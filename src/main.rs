@@ -16,21 +16,24 @@ fn main() {
                                 vec3(0.0, 0.0, 5.0),
                                 vec3(0.0, 0.0, 0.0),
                                 vec3(0.0, 1.0, 0.0),
-                                degrees(45.0),
+                                degrees(30.0),
                                 width as f32 / height as f32, 0.1, 1000.0);
 
-    Loader::load(&["src/test_texture.jpg"], move |loaded|
+    let jpg_filepath = "test_photos/DSC_9479_6_25.JPG";
+
+    Loader::load(&[jpg_filepath], move |loaded|
     {
 
         let mut square_cpu_mesh = CPUMesh {
             positions: square_positions(),
+            uvs: Some(square_uvs()),
             ..Default::default()
         };
         square_cpu_mesh.compute_normals();
         let square_material = PhongMaterial {
             color_source: ColorSource::Texture(std::rc::Rc::new(texture::Texture2D::new_with_u8(&gl, Interpolation::Linear, Interpolation::Linear,
-                                                                                                Some(Interpolation::Linear), Wrapping::Repeat, Wrapping::Repeat,
-                                                                                                &Loader::get_image(loaded, "src/test_texture.jpg").unwrap()).unwrap())),
+                                                                                                None, Wrapping::ClampToEdge, Wrapping::ClampToEdge,
+                                                                                                &Loader::get_image(loaded, jpg_filepath).unwrap()).unwrap())),
             ..Default::default()
         };
         let square_mesh = renderer.new_mesh(&square_cpu_mesh, &square_material).unwrap();
@@ -92,5 +95,16 @@ fn square_positions() -> Vec<f32> {
         1.0, 1.0, 0.0,
         -1.0, 1.0, 0.0,
         -1.0, -1.0, 0.0,
+    ]
+}
+
+fn square_uvs() -> Vec<f32> {
+    vec![
+        0.0, 0.0,
+        1.0, 0.0,
+        1.0, 1.0,
+        1.0, 1.0,
+        0.0, 1.0,
+        0.0, 0.0,
     ]
 }
