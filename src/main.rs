@@ -79,7 +79,8 @@ fn main() {
                 Ok(())
             }).unwrap();
 
-            renderer.render_to_screen_with_forward_pass(&camera, Some(&ambient_light), &[&directional_light], &[], &[], width, height, || {
+            Screen::write(&gl, 0, 0, width, height, Some(&vec4(0.2, 0.2, 0.2, 1.0)), Some(1.0), || {
+                renderer.light_pass(&camera, Some(&ambient_light), &[&directional_light], &[], &[])?;
                 Ok(())
             }).unwrap();
 
