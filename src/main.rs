@@ -1,6 +1,8 @@
 
 use three_d::*;
 
+mod read_pto;
+
 fn main() {
 
     let mut window = Window::new_default("panorama_tool").unwrap();
