@@ -1,14 +1,16 @@
 use std::str::FromStr;
 use nom::{
     IResult,
-    bytes::complete::{tag, take_while1},
-    combinator::{map_res, eof},
-    number::complete::double
+    bytes::complete::{tag, take_while1, take_until},
+    combinator::map_res,
+    number::complete::double,
+    character::complete::multispace0,
+    multi::fold_many1,
 };
 
 
-#[derive(Debug, PartialEq)]
-struct ControlPoint {
+#[derive(Debug, PartialEq, Clone)]
+pub struct ControlPoint {
     image_id: u64,
     x_coord: f64,
     y_coord: f64,
@@ -28,7 +30,6 @@ fn uinteger64(input: &str) -> IResult<&str, u64> {
         |s| u64::from_str(s)
     )(input)
 }
-
 
 fn control_point_pair(input: &str) -> IResult<&str, (ControlPoint, ControlPoint)> {
 
@@ -54,7 +55,7 @@ fn control_point_pair(input: &str) -> IResult<&str, (ControlPoint, ControlPoint)
 
     let (i, _) = tag(" t0")(i)?;
 
-    eof(i)?;
+    let (i, _) = multispace0(i)?;
 
     Ok((i,
         (
@@ -62,6 +63,36 @@ fn control_point_pair(input: &str) -> IResult<&str, (ControlPoint, ControlPoint)
             ControlPoint{image_id: id2, x_coord: x2, y_coord: y2}
         )
     ))
+}
+
+fn read_control_point_pairs_impl(pto_file_contents: &str) -> IResult<&str, Vec<(ControlPoint, ControlPoint)>> {
+
+    let (i, _) = take_until("# control points")(pto_file_contents)?;
+    let (i, _) = tag("# control points")(i)?;
+    let (i, _) = multispace0(i)?;
+
+    let (i, pairs) =
+    fold_many1(
+        control_point_pair,
+        Vec::new(),
+        |mut acc: Vec<_>, item| {
+            acc.push(item);
+            acc
+        }
+    )(i)?;
+
+    Ok((i, pairs))
+}
+
+
+pub fn read_control_point_pairs(pto_file_contents: &str) -> std::result::Result<Vec<(ControlPoint, ControlPoint)>, String> {
+
+    match read_control_point_pairs_impl(pto_file_contents) {
+        Ok((_, v)) => Ok(v),
+        Err(nom::Err::Error(e)) => Err(format!("{:?}", e)),
+        Err(nom::Err::Incomplete(e)) => Err(format!("{:?}", e)),
+        Err(nom::Err::Failure(e)) => Err(format!("{:?}", e)),
+    }
 }
 
 
@@ -104,10 +135,30 @@ mod test {
         }
 
         assert_matches!(control_point_pair("c n0 N1 x568.542826048136 y117.691966641595 X54.4570607766205 Y98.7300002744364 t0"), Ok(_));
-        assert_matches!(control_point_pair("c n0 N1 x568.542826048136 y117.691966641595 X54.4570607766205 Y98.7300002744364 t0 trailing text"), Err(_));
+        assert_matches!(control_point_pair("c n0 N1 x568.542826048136 y117.691966641595 X54.4570607766205 Y98.7300002744364 t0 "), Ok(_));
+        assert_matches!(control_point_pair("c n0 N1 x568.542826048136 y117.691966641595 X54.4570607766205 Y98.7300002744364 t0\t"), Ok(_));
+        assert_matches!(control_point_pair("c n0 N1 x568.542826048136 y117.691966641595 X54.4570607766205 Y98.7300002744364 t0\n "), Ok(_));
+        assert_matches!(control_point_pair("c n0 N1 x568.542826048136 y117.691966641595 X54.4570607766205 Y98.7300002744364 t0trailing text"), Ok(_));
         assert_matches!(control_point_pair( " n0 N1 x568.542826048136 y117.691966641595 X54.4570607766205 Y98.7300002744364 t0"), Err(_));
         assert_matches!(control_point_pair("c n0 N1 x568.542826048136 y117.691966641595 X54.4570607766205 Y98.7300002744364"   ), Err(_));
         assert_matches!(control_point_pair("c n0 n1 x568.542826048136 y117.691966641595 x54.4570607766205 y98.7300002744364 t0"), Err(_));
+    }
+
+    #[test]
+    fn read_control_point_pairs_test() {
+
+let pto_file_contents =
+"file contents
+
+# control points
+c n0 N1 x568.542826048136 y117.691966641595 X54.4570607766205 Y98.7300002744364 t0
+
+more file contents
+";
+        let v= read_control_point_pairs(pto_file_contents).unwrap();
+        assert_eq!(1, v.len());
+        assert_eq!(v[0].0, ControlPoint::new(0, 568.542826048136, 117.691966641595));
+        assert_eq!(v[0].1, ControlPoint::new(1, 54.4570607766205, 98.7300002744364));
     }
 
 }
