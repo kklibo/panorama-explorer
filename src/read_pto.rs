@@ -147,6 +147,8 @@ mod test {
     #[test]
     fn read_control_point_pairs_test() {
 
+        //one control point pair
+        {
 let pto_file_contents =
 "file contents
 
@@ -155,10 +157,69 @@ c n0 N1 x568.542826048136 y117.691966641595 X54.4570607766205 Y98.7300002744364 
 
 more file contents
 ";
-        let v= read_control_point_pairs(pto_file_contents).unwrap();
-        assert_eq!(1, v.len());
-        assert_eq!(v[0].0, ControlPoint::new(0, 568.542826048136, 117.691966641595));
-        assert_eq!(v[0].1, ControlPoint::new(1, 54.4570607766205, 98.7300002744364));
-    }
+            let v = read_control_point_pairs(pto_file_contents).unwrap();
+            assert_eq!(1, v.len());
+            assert_eq!(v[0].0, ControlPoint::new(0, 568.542826048136, 117.691966641595));
+            assert_eq!(v[0].1, ControlPoint::new(1, 54.4570607766205, 98.7300002744364));
+        }
 
+        //3 control point pairs
+        {
+let pto_file_contents =
+"file contents
+
+# control points
+c n0 N1 x568.542826048136 y117.691966641595 X54.4570607766205 Y98.7300002744364 t0
+c n1 N123 x111.1 y222.2 X333.3 Y444.4 t0
+c n2 N123 x555.5 y222.2 X333.3 Y444.4 t0
+
+more file contents
+";
+            let v = read_control_point_pairs(pto_file_contents).unwrap();
+            assert_eq!(3, v.len());
+            assert_eq!(v[0].0, ControlPoint::new(0, 568.542826048136, 117.691966641595));
+            assert_eq!(v[0].1, ControlPoint::new(1, 54.4570607766205, 98.7300002744364));
+            assert_eq!(v[1].0, ControlPoint::new(1, 111.1, 222.2));
+            assert_eq!(v[1].1, ControlPoint::new(123, 333.3, 444.4));
+            assert_eq!(v[2].0, ControlPoint::new(2, 555.5, 222.2));
+            assert_eq!(v[2].1, ControlPoint::new(123, 333.3, 444.4));
+        }
+
+        //no control point pairs
+        {
+let pto_file_contents =
+"file contents
+
+# control points
+
+more file contents
+";
+            assert_matches!(read_control_point_pairs(pto_file_contents), Err(_));
+        }
+
+        //no control point section header
+        {
+let pto_file_contents =
+"file contents
+
+c n0 N1 x568.542826048136 y117.691966641595 X54.4570607766205 Y98.7300002744364 t0
+
+more file contents
+";
+            assert_matches!(read_control_point_pairs(pto_file_contents), Err(_));
+        }
+
+        //malformed control point pair line
+        {
+let pto_file_contents =
+"file contents
+
+# control points
+c n0 N1 x568.542826048136 y117.691966641595 [invalid] X54.4570607766205 Y98.7300002744364 t0
+
+more file contents
+";
+            assert_matches!(read_control_point_pairs(pto_file_contents), Err(_));
+        }
+    }
 }
