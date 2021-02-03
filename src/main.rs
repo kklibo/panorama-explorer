@@ -1,9 +1,14 @@
 
 use three_d::*;
+use log::info;
 
 mod read_pto;
 
 fn main() {
+
+    if cfg!(not(target_arch = "wasm32")) {
+        env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
+    }
 
     let mut window = Window::new_default("panorama_tool").unwrap();
     let (width, height) = window.framebuffer_size();
@@ -65,7 +70,7 @@ fn main() {
                         if kind == "R" && *state == State::Pressed
                         {
                             renderer.next_debug_type();
-                            println!("{:?}", renderer.debug_type());
+                            info!("{:?}", renderer.debug_type());
                         }
                     }
                 }
