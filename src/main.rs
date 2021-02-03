@@ -74,7 +74,12 @@ fn main() {
             // draw
             // Geometry pass
             renderer.geometry_pass(width, height, &|| {
-                let transformation = Mat4::identity();
+
+                //temporary test hardcode
+                let t1 = Mat4::from_nonuniform_scale(460f32,307f32,1f32);
+                let t2 = Mat4::from_scale(1f32/460f32).concat(&t1);
+                let transformation = t2;
+
                 square_mesh.render_geometry(&transformation, &camera)?;
                 Ok(())
             }).unwrap();
