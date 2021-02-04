@@ -4,6 +4,27 @@ use log::info;
 
 mod read_pto;
 
+
+
+fn load_mesh_from_filepath(gl: &Gl, renderer: &PhongDeferredPipeline, loaded: &mut Loaded, jpg_filepath: &str) -> PhongDeferredMesh {
+
+    let mut square_cpu_mesh = CPUMesh {
+        positions: square_positions(),
+        uvs: Some(square_uvs()),
+        ..Default::default()
+    };
+    square_cpu_mesh.compute_normals();
+    let square_material = PhongMaterial {
+        color_source: ColorSource::Texture(std::rc::Rc::new(texture::Texture2D::new_with_u8(&gl, Interpolation::Linear, Interpolation::Linear,
+                                                                                            None, Wrapping::ClampToEdge, Wrapping::ClampToEdge,
+                                                                                            &Loader::get_image(loaded, jpg_filepath).unwrap()).unwrap())),
+        ..Default::default()
+    };
+
+    renderer.new_mesh(&square_cpu_mesh, &square_material).unwrap()
+}
+
+
 fn main() {
 
     if cfg!(not(target_arch = "wasm32")) {
@@ -28,21 +49,7 @@ fn main() {
 
     Loader::load(&[jpg_filepath], move |loaded|
     {
-
-        let mut square_cpu_mesh = CPUMesh {
-            positions: square_positions(),
-            uvs: Some(square_uvs()),
-            ..Default::default()
-        };
-        square_cpu_mesh.compute_normals();
-        let square_material = PhongMaterial {
-            color_source: ColorSource::Texture(std::rc::Rc::new(texture::Texture2D::new_with_u8(&gl, Interpolation::Linear, Interpolation::Linear,
-                                                                                                None, Wrapping::ClampToEdge, Wrapping::ClampToEdge,
-                                                                                                &Loader::get_image(loaded, jpg_filepath).unwrap()).unwrap())),
-            ..Default::default()
-        };
-        let square_mesh = renderer.new_mesh(&square_cpu_mesh, &square_material).unwrap();
-
+        let square_mesh = load_mesh_from_filepath(&gl, &renderer, loaded, jpg_filepath);
 
         let ambient_light = AmbientLight::new(&gl, 0.4, &vec3(1.0, 1.0, 1.0)).unwrap();
         let directional_light = DirectionalLight::new(&gl, 1.0, &vec3(1.0, 1.0, 1.0), &vec3(0.0, -1.0, -1.0)).unwrap();
