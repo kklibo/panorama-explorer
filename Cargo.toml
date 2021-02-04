@@ -12,6 +12,7 @@ crate-type = ["cdylib"]
 [dependencies]
 three-d = "0.4.2"
 log = "0.4"
+cgmath = "0.17"
 wasm-bindgen = "0.2"
 console_error_panic_hook = "0.1"
 console_log = "0.1"

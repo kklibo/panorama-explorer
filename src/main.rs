@@ -59,11 +59,16 @@ fn main() {
                                 degrees(30.0),
                                 width as f32 / height as f32, 0.1, 1000.0);
 
-    let jpg_filepath = "test_photos/DSC_9479_6_25.JPG";
+    let jpg_filepaths = [
+        "test_photos/DSC_9108_12_5.JPG",
+        "test_photos/DSC_9109_12_5.JPG"
+    ];
 
-    Loader::load(&[jpg_filepath], move |loaded|
+    Loader::load(&jpg_filepaths, move |loaded|
     {
-        let square_mesh = load_mesh_from_filepath(&gl, &renderer, loaded, jpg_filepath);
+        let meshes = jpg_filepaths.iter().map(|x| {
+            load_mesh_from_filepath(&gl, &renderer, loaded, x)
+        }).collect::<Vec<_>>();
 
         let ambient_light = AmbientLight::new(&gl, 0.4, &vec3(1.0, 1.0, 1.0)).unwrap();
         let directional_light = DirectionalLight::new(&gl, 1.0, &vec3(1.0, 1.0, 1.0), &vec3(0.0, -1.0, -1.0)).unwrap();
@@ -101,12 +106,19 @@ fn main() {
             // Geometry pass
             renderer.geometry_pass(width, height, &|| {
 
-                //temporary test hardcode
-                let t1 = Mat4::from_nonuniform_scale(square_mesh.pixel_width as f32,square_mesh.pixel_height as f32,1f32);
-                let t2 = Mat4::from_scale(1f32/square_mesh.pixel_width as f32).concat(&t1);
+                let t1 = Mat4::from_nonuniform_scale(meshes[0].pixel_width as f32,meshes[0].pixel_height as f32,1f32);
+                let t2 = Mat4::from_scale(1f32/meshes[0].pixel_width as f32).concat(&t1);
                 let transformation = t2;
 
-                square_mesh.mesh.render_geometry(&transformation, &camera)?;
+                meshes[0].mesh.render_geometry(&transformation, &camera)?;
+
+                let t1 = Mat4::from_nonuniform_scale(meshes[1].pixel_width as f32,meshes[1].pixel_height as f32,1f32);
+                let t1= Mat4::from_translation(cgmath::Vector3::new(1000f32, 0f32, 0f32)).concat(&t1);
+                let t2 = Mat4::from_scale(1f32/meshes[1].pixel_width as f32).concat(&t1);
+                let transformation = t2;
+
+                meshes[1].mesh.render_geometry(&transformation, &camera)?;
+
                 Ok(())
             }).unwrap();
 

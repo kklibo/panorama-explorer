@@ -804,6 +804,7 @@ name = "panorama_tool"
 version = "0.1.0"
 dependencies = [
  "assert_matches",
+ "cgmath 0.17.0",
  "console_error_panic_hook",
  "console_log",
  "env_logger",
