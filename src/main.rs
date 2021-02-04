@@ -4,24 +4,38 @@ use log::info;
 
 mod read_pto;
 
+struct LoadedImageMesh {
 
+    pub mesh: PhongDeferredMesh,
+    pub pixel_width: u32,
+    pub pixel_height: u32,
+}
 
-fn load_mesh_from_filepath(gl: &Gl, renderer: &PhongDeferredPipeline, loaded: &mut Loaded, jpg_filepath: &str) -> PhongDeferredMesh {
+fn load_mesh_from_filepath(gl: &Gl, renderer: &PhongDeferredPipeline, loaded: &mut Loaded, image_filepath: &str) -> LoadedImageMesh {
 
-    let mut square_cpu_mesh = CPUMesh {
+    let mut cpu_mesh = CPUMesh {
         positions: square_positions(),
         uvs: Some(square_uvs()),
+
         ..Default::default()
     };
-    square_cpu_mesh.compute_normals();
-    let square_material = PhongMaterial {
-        color_source: ColorSource::Texture(std::rc::Rc::new(texture::Texture2D::new_with_u8(&gl, Interpolation::Linear, Interpolation::Linear,
-                                                                                            None, Wrapping::ClampToEdge, Wrapping::ClampToEdge,
-                                                                                            &Loader::get_image(loaded, jpg_filepath).unwrap()).unwrap())),
+    cpu_mesh.compute_normals();
+
+    let image = Loader::get_image(loaded, image_filepath).unwrap();
+
+    let material = PhongMaterial {
+        color_source: ColorSource::Texture(std::rc::Rc::new(
+            texture::Texture2D::new_with_u8(&gl,
+                Interpolation::Linear, Interpolation::Linear,
+                None, Wrapping::ClampToEdge, Wrapping::ClampToEdge,
+                &image).unwrap())),
+
         ..Default::default()
     };
 
-    renderer.new_mesh(&square_cpu_mesh, &square_material).unwrap()
+    let mesh = renderer.new_mesh(&cpu_mesh, &material).unwrap();
+
+    LoadedImageMesh {mesh, pixel_width: image.width, pixel_height: image.height}
 }
 
 
@@ -88,11 +102,11 @@ fn main() {
             renderer.geometry_pass(width, height, &|| {
 
                 //temporary test hardcode
-                let t1 = Mat4::from_nonuniform_scale(460f32,307f32,1f32);
-                let t2 = Mat4::from_scale(1f32/460f32).concat(&t1);
+                let t1 = Mat4::from_nonuniform_scale(square_mesh.pixel_width as f32,square_mesh.pixel_height as f32,1f32);
+                let t2 = Mat4::from_scale(1f32/square_mesh.pixel_width as f32).concat(&t1);
                 let transformation = t2;
 
-                square_mesh.render_geometry(&transformation, &camera)?;
+                square_mesh.mesh.render_geometry(&transformation, &camera)?;
                 Ok(())
             }).unwrap();
 
