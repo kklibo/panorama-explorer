@@ -39,6 +39,30 @@ fn load_mesh_from_filepath(gl: &Gl, renderer: &PhongDeferredPipeline, loaded: &m
 }
 
 
+struct Zoom {
+    pub scale: f32,
+    pub value: u32,
+    pub min: u32,
+    pub max: u32,
+}
+
+impl Zoom {
+    fn zoom_in(&mut self) {
+        if self.value > self.min {
+            self.value -= 1;
+        }
+    }
+    fn zoom_out(&mut self) {
+        if self.value < self.max {
+            self.value += 1;
+        }
+    }
+    fn get_size(&self) -> f32 {
+        2_u32.pow(self.value) as f32 * self.scale
+    }
+}
+
+
 fn main() {
 
     if cfg!(not(target_arch = "wasm32")) {
@@ -46,18 +70,31 @@ fn main() {
     }
 
     let mut window = Window::new_default("panorama_tool").unwrap();
-    let (width, height) = window.framebuffer_size();
+    let (width, height) =
+        if cfg!(target_arch = "wasm32") {
+            (1280, 720) //temp hardcode for web canvas
+        } else {
+            window.framebuffer_size()
+        };
+
     let gl = window.gl();
+
+    let mut zoom = Zoom {
+        scale: 1_f32,
+        value: 10_u32,
+        min: 1_u32,
+        max: 100_u32,
+    };
 
     // Renderer
     let mut renderer = PhongDeferredPipeline::new(&gl).unwrap();
     let mut camera =
-        Camera::new_perspective(&gl,
+        Camera::new_orthographic(&gl,
                                 vec3(0.0, 0.0, 5.0),
                                 vec3(0.0, 0.0, 0.0),
                                 vec3(0.0, 1.0, 0.0),
-                                degrees(30.0),
-                                width as f32 / height as f32, 0.1, 1000.0);
+                                zoom.get_size(), zoom.get_size(), 10.0);
+
 
     let jpg_filepaths = [
         "test_photos/DSC_9108_12_5.JPG",
@@ -74,23 +111,32 @@ fn main() {
         let directional_light = DirectionalLight::new(&gl, 1.0, &vec3(1.0, 1.0, 1.0), &vec3(0.0, -1.0, -1.0)).unwrap();
 
         // main loop
-        let mut rotating = false;
+        let mut panning = false;
         window.render_loop(move |frame_input|
         {
-            camera.set_size(frame_input.screen_width as f32, frame_input.screen_height as f32);
-
             for event in frame_input.events.iter() {
                 match event {
                     Event::MouseClick {state, button, ..} => {
-                        rotating = *button == MouseButton::Left && *state == State::Pressed;
+                        panning = *button == MouseButton::Left && *state == State::Pressed;
                     },
                     Event::MouseMotion {delta} => {
-                        if rotating {
-                            camera.rotate(delta.0 as f32, delta.1 as f32);
+                        if panning {
+                            info!("mouse delta: {:?} {:?}", delta.0, delta.1);
+
+                            camera.translate(&Vec3::new(-delta.0 as f32, delta.1 as f32, 0 as f32));
                         }
                     },
                     Event::MouseWheel {delta} => {
-                        camera.zoom(*delta as f32);
+                        info!("{:?}", delta);
+
+                        match (*delta > 0.0, cfg!(target_arch = "wasm32")) {
+                            (true, true) => zoom.zoom_out(),
+                            (true, false) => zoom.zoom_in(),
+                            (false, true) => zoom.zoom_in(),
+                            (false, false) => zoom.zoom_out(),
+                        }
+
+                        camera.set_orthographic_projection(zoom.get_size(), zoom.get_size(), 10.0);
                     },
                     Event::Key { state, kind } => {
                         if kind == "R" && *state == State::Pressed
@@ -107,17 +153,17 @@ fn main() {
             renderer.geometry_pass(width, height, &|| {
 
                 let t1 = Mat4::from_nonuniform_scale(meshes[0].pixel_width as f32,meshes[0].pixel_height as f32,1f32);
-                let t2 = Mat4::from_scale(1f32/meshes[0].pixel_width as f32).concat(&t1);
-                let transformation = t2;
+                //let t2 = Mat4::from_scale(1f32/meshes[0].pixel_width as f32).concat(&t1);
+                //let transformation = t2;
 
-                meshes[0].mesh.render_geometry(&transformation, &camera)?;
+                meshes[0].mesh.render_geometry(&t1, &camera)?;
 
                 let t1 = Mat4::from_nonuniform_scale(meshes[1].pixel_width as f32,meshes[1].pixel_height as f32,1f32);
                 let t1= Mat4::from_translation(cgmath::Vector3::new(1000f32, 0f32, 0f32)).concat(&t1);
-                let t2 = Mat4::from_scale(1f32/meshes[1].pixel_width as f32).concat(&t1);
-                let transformation = t2;
+                //let t2 = Mat4::from_scale(1f32/meshes[1].pixel_width as f32).concat(&t1);
+                //let transformation = t2;
 
-                meshes[1].mesh.render_geometry(&transformation, &camera)?;
+                meshes[1].mesh.render_geometry(&t1, &camera)?;
 
                 Ok(())
             }).unwrap();
