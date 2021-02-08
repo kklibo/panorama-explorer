@@ -86,6 +86,11 @@ fn main() {
         max: 100_u32,
     };
 
+    fn get_gl_units_per_pixel(zoom: &Zoom, width: usize) -> f32 {
+        if width == 0 {panic!("gl width = 0");}
+        zoom.get_size() / width as f32
+    };
+
     // Renderer
     let mut renderer = PhongDeferredPipeline::new(&gl).unwrap();
     let mut camera =
@@ -123,7 +128,11 @@ fn main() {
                         if panning {
                             info!("mouse delta: {:?} {:?}", delta.0, delta.1);
 
-                            camera.translate(&Vec3::new(-delta.0 as f32, delta.1 as f32, 0 as f32));
+                            camera.translate(&Vec3::new(
+                                -delta.0 as f32 * get_gl_units_per_pixel(&zoom, width),
+                                delta.1 as f32 * get_gl_units_per_pixel(&zoom, width),
+                                0 as f32)
+                            );
                         }
                     },
                     Event::MouseWheel {delta} => {

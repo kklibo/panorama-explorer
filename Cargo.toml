@@ -10,7 +10,8 @@ edition = "2018"
 crate-type = ["cdylib"]
 
 [dependencies]
-three-d = "0.4.2"
+#three-d = "0.4.2"
+three-d = {path = "../../temp_repos/three-d/"}
 log = "0.4"
 cgmath = "0.17"
 wasm-bindgen = "0.2"
