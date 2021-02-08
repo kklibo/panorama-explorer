@@ -11,7 +11,7 @@ struct LoadedImageMesh {
     pub pixel_height: u32,
 }
 
-fn load_mesh_from_filepath(gl: &Gl, renderer: &PhongDeferredPipeline, loaded: &mut Loaded, image_filepath: &str) -> LoadedImageMesh {
+fn load_mesh_from_filepath(context: &Context, loaded: &mut Loaded, image_filepath: &str) -> LoadedImageMesh {
 
     let mut cpu_mesh = CPUMesh {
         positions: square_positions(),
@@ -25,7 +25,7 @@ fn load_mesh_from_filepath(gl: &Gl, renderer: &PhongDeferredPipeline, loaded: &m
 
     let material = PhongMaterial {
         color_source: ColorSource::Texture(std::rc::Rc::new(
-            texture::Texture2D::new_with_u8(&gl,
+            texture::Texture2D::new_with_u8(&context,
                 Interpolation::Linear, Interpolation::Linear,
                 None, Wrapping::ClampToEdge, Wrapping::ClampToEdge,
                 &image).unwrap())),
@@ -33,7 +33,7 @@ fn load_mesh_from_filepath(gl: &Gl, renderer: &PhongDeferredPipeline, loaded: &m
         ..Default::default()
     };
 
-    let mesh = renderer.new_mesh(&cpu_mesh, &material).unwrap();
+    let mesh = PhongDeferredMesh::new(&context, &cpu_mesh, &material).unwrap();
 
     LoadedImageMesh {mesh, pixel_width: image.width, pixel_height: image.height}
 }
@@ -69,15 +69,15 @@ fn main() {
         env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
     }
 
-    let mut window = Window::new_default("panorama_tool").unwrap();
+    let mut window = Window::new("panorama_tool", None).unwrap();
     let (width, height) =
         if cfg!(target_arch = "wasm32") {
             (1280, 720) //temp hardcode for web canvas
         } else {
-            window.framebuffer_size()
+            (window.viewport().width, window.viewport().height)
         };
 
-    let gl = window.gl();
+    let context = window.gl();
 
     let mut zoom = Zoom {
         scale: 1_f32,
@@ -92,9 +92,9 @@ fn main() {
     };
 
     // Renderer
-    let mut renderer = PhongDeferredPipeline::new(&gl).unwrap();
+    let mut pipeline = PhongDeferredPipeline::new(&context).unwrap();
     let mut camera =
-        Camera::new_orthographic(&gl,
+        Camera::new_orthographic(&context,
                                 vec3(0.0, 0.0, 5.0),
                                 vec3(0.0, 0.0, 0.0),
                                 vec3(0.0, 1.0, 0.0),
@@ -109,11 +109,11 @@ fn main() {
     Loader::load(&jpg_filepaths, move |loaded|
     {
         let meshes = jpg_filepaths.iter().map(|x| {
-            load_mesh_from_filepath(&gl, &renderer, loaded, x)
+            load_mesh_from_filepath(&context, loaded, x)
         }).collect::<Vec<_>>();
 
-        let ambient_light = AmbientLight::new(&gl, 0.4, &vec3(1.0, 1.0, 1.0)).unwrap();
-        let directional_light = DirectionalLight::new(&gl, 1.0, &vec3(1.0, 1.0, 1.0), &vec3(0.0, -1.0, -1.0)).unwrap();
+        let ambient_light = AmbientLight {intensity: 0.4, color: vec3(1.0, 1.0, 1.0)};
+        let directional_light = DirectionalLight::new(&context, 1.0, &vec3(1.0, 1.0, 1.0), &vec3(0.0, -1.0, -1.0)).unwrap();
 
         // main loop
         let mut panning = false;
@@ -124,7 +124,7 @@ fn main() {
                     Event::MouseClick {state, button, ..} => {
                         panning = *button == MouseButton::Left && *state == State::Pressed;
                     },
-                    Event::MouseMotion {delta} => {
+                    Event::MouseMotion {delta, ..} => {
                         if panning {
                             info!("mouse delta: {:?} {:?}", delta.0, delta.1);
 
@@ -150,8 +150,8 @@ fn main() {
                     Event::Key { state, kind } => {
                         if kind == "R" && *state == State::Pressed
                         {
-                            renderer.next_debug_type();
-                            info!("{:?}", renderer.debug_type());
+                            pipeline.next_debug_type();
+                            info!("{:?}", pipeline.debug_type());
                         }
                     }
                 }
@@ -159,26 +159,28 @@ fn main() {
 
             // draw
             // Geometry pass
-            renderer.geometry_pass(width, height, &|| {
+            pipeline.geometry_pass(width, height, &|| {
 
                 let t1 = Mat4::from_nonuniform_scale(meshes[0].pixel_width as f32,meshes[0].pixel_height as f32,1f32);
                 //let t2 = Mat4::from_scale(1f32/meshes[0].pixel_width as f32).concat(&t1);
                 //let transformation = t2;
 
-                meshes[0].mesh.render_geometry(&t1, &camera)?;
+                meshes[0].mesh.render_geometry(RenderStates {cull: CullType::Back, ..Default::default()},
+                                               frame_input.viewport, &t1, &camera)?;
 
                 let t1 = Mat4::from_nonuniform_scale(meshes[1].pixel_width as f32,meshes[1].pixel_height as f32,1f32);
                 let t1= Mat4::from_translation(cgmath::Vector3::new(1000f32, 0f32, 0f32)).concat(&t1);
                 //let t2 = Mat4::from_scale(1f32/meshes[1].pixel_width as f32).concat(&t1);
                 //let transformation = t2;
 
-                meshes[1].mesh.render_geometry(&t1, &camera)?;
+                meshes[1].mesh.render_geometry(RenderStates {cull: CullType::Back, ..Default::default()},
+                                               frame_input.viewport, &t1, &camera)?;
 
                 Ok(())
             }).unwrap();
 
-            Screen::write(&gl, 0, 0, width, height, Some(&vec4(0.2, 0.2, 0.2, 1.0)), Some(1.0), || {
-                renderer.light_pass(&camera, Some(&ambient_light), &[&directional_light], &[], &[])?;
+            Screen::write(&context, Some(&vec4(0.2, 0.2, 0.2, 1.0)), Some(1.0), || {
+                pipeline.light_pass(frame_input.viewport, &camera, Some(&ambient_light), &[&directional_light], &[], &[])?;
                 Ok(())
             }).unwrap();
 
