@@ -40,7 +40,7 @@ fn load_mesh_from_filepath(context: &Context, loaded: &mut Loaded, image_filepat
 
 
 struct Zoom {
-    pub scale: f32,
+    pub scale: f64,
     pub value: u32,
     pub min: u32,
     pub max: u32,
@@ -57,8 +57,8 @@ impl Zoom {
             self.value += 1;
         }
     }
-    fn get_size(&self) -> f32 {
-        2_u32.pow(self.value) as f32 * self.scale
+    fn get_size(&self) -> f64 {
+        2_u32.pow(self.value) as f64 * self.scale
     }
 }
 
@@ -80,15 +80,15 @@ fn main() {
     let context = window.gl();
 
     let mut zoom = Zoom {
-        scale: 1_f32,
+        scale: 1_f64,
         value: 10_u32,
         min: 1_u32,
         max: 100_u32,
     };
 
-    fn get_gl_units_per_pixel(zoom: &Zoom, width: usize) -> f32 {
+    fn get_gl_units_per_pixel(zoom: &Zoom, width: usize) -> f64 {
         if width == 0 {panic!("gl width = 0");}
-        zoom.get_size() / width as f32
+        zoom.get_size() / width as f64
     };
 
     // Renderer
@@ -98,7 +98,7 @@ fn main() {
                                 vec3(0.0, 0.0, 5.0),
                                 vec3(0.0, 0.0, 0.0),
                                 vec3(0.0, 1.0, 0.0),
-                                zoom.get_size(), zoom.get_size(), 10.0);
+                                zoom.get_size() as f32, zoom.get_size() as f32, 10.0);
 
 
     let jpg_filepaths = [
@@ -117,21 +117,35 @@ fn main() {
 
         // main loop
         let mut panning = false;
+        let mut pan_mouse_start = (0_f64, 0_f64); //temp
+        let mut pan_camera_start = camera.position().clone(); //temp
+
         window.render_loop(move |frame_input|
         {
             for event in frame_input.events.iter() {
                 match event {
-                    Event::MouseClick {state, button, ..} => {
+                    Event::MouseClick {state, button, position} => {
+                        info!("MouseClick: mouse position: {:?} {:?}", position.0, position.1);
+
                         panning = *button == MouseButton::Left && *state == State::Pressed;
+
+                        if panning {
+                            pan_mouse_start = *position;
+                            pan_camera_start = camera.position().clone();
+                        }
                     },
-                    Event::MouseMotion {delta, ..} => {
+                    Event::MouseMotion {delta, position} => {
                         if panning {
                             info!("mouse delta: {:?} {:?}", delta.0, delta.1);
+                            info!("mouse position: {:?} {:?}", position.0, position.1);
 
-                            camera.translate(&Vec3::new(
-                                -delta.0 as f32 * get_gl_units_per_pixel(&zoom, width),
-                                delta.1 as f32 * get_gl_units_per_pixel(&zoom, width),
-                                0 as f32)
+                            let camera_position_x = pan_camera_start.x - ((position.0 - pan_mouse_start.0) * get_gl_units_per_pixel(&zoom, width)) as f32;
+                            let camera_position_y = pan_camera_start.y + ((position.1 - pan_mouse_start.1) * get_gl_units_per_pixel(&zoom, width)) as f32;
+
+                            camera.set_view(
+                                vec3(camera_position_x as f32, camera_position_y as f32, 5.0),
+                                vec3(camera_position_x as f32, camera_position_y as f32, 0.0),
+                                vec3(0.0, 1.0, 0.0)
                             );
                         }
                     },
@@ -145,7 +159,7 @@ fn main() {
                             (false, false) => zoom.zoom_out(),
                         }
 
-                        camera.set_orthographic_projection(zoom.get_size(), zoom.get_size(), 10.0);
+                        camera.set_orthographic_projection(zoom.get_size() as f32, zoom.get_size() as f32, 10.0);
                     },
                     Event::Key { state, kind } => {
                         if kind == "R" && *state == State::Pressed
