@@ -52,7 +52,7 @@ fn main() {
         scale: 1_f64,
         value: 10_u32,
         min: 1_u32,
-        max: 100_u32,
+        max: 15_u32,
     };
 
 
@@ -83,9 +83,12 @@ fn main() {
         let directional_light = DirectionalLight::new(&context, 1.0, &vec3(1.0, 1.0, 1.0), &vec3(0.0, -1.0, -1.0)).unwrap();
 
         // main loop
-        let mut panning = false;
-        let mut pan_mouse_start = (0_f64, 0_f64); //temp
-        let mut pan_camera_start = camera.position().clone(); //temp
+
+        struct Pan {
+            mouse_start: (f64,f64),
+            camera_start: Vec3,
+        }
+        let mut active_pan: Option<Pan> = None;
 
         window.render_loop(move |frame_input|
         {
@@ -99,20 +102,23 @@ fn main() {
                     Event::MouseClick {state, button, position} => {
                         info!("MouseClick: mouse position: {:?} {:?}", position.0, position.1);
 
-                        panning = *button == MouseButton::Left && *state == State::Pressed;
+                        active_pan =
+                        match *button == MouseButton::Left && *state == State::Pressed {
+                            true => Some(Pan {
+                                mouse_start: *position,
+                                camera_start: camera.position().clone(),
+                            }),
+                            false => None,
+                        };
 
-                        if panning {
-                            pan_mouse_start = *position;
-                            pan_camera_start = camera.position().clone();
-                        }
                     },
                     Event::MouseMotion {delta, position} => {
-                        if panning {
+                        if let Some(ref mut pan) = active_pan {
                             info!("mouse delta: {:?} {:?}", delta.0, delta.1);
                             info!("mouse position: {:?} {:?}", position.0, position.1);
 
-                            let camera_position_x = pan_camera_start.x - ((position.0 - pan_mouse_start.0) * zoom.gl_units_per_pixel(frame_input.viewport.width)) as f32;
-                            let camera_position_y = pan_camera_start.y + ((position.1 - pan_mouse_start.1) * zoom.gl_units_per_pixel(frame_input.viewport.width)) as f32;
+                            let camera_position_x = pan.camera_start.x - ((position.0 - pan.mouse_start.0) * zoom.gl_units_per_pixel(frame_input.viewport.width)) as f32;
+                            let camera_position_y = pan.camera_start.y + ((position.1 - pan.mouse_start.1) * zoom.gl_units_per_pixel(frame_input.viewport.width)) as f32;
 
                             camera.set_view(
                                 vec3(camera_position_x as f32, camera_position_y as f32, 5.0),
