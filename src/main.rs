@@ -2,6 +2,7 @@
 use three_d::*;
 use log::info;
 
+mod zoom;
 mod read_pto;
 
 struct LoadedImageMesh {
@@ -38,47 +39,6 @@ fn load_mesh_from_filepath(context: &Context, loaded: &mut Loaded, image_filepat
     LoadedImageMesh {mesh, pixel_width: image.width, pixel_height: image.height}
 }
 
-
-struct Zoom {
-    pub scale: f64,
-    pub value: u32,
-    pub min: u32,
-    pub max: u32,
-}
-
-impl Zoom {
-    fn zoom_in(&mut self) {
-        if self.value > self.min {
-            self.value -= 1;
-        }
-    }
-    fn zoom_out(&mut self) {
-        if self.value < self.max {
-            self.value += 1;
-        }
-    }
-    fn size_in_gl_units(&self) -> f64 {
-        2_u32.pow(self.value) as f64 * self.scale
-    }
-
-    fn gl_units_width(&self) -> f32 {
-
-        self.size_in_gl_units() as f32
-    }
-
-    fn gl_units_height(&self, aspect_x_to_y: f32) -> f32 {
-
-        if aspect_x_to_y <= 0.0 {panic!("non-positive aspect ratio");}
-        self.size_in_gl_units() as f32 / aspect_x_to_y
-    }
-
-    fn gl_units_per_pixel(&self, width_in_pixels: usize) -> f64 {
-        if width_in_pixels == 0 {panic!("width_in_pixels = 0");}
-        self.size_in_gl_units() / width_in_pixels as f64
-    }
-}
-
-
 fn main() {
 
     if cfg!(not(target_arch = "wasm32")) {
@@ -88,7 +48,7 @@ fn main() {
     let mut window = Window::new("panorama_tool", None).unwrap();
     let context = window.gl();
 
-    let mut zoom = Zoom {
+    let mut zoom = zoom::Zoom {
         scale: 1_f64,
         value: 10_u32,
         min: 1_u32,
