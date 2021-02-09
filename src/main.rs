@@ -57,8 +57,24 @@ impl Zoom {
             self.value += 1;
         }
     }
-    fn get_size(&self) -> f64 {
+    fn size_in_gl_units(&self) -> f64 {
         2_u32.pow(self.value) as f64 * self.scale
+    }
+
+    fn gl_units_width(&self) -> f32 {
+
+        self.size_in_gl_units() as f32
+    }
+
+    fn gl_units_height(&self, aspect_x_to_y: f32) -> f32 {
+
+        if aspect_x_to_y <= 0.0 {panic!("non-positive aspect ratio");}
+        self.size_in_gl_units() as f32 / aspect_x_to_y
+    }
+
+    fn gl_units_per_pixel(&self, width_in_pixels: usize) -> f64 {
+        if width_in_pixels == 0 {panic!("width_in_pixels = 0");}
+        self.size_in_gl_units() / width_in_pixels as f64
     }
 }
 
@@ -79,24 +95,17 @@ fn main() {
         max: 100_u32,
     };
 
-    fn get_gl_units_per_pixel(zoom: &Zoom, width: usize) -> f64 {
-        if width == 0 {panic!("gl width = 0");}
-        zoom.get_size() / width as f64
-    };
 
     // Renderer
     let mut pipeline = PhongDeferredPipeline::new(&context).unwrap();
-
-    let aspect = window.viewport().aspect();
-    if aspect <= 0.0 {panic!();}
-    let ortho_size = (zoom.get_size() as f32, zoom.get_size() as f32 / aspect);
-
     let mut camera =
         Camera::new_orthographic(&context,
                                 vec3(0.0, 0.0, 5.0),
                                 vec3(0.0, 0.0, 0.0),
                                 vec3(0.0, 1.0, 0.0),
-                                ortho_size.0, ortho_size.1, 10.0);
+                                zoom.gl_units_width(),
+                                 zoom.gl_units_height(window.viewport().aspect()),
+                                 10.0);
 
 
     let jpg_filepaths = [
@@ -121,13 +130,9 @@ fn main() {
         window.render_loop(move |frame_input|
         {
             camera.set_aspect(frame_input.viewport.aspect());
-
-            let aspect = frame_input.viewport.aspect();
-            if aspect <= 0.0 {panic!();}
-            let ortho_size = (zoom.get_size() as f32, zoom.get_size() as f32 / aspect);
-
-            camera.set_orthographic_projection(ortho_size.0, ortho_size.1, 10.0);
-
+            camera.set_orthographic_projection(zoom.gl_units_width(),
+                                               zoom.gl_units_height(frame_input.viewport.aspect()),
+                                               10.0);
 
             for event in frame_input.events.iter() {
                 match event {
@@ -146,8 +151,8 @@ fn main() {
                             info!("mouse delta: {:?} {:?}", delta.0, delta.1);
                             info!("mouse position: {:?} {:?}", position.0, position.1);
 
-                            let camera_position_x = pan_camera_start.x - ((position.0 - pan_mouse_start.0) * get_gl_units_per_pixel(&zoom, frame_input.viewport.width)) as f32;
-                            let camera_position_y = pan_camera_start.y + ((position.1 - pan_mouse_start.1) * get_gl_units_per_pixel(&zoom, frame_input.viewport.width)) as f32;
+                            let camera_position_x = pan_camera_start.x - ((position.0 - pan_mouse_start.0) * zoom.gl_units_per_pixel(frame_input.viewport.width)) as f32;
+                            let camera_position_y = pan_camera_start.y + ((position.1 - pan_mouse_start.1) * zoom.gl_units_per_pixel(frame_input.viewport.width)) as f32;
 
                             camera.set_view(
                                 vec3(camera_position_x as f32, camera_position_y as f32, 5.0),
@@ -166,11 +171,9 @@ fn main() {
                             (false, false) => zoom.zoom_out(),
                         }
 
-                        let aspect = frame_input.viewport.aspect();
-                        if aspect <= 0.0 {panic!();}
-                        let ortho_size = (zoom.get_size() as f32, zoom.get_size() as f32 / aspect);
-
-                        camera.set_orthographic_projection(ortho_size.0, ortho_size.1, 10.0);
+                        camera.set_orthographic_projection(zoom.gl_units_width(),
+                                                           zoom.gl_units_height(frame_input.viewport.aspect()),
+                                                           10.0);
                     },
                     Event::Key { state, kind } => {
                         if kind == "R" && *state == State::Pressed
