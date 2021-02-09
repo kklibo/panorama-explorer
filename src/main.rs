@@ -90,6 +90,8 @@ fn main() {
         }
         let mut active_pan: Option<Pan> = None;
 
+        let mut mouse_position = (0_f64,0_f64); //temp
+
         window.render_loop(move |frame_input|
         {
             camera.set_aspect(frame_input.viewport.aspect());
@@ -101,6 +103,7 @@ fn main() {
                 match event {
                     Event::MouseClick {state, button, position} => {
                         info!("MouseClick: mouse position: {:?} {:?}", position.0, position.1);
+                        mouse_position = *position;
 
                         active_pan =
                         match *button == MouseButton::Left && *state == State::Pressed {
@@ -113,6 +116,9 @@ fn main() {
 
                     },
                     Event::MouseMotion {delta, position} => {
+
+                        mouse_position = *position;
+
                         if let Some(ref mut pan) = active_pan {
                             info!("mouse delta: {:?} {:?}", delta.0, delta.1);
                             info!("mouse position: {:?} {:?}", position.0, position.1);
@@ -130,11 +136,26 @@ fn main() {
                     Event::MouseWheel {delta} => {
                         info!("{:?}", delta);
 
+                        if frame_input.viewport.width  <= 0 {panic!("non-positive viewport width" );}
+                        if frame_input.viewport.height <= 0 {panic!("non-positive viewport height");}
+                        let cursor_screen_x = mouse_position.0 / frame_input.viewport.width as f64;
+                        let cursor_screen_y = 1_f64-(mouse_position.1 / frame_input.viewport.height as f64);
+
                         match (*delta > 0.0, cfg!(target_arch = "wasm32")) {
-                            (true, true) => zoom.zoom_out(),
-                            (true, false) => zoom.zoom_in(),
-                            (false, true) => zoom.zoom_in(),
-                            (false, false) => zoom.zoom_out(),
+                            (true, true) | (false, false) => {
+                                camera.translate(&Vec3::new(
+                                    -zoom.gl_units_width()*(cursor_screen_x-0.5) as f32,
+                                    -zoom.gl_units_height(frame_input.viewport.aspect())*(cursor_screen_y-0.5) as f32,
+                                    0.0));
+                                zoom.zoom_out();
+                            },
+                            (true, false) | (false, true) => {
+                                zoom.zoom_in();
+                                camera.translate(&Vec3::new(
+                                    zoom.gl_units_width()*(cursor_screen_x-0.5) as f32,
+                                    zoom.gl_units_height(frame_input.viewport.aspect())*(cursor_screen_y-0.5) as f32,
+                                    0.0));
+                            },
                         }
 
                         camera.set_orthographic_projection(zoom.gl_units_width(),
