@@ -70,13 +70,6 @@ fn main() {
     }
 
     let mut window = Window::new("panorama_tool", None).unwrap();
-    let (width, height) =
-        if cfg!(target_arch = "wasm32") {
-            (1280, 720) //temp hardcode for web canvas
-        } else {
-            (window.viewport().width, window.viewport().height)
-        };
-
     let context = window.gl();
 
     let mut zoom = Zoom {
@@ -93,12 +86,17 @@ fn main() {
 
     // Renderer
     let mut pipeline = PhongDeferredPipeline::new(&context).unwrap();
+
+    let aspect = window.viewport().aspect();
+    if aspect <= 0.0 {panic!();}
+    let ortho_size = (zoom.get_size() as f32, zoom.get_size() as f32 / aspect);
+
     let mut camera =
         Camera::new_orthographic(&context,
                                 vec3(0.0, 0.0, 5.0),
                                 vec3(0.0, 0.0, 0.0),
                                 vec3(0.0, 1.0, 0.0),
-                                zoom.get_size() as f32, zoom.get_size() as f32, 10.0);
+                                ortho_size.0, ortho_size.1, 10.0);
 
 
     let jpg_filepaths = [
@@ -122,6 +120,15 @@ fn main() {
 
         window.render_loop(move |frame_input|
         {
+            camera.set_aspect(frame_input.viewport.aspect());
+
+            let aspect = frame_input.viewport.aspect();
+            if aspect <= 0.0 {panic!();}
+            let ortho_size = (zoom.get_size() as f32, zoom.get_size() as f32 / aspect);
+
+            camera.set_orthographic_projection(ortho_size.0, ortho_size.1, 10.0);
+
+
             for event in frame_input.events.iter() {
                 match event {
                     Event::MouseClick {state, button, position} => {
@@ -139,8 +146,8 @@ fn main() {
                             info!("mouse delta: {:?} {:?}", delta.0, delta.1);
                             info!("mouse position: {:?} {:?}", position.0, position.1);
 
-                            let camera_position_x = pan_camera_start.x - ((position.0 - pan_mouse_start.0) * get_gl_units_per_pixel(&zoom, width)) as f32;
-                            let camera_position_y = pan_camera_start.y + ((position.1 - pan_mouse_start.1) * get_gl_units_per_pixel(&zoom, width)) as f32;
+                            let camera_position_x = pan_camera_start.x - ((position.0 - pan_mouse_start.0) * get_gl_units_per_pixel(&zoom, frame_input.viewport.width)) as f32;
+                            let camera_position_y = pan_camera_start.y + ((position.1 - pan_mouse_start.1) * get_gl_units_per_pixel(&zoom, frame_input.viewport.width)) as f32;
 
                             camera.set_view(
                                 vec3(camera_position_x as f32, camera_position_y as f32, 5.0),
@@ -159,7 +166,11 @@ fn main() {
                             (false, false) => zoom.zoom_out(),
                         }
 
-                        camera.set_orthographic_projection(zoom.get_size() as f32, zoom.get_size() as f32, 10.0);
+                        let aspect = frame_input.viewport.aspect();
+                        if aspect <= 0.0 {panic!();}
+                        let ortho_size = (zoom.get_size() as f32, zoom.get_size() as f32 / aspect);
+
+                        camera.set_orthographic_projection(ortho_size.0, ortho_size.1, 10.0);
                     },
                     Event::Key { state, kind } => {
                         if kind == "R" && *state == State::Pressed
@@ -173,7 +184,7 @@ fn main() {
 
             // draw
             // Geometry pass
-            pipeline.geometry_pass(width, height, &|| {
+            pipeline.geometry_pass(frame_input.viewport.width, frame_input.viewport.height, &|| {
 
                 let t1 = Mat4::from_nonuniform_scale(meshes[0].pixel_width as f32,meshes[0].pixel_height as f32,1f32);
                 //let t2 = Mat4::from_scale(1f32/meshes[0].pixel_width as f32).concat(&t1);
