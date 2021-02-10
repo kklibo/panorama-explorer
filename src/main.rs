@@ -141,19 +141,29 @@ fn main() {
                         let cursor_screen_x = mouse_position.0 / frame_input.viewport.width as f64;
                         let cursor_screen_y = 1_f64-(mouse_position.1 / frame_input.viewport.height as f64);
 
+                        info!("cursor_screen {:?},{:?}", cursor_screen_x, cursor_screen_y);
+
                         match (*delta > 0.0, cfg!(target_arch = "wasm32")) {
                             (true, true) | (false, false) => {
+                                camera.translate(&Vec3::new(
+                                    zoom.gl_units_width()*(cursor_screen_x-0.5) as f32,
+                                    zoom.gl_units_height(frame_input.viewport.aspect())*(cursor_screen_y-0.5) as f32,
+                                    0.0));
+                                zoom.zoom_out();
                                 camera.translate(&Vec3::new(
                                     -zoom.gl_units_width()*(cursor_screen_x-0.5) as f32,
                                     -zoom.gl_units_height(frame_input.viewport.aspect())*(cursor_screen_y-0.5) as f32,
                                     0.0));
-                                zoom.zoom_out();
                             },
                             (true, false) | (false, true) => {
-                                zoom.zoom_in();
                                 camera.translate(&Vec3::new(
                                     zoom.gl_units_width()*(cursor_screen_x-0.5) as f32,
                                     zoom.gl_units_height(frame_input.viewport.aspect())*(cursor_screen_y-0.5) as f32,
+                                    0.0));
+                                zoom.zoom_in();
+                                camera.translate(&Vec3::new(
+                                    -zoom.gl_units_width()*(cursor_screen_x-0.5) as f32,
+                                    -zoom.gl_units_height(frame_input.viewport.aspect())*(cursor_screen_y-0.5) as f32,
                                     0.0));
                             },
                         }
