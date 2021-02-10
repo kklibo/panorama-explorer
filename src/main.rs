@@ -131,34 +131,70 @@ fn main() {
                     Event::MouseWheel {delta, position} => {
                         info!("{:?}", delta);
 
-                        if frame_input.viewport.width  <= 0 {panic!("non-positive viewport width" );}
-                        if frame_input.viewport.height <= 0 {panic!("non-positive viewport height");}
-                        let cursor_screen_x = position.0 / frame_input.viewport.width as f64;
-                        let cursor_screen_y = 1_f64-(position.1 / frame_input.viewport.height as f64);
+                        //coords conversion test
 
-                        info!("cursor_screen {:?},{:?}", cursor_screen_x, cursor_screen_y);
+                        struct ScreenCoords {
+                            /// x location in screen units: [-0.5,0.5], positive is right
+                            x: f64,
+                            /// y location in screen units: [-0.5,0.5], positive is up
+                            y: f64,
+                        }
+
+                        struct PixelCoords {
+                            /// x location in pixels: [0.0, width], positive is right
+                            x: f64,
+                            /// y location in pixels: [0.0, height], positive is down
+                            y: f64,
+                        }
+
+                        struct WorldCoords {
+                            /// x location in world units: [left, right]
+                            x: f64,
+                            /// y location in world units: [bottom, top]
+                            y: f64,
+                        }
+
+                        fn pixel_to_screen(position: PixelCoords, screen_width: usize, screen_height: usize ) -> ScreenCoords {
+                            if screen_width  <= 0 {panic!("non-positive viewport width" );}
+                            if screen_height <= 0 {panic!("non-positive viewport height");}
+
+                            let x = position.x / screen_width as f64 - 0.5_f64;
+                            let y = 1_f64 - (position.y / screen_height as f64) - 0.5_f64;
+
+                            ScreenCoords{x,y}
+                        }
+
+                        let screen_coords =
+                        pixel_to_screen(
+                            PixelCoords{x: position.0, y: position.1},
+                            frame_input.viewport.width,
+                            frame_input.viewport.height,
+                        );
+
+
+                        info!("cursor_screen {:?},{:?}", screen_coords.x, screen_coords.y);
 
                         match (*delta > 0.0, cfg!(target_arch = "wasm32")) {
                             (true, true) | (false, false) => {
                                 camera.translate(&Vec3::new(
-                                    zoom.gl_units_width()*(cursor_screen_x-0.5) as f32,
-                                    zoom.gl_units_height(frame_input.viewport.aspect())*(cursor_screen_y-0.5) as f32,
+                                    zoom.gl_units_width()*(screen_coords.x) as f32,
+                                    zoom.gl_units_height(frame_input.viewport.aspect())*(screen_coords.y) as f32,
                                     0.0));
                                 zoom.zoom_out();
                                 camera.translate(&Vec3::new(
-                                    -zoom.gl_units_width()*(cursor_screen_x-0.5) as f32,
-                                    -zoom.gl_units_height(frame_input.viewport.aspect())*(cursor_screen_y-0.5) as f32,
+                                    -zoom.gl_units_width()*(screen_coords.x) as f32,
+                                    -zoom.gl_units_height(frame_input.viewport.aspect())*(screen_coords.y) as f32,
                                     0.0));
                             },
                             (true, false) | (false, true) => {
                                 camera.translate(&Vec3::new(
-                                    zoom.gl_units_width()*(cursor_screen_x-0.5) as f32,
-                                    zoom.gl_units_height(frame_input.viewport.aspect())*(cursor_screen_y-0.5) as f32,
+                                    zoom.gl_units_width()*(screen_coords.x) as f32,
+                                    zoom.gl_units_height(frame_input.viewport.aspect())*(screen_coords.y) as f32,
                                     0.0));
                                 zoom.zoom_in();
                                 camera.translate(&Vec3::new(
-                                    -zoom.gl_units_width()*(cursor_screen_x-0.5) as f32,
-                                    -zoom.gl_units_height(frame_input.viewport.aspect())*(cursor_screen_y-0.5) as f32,
+                                    -zoom.gl_units_width()*(screen_coords.x) as f32,
+                                    -zoom.gl_units_height(frame_input.viewport.aspect())*(screen_coords.y) as f32,
                                     0.0));
                             },
                         }
