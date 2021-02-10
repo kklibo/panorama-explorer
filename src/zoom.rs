@@ -18,15 +18,15 @@ impl Zoom {
         }
     }
 
-    pub fn gl_units_width(&self) -> f32 {
+    pub fn gl_units_width(&self) -> f64 {
 
-        self.size_in_gl_units() as f32
+        self.size_in_gl_units()
     }
 
-    pub fn gl_units_height(&self, aspect_x_to_y: f32) -> f32 {
+    pub fn gl_units_height(&self, aspect_x_to_y: f32) -> f64 {
 
         if aspect_x_to_y <= 0.0 {panic!("non-positive aspect ratio");}
-        self.size_in_gl_units() as f32 / aspect_x_to_y
+        self.size_in_gl_units() / aspect_x_to_y as f64
     }
 
     pub fn gl_units_per_pixel(&self, width_in_pixels: usize) -> f64 {

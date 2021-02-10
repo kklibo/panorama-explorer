@@ -63,8 +63,8 @@ fn main() {
                                 vec3(0.0, 0.0, 5.0),
                                 vec3(0.0, 0.0, 0.0),
                                 vec3(0.0, 1.0, 0.0),
-                                zoom.gl_units_width(),
-                                 zoom.gl_units_height(window.viewport().aspect()),
+                                zoom.gl_units_width() as f32,
+                                 zoom.gl_units_height(window.viewport().aspect()) as f32,
                                  10.0);
 
 
@@ -93,8 +93,8 @@ fn main() {
         window.render_loop(move |frame_input|
         {
             camera.set_aspect(frame_input.viewport.aspect());
-            camera.set_orthographic_projection(zoom.gl_units_width(),
-                                               zoom.gl_units_height(frame_input.viewport.aspect()),
+            camera.set_orthographic_projection(zoom.gl_units_width() as f32,
+                                               zoom.gl_units_height(frame_input.viewport.aspect()) as f32,
                                                10.0);
 
             for event in frame_input.events.iter() {
@@ -154,14 +154,27 @@ fn main() {
                             y: f64,
                         }
 
-                        fn pixel_to_screen(position: PixelCoords, screen_width: usize, screen_height: usize ) -> ScreenCoords {
-                            if screen_width  <= 0 {panic!("non-positive viewport width" );}
-                            if screen_height <= 0 {panic!("non-positive viewport height");}
+                        fn pixel_to_screen(position: PixelCoords, screen_width_pixels: usize, screen_height_pixels: usize ) -> ScreenCoords {
+                            if screen_width_pixels  <= 0 {panic!("non-positive viewport width" );}
+                            if screen_height_pixels <= 0 {panic!("non-positive viewport height");}
 
-                            let x = position.x / screen_width as f64 - 0.5_f64;
-                            let y = 1_f64 - (position.y / screen_height as f64) - 0.5_f64;
+                            let x = position.x / screen_width_pixels as f64 - 0.5_f64;
+                            let y = 1_f64 - (position.y / screen_height_pixels as f64) - 0.5_f64;
 
                             ScreenCoords{x,y}
+                        }
+
+                        //remove/replace this?
+                        fn screen_to_world_at_origin(
+                            position: &ScreenCoords,
+                            screen_width_in_world_units: f64,
+                            screen_height_in_world_units: f64,
+                        ) -> WorldCoords {
+
+                            WorldCoords {
+                                x: screen_width_in_world_units * position.x,
+                                y: screen_height_in_world_units * position.y,
+                            }
                         }
 
                         let screen_coords =
@@ -176,31 +189,43 @@ fn main() {
 
                         match (*delta > 0.0, cfg!(target_arch = "wasm32")) {
                             (true, true) | (false, false) => {
-                                camera.translate(&Vec3::new(
-                                    zoom.gl_units_width()*(screen_coords.x) as f32,
-                                    zoom.gl_units_height(frame_input.viewport.aspect())*(screen_coords.y) as f32,
-                                    0.0));
+                                let to_cursor = screen_to_world_at_origin(
+                                    &screen_coords,
+                                    zoom.gl_units_width(),
+                                    zoom.gl_units_height(frame_input.viewport.aspect()),
+                                );
+                                camera.translate(&Vec3::new(to_cursor.x as f32, to_cursor.y as f32, 0.0));
+
                                 zoom.zoom_out();
-                                camera.translate(&Vec3::new(
-                                    -zoom.gl_units_width()*(screen_coords.x) as f32,
-                                    -zoom.gl_units_height(frame_input.viewport.aspect())*(screen_coords.y) as f32,
-                                    0.0));
+
+                                let back_from_cursor = screen_to_world_at_origin(
+                                    &screen_coords,
+                                    -zoom.gl_units_width(),
+                                    -zoom.gl_units_height(frame_input.viewport.aspect()),
+                                );
+                                camera.translate(&Vec3::new(back_from_cursor.x as f32, back_from_cursor.y as f32, 0.0));
                             },
                             (true, false) | (false, true) => {
-                                camera.translate(&Vec3::new(
-                                    zoom.gl_units_width()*(screen_coords.x) as f32,
-                                    zoom.gl_units_height(frame_input.viewport.aspect())*(screen_coords.y) as f32,
-                                    0.0));
+                                let to_cursor = screen_to_world_at_origin(
+                                    &screen_coords,
+                                    zoom.gl_units_width(),
+                                    zoom.gl_units_height(frame_input.viewport.aspect()),
+                                );
+                                camera.translate(&Vec3::new(to_cursor.x as f32, to_cursor.y as f32, 0.0));
+
                                 zoom.zoom_in();
-                                camera.translate(&Vec3::new(
-                                    -zoom.gl_units_width()*(screen_coords.x) as f32,
-                                    -zoom.gl_units_height(frame_input.viewport.aspect())*(screen_coords.y) as f32,
-                                    0.0));
+
+                                let back_from_cursor = screen_to_world_at_origin(
+                                    &screen_coords,
+                                    -zoom.gl_units_width(),
+                                    -zoom.gl_units_height(frame_input.viewport.aspect()),
+                                );
+                                camera.translate(&Vec3::new(back_from_cursor.x as f32, back_from_cursor.y as f32, 0.0));
                             },
                         }
 
-                        camera.set_orthographic_projection(zoom.gl_units_width(),
-                                                           zoom.gl_units_height(frame_input.viewport.aspect()),
+                        camera.set_orthographic_projection(zoom.gl_units_width() as f32,
+                                                           zoom.gl_units_height(frame_input.viewport.aspect()) as f32,
                                                            10.0);
                     },
                     Event::Key { state, kind } => {
