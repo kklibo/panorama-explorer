@@ -90,8 +90,6 @@ fn main() {
         }
         let mut active_pan: Option<Pan> = None;
 
-        let mut mouse_position = (0_f64,0_f64); //temp
-
         window.render_loop(move |frame_input|
         {
             camera.set_aspect(frame_input.viewport.aspect());
@@ -103,7 +101,6 @@ fn main() {
                 match event {
                     Event::MouseClick {state, button, position} => {
                         info!("MouseClick: mouse position: {:?} {:?}", position.0, position.1);
-                        mouse_position = *position;
 
                         active_pan =
                         match *button == MouseButton::Left && *state == State::Pressed {
@@ -116,8 +113,6 @@ fn main() {
 
                     },
                     Event::MouseMotion {delta, position} => {
-
-                        mouse_position = *position;
 
                         if let Some(ref mut pan) = active_pan {
                             info!("mouse delta: {:?} {:?}", delta.0, delta.1);
@@ -133,13 +128,13 @@ fn main() {
                             );
                         }
                     },
-                    Event::MouseWheel {delta} => {
+                    Event::MouseWheel {delta, position} => {
                         info!("{:?}", delta);
 
                         if frame_input.viewport.width  <= 0 {panic!("non-positive viewport width" );}
                         if frame_input.viewport.height <= 0 {panic!("non-positive viewport height");}
-                        let cursor_screen_x = mouse_position.0 / frame_input.viewport.width as f64;
-                        let cursor_screen_y = 1_f64-(mouse_position.1 / frame_input.viewport.height as f64);
+                        let cursor_screen_x = position.0 / frame_input.viewport.width as f64;
+                        let cursor_screen_y = 1_f64-(position.1 / frame_input.viewport.height as f64);
 
                         info!("cursor_screen {:?},{:?}", cursor_screen_x, cursor_screen_y);
 
