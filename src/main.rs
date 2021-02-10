@@ -5,6 +5,8 @@ use log::info;
 mod zoom;
 mod read_pto;
 
+use zoom::{PixelCoords, screen_to_world_at_origin, pixel_to_screen};
+
 struct LoadedImageMesh {
 
     pub mesh: PhongDeferredMesh,
@@ -131,59 +133,12 @@ fn main() {
                     Event::MouseWheel {delta, position} => {
                         info!("{:?}", delta);
 
-                        //coords conversion test
-
-                        struct ScreenCoords {
-                            /// x location in screen units: [-0.5,0.5], positive is right
-                            x: f64,
-                            /// y location in screen units: [-0.5,0.5], positive is up
-                            y: f64,
-                        }
-
-                        struct PixelCoords {
-                            /// x location in pixels: [0.0, width], positive is right
-                            x: f64,
-                            /// y location in pixels: [0.0, height], positive is down
-                            y: f64,
-                        }
-
-                        struct WorldCoords {
-                            /// x location in world units: [left, right]
-                            x: f64,
-                            /// y location in world units: [bottom, top]
-                            y: f64,
-                        }
-
-                        fn pixel_to_screen(position: PixelCoords, screen_width_pixels: usize, screen_height_pixels: usize ) -> ScreenCoords {
-                            if screen_width_pixels  <= 0 {panic!("non-positive viewport width" );}
-                            if screen_height_pixels <= 0 {panic!("non-positive viewport height");}
-
-                            let x = position.x / screen_width_pixels as f64 - 0.5_f64;
-                            let y = 1_f64 - (position.y / screen_height_pixels as f64) - 0.5_f64;
-
-                            ScreenCoords{x,y}
-                        }
-
-                        //remove/replace this?
-                        fn screen_to_world_at_origin(
-                            position: &ScreenCoords,
-                            screen_width_in_world_units: f64,
-                            screen_height_in_world_units: f64,
-                        ) -> WorldCoords {
-
-                            WorldCoords {
-                                x: screen_width_in_world_units * position.x,
-                                y: screen_height_in_world_units * position.y,
-                            }
-                        }
-
                         let screen_coords =
                         pixel_to_screen(
                             PixelCoords{x: position.0, y: position.1},
                             frame_input.viewport.width,
                             frame_input.viewport.height,
                         );
-
 
                         info!("cursor_screen {:?},{:?}", screen_coords.x, screen_coords.y);
 
