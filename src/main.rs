@@ -5,7 +5,7 @@ use log::info;
 mod zoom;
 mod read_pto;
 
-use zoom::{PixelCoords, screen_to_world_at_origin};
+use zoom::PixelCoords;
 
 struct LoadedImageMesh {
 
@@ -145,38 +145,22 @@ fn main() {
 
                         match (*delta > 0.0, cfg!(target_arch = "wasm32")) {
                             (true, true) | (false, false) => {
-                                let to_cursor = screen_to_world_at_origin(
-                                    &screen_coords,
-                                    zoom.gl_units_width(),
-                                    zoom.gl_units_height(),
-                                );
+                                let to_cursor = zoom.screen_to_world_at_origin(&screen_coords);
                                 camera.translate(&Vec3::new(to_cursor.x as f32, to_cursor.y as f32, 0.0));
 
                                 zoom.zoom_out();
 
-                                let back_from_cursor = screen_to_world_at_origin(
-                                    &screen_coords,
-                                    -zoom.gl_units_width(),
-                                    -zoom.gl_units_height(),
-                                );
-                                camera.translate(&Vec3::new(back_from_cursor.x as f32, back_from_cursor.y as f32, 0.0));
+                                let to_cursor = zoom.screen_to_world_at_origin(&screen_coords);
+                                camera.translate(&Vec3::new(-to_cursor.x as f32, -to_cursor.y as f32, 0.0));
                             },
                             (true, false) | (false, true) => {
-                                let to_cursor = screen_to_world_at_origin(
-                                    &screen_coords,
-                                    zoom.gl_units_width(),
-                                    zoom.gl_units_height(),
-                                );
+                                let to_cursor = zoom.screen_to_world_at_origin(&screen_coords);
                                 camera.translate(&Vec3::new(to_cursor.x as f32, to_cursor.y as f32, 0.0));
 
                                 zoom.zoom_in();
 
-                                let back_from_cursor = screen_to_world_at_origin(
-                                    &screen_coords,
-                                    -zoom.gl_units_width(),
-                                    -zoom.gl_units_height(),
-                                );
-                                camera.translate(&Vec3::new(back_from_cursor.x as f32, back_from_cursor.y as f32, 0.0));
+                                let to_cursor = zoom.screen_to_world_at_origin(&screen_coords);
+                                camera.translate(&Vec3::new(-to_cursor.x as f32, -to_cursor.y as f32, 0.0));
                             },
                         }
 

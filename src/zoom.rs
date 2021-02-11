@@ -46,6 +46,14 @@ impl Zoom {
         ScreenCoords{x,y}
     }
 
+    //remove/replace this?
+    pub fn screen_to_world_at_origin(&self, position: &ScreenCoords) -> WorldCoords {
+        WorldCoords {
+            x: self.gl_units_width() * position.x,
+            y: self.gl_units_height() * position.y,
+        }
+    }
+
     fn size_in_gl_units(&self) -> f64 {
         2_u32.pow(self.value) as f64 * self.scale
     }
@@ -77,18 +85,4 @@ pub struct WorldCoords {
     pub x: f64,
     /// y location in world units: [bottom, top]
     pub y: f64,
-}
-
-
-//remove/replace this?
-pub fn screen_to_world_at_origin(
-    position: &ScreenCoords,
-    screen_width_in_world_units: f64,
-    screen_height_in_world_units: f64,
-) -> WorldCoords {
-
-    WorldCoords {
-        x: screen_width_in_world_units * position.x,
-        y: screen_height_in_world_units * position.y,
-    }
 }
