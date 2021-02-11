@@ -1,4 +1,5 @@
 
+//rename: ViewportGeometry ?
 pub struct Zoom {
     pub scale: f64,
     pub value: u32,
@@ -35,6 +36,16 @@ impl Zoom {
         self.size_in_gl_units() / self.width_in_pixels as f64
     }
 
+    pub fn pixel_to_screen(&self, position: PixelCoords) -> ScreenCoords {
+        if self.width_in_pixels  <= 0 {panic!("non-positive viewport width" );}
+        if self.height_in_pixels <= 0 {panic!("non-positive viewport height");}
+
+        let x = position.x / self.width_in_pixels as f64 - 0.5_f64;
+        let y = 1_f64 - (position.y / self.height_in_pixels as f64) - 0.5_f64;
+
+        ScreenCoords{x,y}
+    }
+
     fn size_in_gl_units(&self) -> f64 {
         2_u32.pow(self.value) as f64 * self.scale
     }
@@ -68,15 +79,6 @@ pub struct WorldCoords {
     pub y: f64,
 }
 
-pub fn pixel_to_screen(position: PixelCoords, screen_width_pixels: usize, screen_height_pixels: usize ) -> ScreenCoords {
-    if screen_width_pixels  <= 0 {panic!("non-positive viewport width" );}
-    if screen_height_pixels <= 0 {panic!("non-positive viewport height");}
-
-    let x = position.x / screen_width_pixels as f64 - 0.5_f64;
-    let y = 1_f64 - (position.y / screen_height_pixels as f64) - 0.5_f64;
-
-    ScreenCoords{x,y}
-}
 
 //remove/replace this?
 pub fn screen_to_world_at_origin(

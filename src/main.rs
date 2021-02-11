@@ -5,7 +5,7 @@ use log::info;
 mod zoom;
 mod read_pto;
 
-use zoom::{PixelCoords, screen_to_world_at_origin, pixel_to_screen};
+use zoom::{PixelCoords, screen_to_world_at_origin};
 
 struct LoadedImageMesh {
 
@@ -139,11 +139,7 @@ fn main() {
                         info!("{:?}", delta);
 
                         let screen_coords =
-                        pixel_to_screen(
-                            PixelCoords{x: position.0, y: position.1},
-                            frame_input.viewport.width,
-                            frame_input.viewport.height,
-                        );
+                        zoom.pixel_to_screen(PixelCoords{x: position.0, y: position.1});
 
                         info!("cursor_screen {:?},{:?}", screen_coords.x, screen_coords.y);
 
