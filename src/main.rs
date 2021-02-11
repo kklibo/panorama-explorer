@@ -55,6 +55,8 @@ fn main() {
         value: 10_u32,
         min: 1_u32,
         max: 15_u32,
+        width_in_pixels: window.viewport().width,
+        height_in_pixels: window.viewport().height,
     };
 
 
@@ -62,11 +64,11 @@ fn main() {
     let mut pipeline = PhongDeferredPipeline::new(&context).unwrap();
     let mut camera =
         Camera::new_orthographic(&context,
-                                vec3(0.0, 0.0, 5.0),
-                                vec3(0.0, 0.0, 0.0),
-                                vec3(0.0, 1.0, 0.0),
-                                zoom.gl_units_width() as f32,
-                                 zoom.gl_units_height(window.viewport().aspect()) as f32,
+                                 vec3(0.0, 0.0, 5.0),
+                                 vec3(0.0, 0.0, 0.0),
+                                 vec3(0.0, 1.0, 0.0),
+                                 zoom.gl_units_width() as f32,
+                                 zoom.gl_units_height() as f32,
                                  10.0);
 
 
@@ -94,9 +96,12 @@ fn main() {
 
         window.render_loop(move |frame_input|
         {
+            zoom.width_in_pixels = frame_input.viewport.width;
+            zoom.height_in_pixels = frame_input.viewport.height;
+
             camera.set_aspect(frame_input.viewport.aspect());
             camera.set_orthographic_projection(zoom.gl_units_width() as f32,
-                                               zoom.gl_units_height(frame_input.viewport.aspect()) as f32,
+                                               zoom.gl_units_height() as f32,
                                                10.0);
 
             for event in frame_input.events.iter() {
@@ -120,8 +125,8 @@ fn main() {
                             info!("mouse delta: {:?} {:?}", delta.0, delta.1);
                             info!("mouse position: {:?} {:?}", position.0, position.1);
 
-                            let camera_position_x = pan.camera_start.x - ((position.0 - pan.mouse_start.0) * zoom.gl_units_per_pixel(frame_input.viewport.width)) as f32;
-                            let camera_position_y = pan.camera_start.y + ((position.1 - pan.mouse_start.1) * zoom.gl_units_per_pixel(frame_input.viewport.width)) as f32;
+                            let camera_position_x = pan.camera_start.x - ((position.0 - pan.mouse_start.0) * zoom.gl_units_per_pixel()) as f32;
+                            let camera_position_y = pan.camera_start.y + ((position.1 - pan.mouse_start.1) * zoom.gl_units_per_pixel()) as f32;
 
                             camera.set_view(
                                 vec3(camera_position_x as f32, camera_position_y as f32, 5.0),
@@ -147,7 +152,7 @@ fn main() {
                                 let to_cursor = screen_to_world_at_origin(
                                     &screen_coords,
                                     zoom.gl_units_width(),
-                                    zoom.gl_units_height(frame_input.viewport.aspect()),
+                                    zoom.gl_units_height(),
                                 );
                                 camera.translate(&Vec3::new(to_cursor.x as f32, to_cursor.y as f32, 0.0));
 
@@ -156,7 +161,7 @@ fn main() {
                                 let back_from_cursor = screen_to_world_at_origin(
                                     &screen_coords,
                                     -zoom.gl_units_width(),
-                                    -zoom.gl_units_height(frame_input.viewport.aspect()),
+                                    -zoom.gl_units_height(),
                                 );
                                 camera.translate(&Vec3::new(back_from_cursor.x as f32, back_from_cursor.y as f32, 0.0));
                             },
@@ -164,7 +169,7 @@ fn main() {
                                 let to_cursor = screen_to_world_at_origin(
                                     &screen_coords,
                                     zoom.gl_units_width(),
-                                    zoom.gl_units_height(frame_input.viewport.aspect()),
+                                    zoom.gl_units_height(),
                                 );
                                 camera.translate(&Vec3::new(to_cursor.x as f32, to_cursor.y as f32, 0.0));
 
@@ -173,14 +178,14 @@ fn main() {
                                 let back_from_cursor = screen_to_world_at_origin(
                                     &screen_coords,
                                     -zoom.gl_units_width(),
-                                    -zoom.gl_units_height(frame_input.viewport.aspect()),
+                                    -zoom.gl_units_height(),
                                 );
                                 camera.translate(&Vec3::new(back_from_cursor.x as f32, back_from_cursor.y as f32, 0.0));
                             },
                         }
 
                         camera.set_orthographic_projection(zoom.gl_units_width() as f32,
-                                                           zoom.gl_units_height(frame_input.viewport.aspect()) as f32,
+                                                           zoom.gl_units_height() as f32,
                                                            10.0);
                     },
                     Event::Key { state, kind } => {

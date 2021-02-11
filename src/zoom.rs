@@ -4,6 +4,8 @@ pub struct Zoom {
     pub value: u32,
     pub min: u32,
     pub max: u32,
+    pub width_in_pixels: usize,
+    pub height_in_pixels: usize,
 }
 
 impl Zoom {
@@ -23,19 +25,25 @@ impl Zoom {
         self.size_in_gl_units()
     }
 
-    pub fn gl_units_height(&self, aspect_x_to_y: f32) -> f64 {
+    pub fn gl_units_height(&self) -> f64 {
 
-        if aspect_x_to_y <= 0.0 {panic!("non-positive aspect ratio");}
-        self.size_in_gl_units() / aspect_x_to_y as f64
+        self.size_in_gl_units() / self.aspect_ratio_x_to_y()
     }
 
-    pub fn gl_units_per_pixel(&self, width_in_pixels: usize) -> f64 {
-        if width_in_pixels == 0 {panic!("width_in_pixels = 0");}
-        self.size_in_gl_units() / width_in_pixels as f64
+    pub fn gl_units_per_pixel(&self) -> f64 {
+        if self.width_in_pixels == 0 {panic!("width_in_pixels = 0");}
+        self.size_in_gl_units() / self.width_in_pixels as f64
     }
 
     fn size_in_gl_units(&self) -> f64 {
         2_u32.pow(self.value) as f64 * self.scale
+    }
+
+    fn aspect_ratio_x_to_y(&self) -> f64 {
+        if self.height_in_pixels <= 0 {panic!("non-positive height in pixels");}
+        let aspect = self.width_in_pixels as f64 / self.height_in_pixels as f64;
+        if aspect <= 0.0 {panic!("non-positive aspect ratio");}
+        aspect
     }
 }
 
