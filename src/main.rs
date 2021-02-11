@@ -5,7 +5,7 @@ use log::info;
 mod zoom;
 mod read_pto;
 
-use zoom::PixelCoords;
+use zoom::{ViewportGeometry, PixelCoords};
 
 struct LoadedImageMesh {
 
@@ -50,11 +50,11 @@ fn main() {
     let mut window = Window::new("panorama_tool", None).unwrap();
     let context = window.gl();
 
-    let mut zoom = zoom::Zoom {
-        scale: 1_f64,
-        value: 10_u32,
-        min: 1_u32,
-        max: 15_u32,
+    let mut viewport_geometry = ViewportGeometry {
+        zoom_scale: 1_f64,
+        zoom_value: 10_u32,
+        zoom_min: 1_u32,
+        zoom_max: 15_u32,
         width_in_pixels: window.viewport().width,
         height_in_pixels: window.viewport().height,
     };
@@ -67,8 +67,8 @@ fn main() {
                                  vec3(0.0, 0.0, 5.0),
                                  vec3(0.0, 0.0, 0.0),
                                  vec3(0.0, 1.0, 0.0),
-                                 zoom.gl_units_width() as f32,
-                                 zoom.gl_units_height() as f32,
+                                 viewport_geometry.width_in_world_units() as f32,
+                                 viewport_geometry.height_in_world_units() as f32,
                                  10.0);
 
 
@@ -96,12 +96,12 @@ fn main() {
 
         window.render_loop(move |frame_input|
         {
-            zoom.width_in_pixels = frame_input.viewport.width;
-            zoom.height_in_pixels = frame_input.viewport.height;
+            viewport_geometry.width_in_pixels = frame_input.viewport.width;
+            viewport_geometry.height_in_pixels = frame_input.viewport.height;
 
             camera.set_aspect(frame_input.viewport.aspect());
-            camera.set_orthographic_projection(zoom.gl_units_width() as f32,
-                                               zoom.gl_units_height() as f32,
+            camera.set_orthographic_projection(viewport_geometry.width_in_world_units() as f32,
+                                               viewport_geometry.height_in_world_units() as f32,
                                                10.0);
 
             for event in frame_input.events.iter() {
@@ -125,8 +125,8 @@ fn main() {
                             info!("mouse delta: {:?} {:?}", delta.0, delta.1);
                             info!("mouse position: {:?} {:?}", position.0, position.1);
 
-                            let camera_position_x = pan.camera_start.x - ((position.0 - pan.mouse_start.0) * zoom.gl_units_per_pixel()) as f32;
-                            let camera_position_y = pan.camera_start.y + ((position.1 - pan.mouse_start.1) * zoom.gl_units_per_pixel()) as f32;
+                            let camera_position_x = pan.camera_start.x - ((position.0 - pan.mouse_start.0) * viewport_geometry.world_units_per_pixel()) as f32;
+                            let camera_position_y = pan.camera_start.y + ((position.1 - pan.mouse_start.1) * viewport_geometry.world_units_per_pixel()) as f32;
 
                             camera.set_view(
                                 vec3(camera_position_x as f32, camera_position_y as f32, 5.0),
@@ -139,26 +139,26 @@ fn main() {
                         info!("{:?}", delta);
 
                         let pixel_coords = PixelCoords{x: position.0, y: position.1};
-                        let screen_coords = zoom.pixel_to_screen(pixel_coords);
+                        let screen_coords = viewport_geometry.convert_pixel_to_screen(pixel_coords);
 
                         info!("cursor_screen {:?},{:?}", screen_coords.x, screen_coords.y);
 
                         //center the zoom action on the cursor
-                        let to_cursor = zoom.screen_to_world_at_origin(&screen_coords);
+                        let to_cursor = viewport_geometry.convert_screen_to_world_at_origin(&screen_coords);
                         camera.translate(&Vec3::new(to_cursor.x as f32, to_cursor.y as f32, 0.0));
 
                         //un-reverse direction in web mode (not sure why it's backwards)
                         match (*delta > 0.0, cfg!(target_arch = "wasm32")) {
-                            (true, true) | (false, false) => zoom.zoom_out(),
-                            (true, false) | (false, true) => zoom.zoom_in(),
+                            (true, true) | (false, false) => viewport_geometry.zoom_out(),
+                            (true, false) | (false, true) => viewport_geometry.zoom_in(),
                         }
 
                         //and translate back, at the new zoom level
-                        let to_cursor = zoom.screen_to_world_at_origin(&screen_coords);
+                        let to_cursor = viewport_geometry.convert_screen_to_world_at_origin(&screen_coords);
                         camera.translate(&Vec3::new(-to_cursor.x as f32, -to_cursor.y as f32, 0.0));
 
-                        camera.set_orthographic_projection(zoom.gl_units_width() as f32,
-                                                           zoom.gl_units_height() as f32,
+                        camera.set_orthographic_projection(viewport_geometry.width_in_world_units() as f32,
+                                                           viewport_geometry.height_in_world_units() as f32,
                                                            10.0);
                     },
                     Event::Key { state, kind } => {
