@@ -50,14 +50,14 @@ fn main() {
     let mut window = Window::new("panorama_tool", None).unwrap();
     let context = window.gl();
 
-    let mut viewport_geometry = ViewportGeometry {
-        zoom_scale: 1_f64,
-        zoom_value: 10_u32,
-        zoom_min: 1_u32,
-        zoom_max: 15_u32,
-        width_in_pixels: window.viewport().width,
-        height_in_pixels: window.viewport().height,
-    };
+    let mut viewport_geometry = ViewportGeometry::try_new(
+        1_f64,
+        10_u32,
+        1_u32,
+        15_u32,
+        window.viewport().width,
+        window.viewport().height,
+    ).unwrap();
 
 
     // Renderer
@@ -96,8 +96,7 @@ fn main() {
 
         window.render_loop(move |frame_input|
         {
-            viewport_geometry.width_in_pixels = frame_input.viewport.width;
-            viewport_geometry.height_in_pixels = frame_input.viewport.height;
+            viewport_geometry.set_pixel_dimensions(frame_input.viewport.width, frame_input.viewport.height).unwrap();
 
             camera.set_aspect(frame_input.viewport.aspect());
             camera.set_orthographic_projection(viewport_geometry.width_in_world_units() as f32,
