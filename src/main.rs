@@ -138,31 +138,24 @@ fn main() {
                     Event::MouseWheel {delta, position} => {
                         info!("{:?}", delta);
 
-                        let screen_coords =
-                        zoom.pixel_to_screen(PixelCoords{x: position.0, y: position.1});
+                        let pixel_coords = PixelCoords{x: position.0, y: position.1};
+                        let screen_coords = zoom.pixel_to_screen(pixel_coords);
 
                         info!("cursor_screen {:?},{:?}", screen_coords.x, screen_coords.y);
 
+                        //center the zoom action on the cursor
+                        let to_cursor = zoom.screen_to_world_at_origin(&screen_coords);
+                        camera.translate(&Vec3::new(to_cursor.x as f32, to_cursor.y as f32, 0.0));
+
+                        //un-reverse direction in web mode (not sure why it's backwards)
                         match (*delta > 0.0, cfg!(target_arch = "wasm32")) {
-                            (true, true) | (false, false) => {
-                                let to_cursor = zoom.screen_to_world_at_origin(&screen_coords);
-                                camera.translate(&Vec3::new(to_cursor.x as f32, to_cursor.y as f32, 0.0));
-
-                                zoom.zoom_out();
-
-                                let to_cursor = zoom.screen_to_world_at_origin(&screen_coords);
-                                camera.translate(&Vec3::new(-to_cursor.x as f32, -to_cursor.y as f32, 0.0));
-                            },
-                            (true, false) | (false, true) => {
-                                let to_cursor = zoom.screen_to_world_at_origin(&screen_coords);
-                                camera.translate(&Vec3::new(to_cursor.x as f32, to_cursor.y as f32, 0.0));
-
-                                zoom.zoom_in();
-
-                                let to_cursor = zoom.screen_to_world_at_origin(&screen_coords);
-                                camera.translate(&Vec3::new(-to_cursor.x as f32, -to_cursor.y as f32, 0.0));
-                            },
+                            (true, true) | (false, false) => zoom.zoom_out(),
+                            (true, false) | (false, true) => zoom.zoom_in(),
                         }
+
+                        //and translate back, at the new zoom level
+                        let to_cursor = zoom.screen_to_world_at_origin(&screen_coords);
+                        camera.translate(&Vec3::new(-to_cursor.x as f32, -to_cursor.y as f32, 0.0));
 
                         camera.set_orthographic_projection(zoom.gl_units_width() as f32,
                                                            zoom.gl_units_height() as f32,
