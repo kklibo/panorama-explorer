@@ -1,14 +1,15 @@
 
 use std::error::Error;
 use std::fmt::{Display, Formatter};
+use std::num::NonZeroUsize;
 
 pub struct ViewportGeometry {
     pub zoom_scale: f64,
     pub zoom_value: u32,
     pub zoom_min: u32,
     pub zoom_max: u32,
-    width_in_pixels: usize,
-    height_in_pixels: usize,
+    width_in_pixels: NonZeroUsize,
+    height_in_pixels: NonZeroUsize,
 }
 
 #[derive(Debug)]
@@ -20,10 +21,7 @@ pub enum PixelDimensionError {
 
 impl Display for PixelDimensionError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            e => write!(f, "{:?}", e)?,
-        };
-        Ok(())
+        write!(f, "{:?}", self)
     }
 }
 
@@ -40,12 +38,11 @@ impl ViewportGeometry {
         height_in_pixels: usize,
     ) -> Result<ViewportGeometry, PixelDimensionError> {
 
-        let mut vg = ViewportGeometry {
-            zoom_scale, zoom_value, zoom_min, zoom_max, width_in_pixels, height_in_pixels
-        };
+        let (width_in_pixels, height_in_pixels) = Self::check_pixel_dimensions(width_in_pixels, height_in_pixels)?;
 
-        vg.set_pixel_dimensions(width_in_pixels, height_in_pixels)?;
-        Ok(vg)
+        Ok( ViewportGeometry {
+            zoom_scale, zoom_value, zoom_min, zoom_max, width_in_pixels, height_in_pixels
+        })
     }
 
     pub fn set_pixel_dimensions(
@@ -54,15 +51,20 @@ impl ViewportGeometry {
         height_in_pixels: usize,
     ) -> Result<(), PixelDimensionError> {
 
-        match (width_in_pixels == 0, height_in_pixels == 0) {
-            (true,  false) => Err(PixelDimensionError::ZeroWidth),
-            (false, true ) => Err(PixelDimensionError::ZeroHeight),
-            (true,  true ) => Err(PixelDimensionError::ZeroWidthAndHeight),
-            (false, false) => {
-                self.width_in_pixels = width_in_pixels;
-                self.height_in_pixels = height_in_pixels;
-                Ok(())
-            }
+        let (width_in_pixels, height_in_pixels) = Self::check_pixel_dimensions(width_in_pixels, height_in_pixels)?;
+
+        self.width_in_pixels = width_in_pixels;
+        self.height_in_pixels = height_in_pixels;
+        Ok(())
+    }
+
+    fn check_pixel_dimensions(width_in_pixels: usize, height_in_pixels: usize) -> Result<(NonZeroUsize, NonZeroUsize), PixelDimensionError> {
+
+        match (NonZeroUsize::new(width_in_pixels), NonZeroUsize::new(height_in_pixels)) {
+            (None,    Some(_)) => Err(PixelDimensionError::ZeroWidth),
+            (Some(_), None   ) => Err(PixelDimensionError::ZeroHeight),
+            (None,    None   ) => Err(PixelDimensionError::ZeroWidthAndHeight),
+            (Some(w), Some(h)) => Ok((w,h)),
         }
     }
 
@@ -88,16 +90,13 @@ impl ViewportGeometry {
     }
 
     pub fn world_units_per_pixel(&self) -> f64 {
-        if self.width_in_pixels == 0 {panic!("width_in_pixels = 0");}
-        self.size_in_world_units() / self.width_in_pixels as f64
+        self.size_in_world_units() / self.width_in_pixels.get() as f64
     }
 
     pub fn convert_pixel_to_screen(&self, position: PixelCoords) -> ScreenCoords {
-        if self.width_in_pixels  <= 0 {panic!("non-positive viewport width" );}
-        if self.height_in_pixels <= 0 {panic!("non-positive viewport height");}
 
-        let x = position.x / self.width_in_pixels as f64 - 0.5_f64;
-        let y = 1_f64 - (position.y / self.height_in_pixels as f64) - 0.5_f64;
+        let x = position.x / self.width_in_pixels.get() as f64 - 0.5_f64;
+        let y = 1_f64 - (position.y / self.height_in_pixels.get() as f64) - 0.5_f64;
 
         ScreenCoords{x,y}
     }
@@ -115,10 +114,7 @@ impl ViewportGeometry {
     }
 
     fn aspect_ratio_x_to_y(&self) -> f64 {
-        if self.height_in_pixels <= 0 {panic!("non-positive height in pixels");}
-        let aspect = self.width_in_pixels as f64 / self.height_in_pixels as f64;
-        if aspect <= 0.0 {panic!("non-positive aspect ratio");}
-        aspect
+        self.width_in_pixels.get() as f64 / self.height_in_pixels.get() as f64
     }
 }
 
