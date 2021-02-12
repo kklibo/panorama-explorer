@@ -2,10 +2,10 @@
 use three_d::*;
 use log::info;
 
-mod zoom;
+mod viewport_geometry;
 mod read_pto;
 
-use zoom::{ViewportGeometry, PixelCoords};
+use viewport_geometry::{ViewportGeometry, PixelCoords};
 
 struct LoadedImageMesh {
 
