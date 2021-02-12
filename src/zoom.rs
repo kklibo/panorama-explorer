@@ -3,6 +3,7 @@ use std::error::Error;
 use std::fmt::{Display, Formatter};
 use std::num::NonZeroUsize;
 
+#[derive(Debug)]
 pub struct ViewportGeometry {
     pub zoom_scale: f64,
     pub zoom_value: u32,
@@ -137,4 +138,53 @@ pub struct WorldCoords {
     pub x: f64,
     /// y location in world units: [bottom, top]
     pub y: f64,
+}
+
+#[cfg(test)]
+mod test {
+
+    use super::*;
+    use assert_matches::*;
+
+    #[test]
+    fn try_new_test() {
+
+        assert_matches!(
+            ViewportGeometry::try_new(
+                1_f64, 10_u32, 1_u32, 15_u32,
+                0_usize,
+                100_usize,
+            ),
+            Err(PixelDimensionError::ZeroWidth)
+        );
+
+        assert_matches!(
+            ViewportGeometry::try_new(
+                1_f64, 10_u32, 1_u32, 15_u32,
+                100_usize,
+                0_usize,
+            ),
+            Err(PixelDimensionError::ZeroHeight)
+        );
+
+        assert_matches!(
+            ViewportGeometry::try_new(
+                1_f64, 10_u32, 1_u32, 15_u32,
+                0_usize,
+                0_usize,
+            ),
+            Err(PixelDimensionError::ZeroWidthAndHeight)
+        );
+
+        assert_matches!(
+            ViewportGeometry::try_new(
+                1_f64, 10_u32, 1_u32, 15_u32,
+                100_usize,
+                100_usize,
+            ),
+            Ok(_)
+        );
+    }
+
+
 }
