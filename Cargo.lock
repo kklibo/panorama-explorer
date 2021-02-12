@@ -1259,8 +1259,6 @@ dependencies = [
 [[package]]
 name = "three-d"
 version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "72c21caf0fb501f9f6a1d120ed8c5cf66a87e8110e7e3ea2f34ca7af18ba7ca5"
 dependencies = [
  "bincode",
  "cgmath 0.17.0",
