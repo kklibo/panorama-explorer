@@ -211,14 +211,16 @@ fn main() {
                 meshes[1].mesh.render_geometry(RenderStates {cull: CullType::Back, ..Default::default()},
                                                frame_input.viewport, &t1, &camera)?;
 
-                let t1 = Mat4::from_nonuniform_scale(1 as f32,1 as f32,1f32);
-                let t1= Mat4::from_translation(cgmath::Vector3::new(0f32, 0f32, 1f32)).concat(&t1);
-                test_mesh.render_geometry(RenderStates {cull: CullType::Back, ..Default::default()},
-                                               frame_input.viewport, &t1, &camera)?;
+                let points = [
+                    Vec3::new(0 as f32, 0 as f32, 1 as f32),
+                    Vec3::new(-460 as f32, 307 as f32, 1 as f32),
+                ];
 
-                let t1= Mat4::from_translation(cgmath::Vector3::new(-460f32, 307f32, 1f32)).concat(&t1);
-                test_mesh.render_geometry(RenderStates {cull: CullType::Back, ..Default::default()},
+                for &v in &points {
+                    let t1= Mat4::from_translation(v);
+                    test_mesh.render_geometry(RenderStates {cull: CullType::Back, ..Default::default()},
                                                frame_input.viewport, &t1, &camera)?;
+                }
 
                 Ok(())
             }).unwrap();
