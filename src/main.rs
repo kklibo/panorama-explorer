@@ -29,7 +29,7 @@ fn load_mesh_from_filepath(context: &Context, loaded: &mut Loaded, image_filepat
     let material = PhongMaterial {
         color_source: ColorSource::Texture(std::rc::Rc::new(
             texture::Texture2D::new_with_u8(&context,
-                Interpolation::Linear, Interpolation::Linear,
+                Interpolation::Nearest, Interpolation::Nearest,
                 None, Wrapping::ClampToEdge, Wrapping::ClampToEdge,
                 &image).unwrap())),
 
@@ -39,6 +39,26 @@ fn load_mesh_from_filepath(context: &Context, loaded: &mut Loaded, image_filepat
     let mesh = PhongDeferredMesh::new(&context, &cpu_mesh, &material).unwrap();
 
     LoadedImageMesh {mesh, pixel_width: image.width, pixel_height: image.height}
+}
+
+fn test_mesh(context: &Context) -> PhongDeferredMesh {
+
+    let mut cpu_mesh = CPUMesh {
+        positions: square_positions(),
+
+        ..Default::default()
+    };
+    cpu_mesh.compute_normals();
+
+    let material = PhongMaterial {
+        color_source: ColorSource::Color(Vec4::new(0.8,0.5, 0.2, 1.0)),
+
+        ..Default::default()
+    };
+
+    let mesh = PhongDeferredMesh::new(&context, &cpu_mesh, &material).unwrap();
+
+    mesh
 }
 
 fn main() {
@@ -83,6 +103,8 @@ fn main() {
             load_mesh_from_filepath(&context, loaded, x)
         }).collect::<Vec<_>>();
 
+        let test_mesh = test_mesh(&context);
+
         let ambient_light = AmbientLight {intensity: 0.4, color: vec3(1.0, 1.0, 1.0)};
         let directional_light = DirectionalLight::new(&context, 1.0, &vec3(1.0, 1.0, 1.0), &vec3(0.0, -1.0, -1.0)).unwrap();
 
@@ -121,8 +143,8 @@ fn main() {
                     Event::MouseMotion {delta, position} => {
 
                         if let Some(ref mut pan) = active_pan {
-                            info!("mouse delta: {:?} {:?}", delta.0, delta.1);
-                            info!("mouse position: {:?} {:?}", position.0, position.1);
+                        //    info!("mouse delta: {:?} {:?}", delta.0, delta.1);
+                        //    info!("mouse position: {:?} {:?}", position.0, position.1);
 
                             let camera_position_x = pan.camera_start.x - ((position.0 - pan.mouse_start.0) * viewport_geometry.world_units_per_pixel()) as f32;
                             let camera_position_y = pan.camera_start.y + ((position.1 - pan.mouse_start.1) * viewport_geometry.world_units_per_pixel()) as f32;
@@ -182,11 +204,20 @@ fn main() {
                                                frame_input.viewport, &t1, &camera)?;
 
                 let t1 = Mat4::from_nonuniform_scale(meshes[1].pixel_width as f32,meshes[1].pixel_height as f32,1f32);
-                let t1= Mat4::from_translation(cgmath::Vector3::new(1000f32, 0f32, 0f32)).concat(&t1);
+                let t1= Mat4::from_translation(cgmath::Vector3::new(500f32, 0f32, 0f32)).concat(&t1);
                 //let t2 = Mat4::from_scale(1f32/meshes[1].pixel_width as f32).concat(&t1);
                 //let transformation = t2;
 
                 meshes[1].mesh.render_geometry(RenderStates {cull: CullType::Back, ..Default::default()},
+                                               frame_input.viewport, &t1, &camera)?;
+
+                let t1 = Mat4::from_nonuniform_scale(1 as f32,1 as f32,1f32);
+                let t1= Mat4::from_translation(cgmath::Vector3::new(0f32, 0f32, 1f32)).concat(&t1);
+                test_mesh.render_geometry(RenderStates {cull: CullType::Back, ..Default::default()},
+                                               frame_input.viewport, &t1, &camera)?;
+
+                let t1= Mat4::from_translation(cgmath::Vector3::new(-460f32, 307f32, 1f32)).concat(&t1);
+                test_mesh.render_geometry(RenderStates {cull: CullType::Back, ..Default::default()},
                                                frame_input.viewport, &t1, &camera)?;
 
                 Ok(())
@@ -203,12 +234,12 @@ fn main() {
 
 fn square_positions() -> Vec<f32> {
     vec![
-        -1.0, -1.0, 0.0,
-        1.0, -1.0, 0.0,
-        1.0, 1.0, 0.0,
-        1.0, 1.0, 0.0,
-        -1.0, 1.0, 0.0,
-        -1.0, -1.0, 0.0,
+        -0.5, -0.5, 0.0,
+        0.5, -0.5, 0.0,
+        0.5, 0.5, 0.0,
+        0.5, 0.5, 0.0,
+        -0.5, 0.5, 0.0,
+        -0.5, -0.5, 0.0,
     ]
 }
 
