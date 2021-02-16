@@ -11,9 +11,9 @@ use nom::{
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct ControlPoint {
-    image_id: u64,
-    x_coord: f64,
-    y_coord: f64,
+    pub image_id: u64,
+    pub x_coord: f64,
+    pub y_coord: f64,
 }
 
 impl ControlPoint {

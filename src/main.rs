@@ -92,6 +92,49 @@ fn main() {
                                  10.0);
 
 
+    use std::sync::{Arc, Mutex};
+
+    let pto_file = "test_photos/DSC_9108_12_5 - DSC_9109_12_5.pto";
+
+    let pairs= Arc::new(Mutex::new(vec!()));
+    let pairs_clone = pairs.clone();
+
+    Loader::load(&[pto_file], move |loaded| {
+
+        let mut pairs = pairs_clone.lock().unwrap();
+
+        let file_u8 = Loader::get(loaded, pto_file).unwrap();
+        let s = std::str::from_utf8(file_u8).unwrap();
+
+        *pairs = read_pto::read_control_point_pairs(s).unwrap();
+
+        for (ref cp1, ref cp2) in &(*pairs) {
+            info!("({:?}, {:?})", cp1, cp2);
+        }
+
+    });
+
+
+    let image0_control_points;
+    {
+        let pairs = pairs.lock().unwrap();
+        image0_control_points =
+            pairs.iter().filter_map(|(cp1, cp2)| {
+                match cp1.image_id {
+                    0 => Some(Vec3::new(cp1.x_coord as f32, cp1.y_coord as f32, 0 as f32)),
+                    _ => None,
+                }
+            }).collect::<Vec<Vec3>>();
+
+        for &Vec3{x,y,z} in &image0_control_points {
+            info!("({:?}, {:?}, {:?})", x,y,z);
+        }
+
+    }
+    let image0_control_points = Arc::new(Mutex::new(image0_control_points));
+
+
+
     let jpg_filepaths = [
         "test_photos/DSC_9108_12_5.JPG",
         "test_photos/DSC_9109_12_5.JPG"
@@ -216,8 +259,12 @@ fn main() {
                     Vec3::new(-460 as f32, 307 as f32, 1 as f32),
                 ];
 
-                for &v in &points {
-                    let t1= Mat4::from_translation(v);
+                let points = image0_control_points.lock().unwrap();
+
+                for &v in &(*points) {
+                    let t1 = Mat4::from_nonuniform_scale(10.0,10.0,1.0);
+                    let t1= Mat4::from_translation(v).concat(&t1);
+
                     test_mesh.render_geometry(RenderStates {cull: CullType::Back, ..Default::default()},
                                                frame_input.viewport, &t1, &camera)?;
                 }
