@@ -227,7 +227,7 @@ fn main() {
             //todo: rename this?
             struct MeshData<'a> {
 
-                pub mesh: &'a LoadedImageMesh,
+                pub mesh: &'a PhongDeferredMesh,
                 pub scale: Mat4,
                 pub translate: Mat4,
 
@@ -235,13 +235,13 @@ fn main() {
 
             impl<'a> MeshData<'a> {
 
-                pub fn from_mesh(mesh: &LoadedImageMesh) -> MeshData {
+                pub fn from_loaded_image_mesh(m: &LoadedImageMesh) -> MeshData {
 
-                    let scale = Mat4::from_nonuniform_scale(mesh.pixel_width as f32,mesh.pixel_height as f32,1 as f32);
+                    let scale = Mat4::from_nonuniform_scale(m.pixel_width as f32,m.pixel_height as f32,1 as f32);
                     let translate = Mat4::from_translation(Vec3::new(0f32, 0f32, 0f32));
 
                     MeshData {
-                        mesh,
+                        mesh: &m.mesh,
                         scale,
                         translate,
                     }
@@ -257,8 +257,8 @@ fn main() {
 
 
             let mut mesh_datas = [
-                MeshData::from_mesh(&meshes[0]),
-                MeshData::from_mesh(&meshes[1]),
+                MeshData::from_loaded_image_mesh(&meshes[0]),
+                MeshData::from_loaded_image_mesh(&meshes[1]),
             ];
             mesh_datas[1].translate = Mat4::from_translation(cgmath::Vector3::new(500f32, 0f32, 0f32));
 
@@ -270,7 +270,7 @@ fn main() {
 
                 for m in &mesh_datas {
 
-                    m.mesh.mesh.render_geometry(RenderStates {cull: CullType::Back, ..Default::default()},
+                    m.mesh.render_geometry(RenderStates {cull: CullType::Back, ..Default::default()},
                                                    frame_input.viewport, &m.to_world(), &camera)?;
                 }
 
