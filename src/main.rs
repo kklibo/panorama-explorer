@@ -92,50 +92,8 @@ fn main() {
                                  10.0);
 
 
-  //  use std::sync::{Arc, Mutex};
 
     let pto_file = "test_photos/DSC_9108_12_5 - DSC_9109_12_5.pto";
-/*
-    let pairs= Arc::new(Mutex::new(vec!()));
-    let pairs_clone = pairs.clone();
-
-    Loader::load(&[pto_file], move |loaded| {
-
-        let mut pairs = pairs_clone.lock().unwrap();
-
-        let file_u8 = Loader::get(loaded, pto_file).unwrap();
-        let s = std::str::from_utf8(file_u8).unwrap();
-
-        *pairs = read_pto::read_control_point_pairs(s).unwrap();
-
-        for (ref cp1, ref cp2) in &(*pairs) {
-            info!("({:?}, {:?})", cp1, cp2);
-        }
-
-    });
-
-    let image0_control_points;
-    {
-        let pairs = pairs.lock().unwrap();
-
-        info!("pairs size: {}", (*pairs).len());
-
-        image0_control_points =
-            pairs.iter().filter_map(|(cp1, cp2)| {
-                match cp1.image_id {
-                    0 => Some(Vec3::new(cp1.x_coord as f32, cp1.y_coord as f32, 0 as f32)),
-                    _ => None,
-                }
-            }).collect::<Vec<Vec3>>();
-
-        for &Vec3{x,y,z} in &image0_control_points {
-            info!("({:?}, {:?}, {:?})", x,y,z);
-        }
-
-    }
-    let image0_control_points = Arc::new(Mutex::new(image0_control_points));
-*/
-
 
     let filepaths = [
         pto_file,
