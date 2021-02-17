@@ -114,10 +114,12 @@ fn main() {
 
     });
 
-
     let image0_control_points;
     {
         let pairs = pairs.lock().unwrap();
+
+        info!("pairs size: {}", (*pairs).len());
+
         image0_control_points =
             pairs.iter().filter_map(|(cp1, cp2)| {
                 match cp1.image_id {
@@ -263,6 +265,7 @@ fn main() {
 
                 for &v in &(*points) {
                     let t1 = Mat4::from_nonuniform_scale(10.0,10.0,1.0);
+                    let t1 = Mat4::from_translation(Vec3::new(-0.5*meshes[0].pixel_width as f32,-0.5*meshes[0].pixel_height as f32,2f32)).concat(&t1);
                     let t1= Mat4::from_translation(v).concat(&t1);
 
                     test_mesh.render_geometry(RenderStates {cull: CullType::Back, ..Default::default()},
