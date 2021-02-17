@@ -222,24 +222,57 @@ fn main() {
                 }
             }
 
+
+
+            //todo: rename this?
+            struct MeshData<'a> {
+
+                pub mesh: &'a LoadedImageMesh,
+                pub scale: Mat4,
+                pub translate: Mat4,
+
+            }
+
+            impl<'a> MeshData<'a> {
+
+                pub fn from_mesh(mesh: &LoadedImageMesh) -> MeshData {
+
+                    let scale = Mat4::from_nonuniform_scale(mesh.pixel_width as f32,mesh.pixel_height as f32,1 as f32);
+                    let translate = Mat4::from_translation(Vec3::new(0f32, 0f32, 0f32));
+
+                    MeshData {
+                        mesh,
+                        scale,
+                        translate,
+                    }
+                }
+
+                pub fn to_world(&self) -> Mat4 {
+
+                    self.translate.concat(&self.scale)
+
+                }
+            }
+
+
+
+            let mut mesh_datas = [
+                MeshData::from_mesh(&meshes[0]),
+                MeshData::from_mesh(&meshes[1]),
+            ];
+            mesh_datas[1].translate = Mat4::from_translation(cgmath::Vector3::new(500f32, 0f32, 0f32));
+
+
             // draw
             // Geometry pass
             pipeline.geometry_pass(frame_input.viewport.width, frame_input.viewport.height, &|| {
 
-                let t1 = Mat4::from_nonuniform_scale(meshes[0].pixel_width as f32,meshes[0].pixel_height as f32,1f32);
-                //let t2 = Mat4::from_scale(1f32/meshes[0].pixel_width as f32).concat(&t1);
-                //let transformation = t2;
 
-                meshes[0].mesh.render_geometry(RenderStates {cull: CullType::Back, ..Default::default()},
-                                               frame_input.viewport, &t1, &camera)?;
+                for m in &mesh_datas {
 
-                let t1 = Mat4::from_nonuniform_scale(meshes[1].pixel_width as f32,meshes[1].pixel_height as f32,1f32);
-                let t1= Mat4::from_translation(cgmath::Vector3::new(500f32, 0f32, 0f32)).concat(&t1);
-                //let t2 = Mat4::from_scale(1f32/meshes[1].pixel_width as f32).concat(&t1);
-                //let transformation = t2;
-
-                meshes[1].mesh.render_geometry(RenderStates {cull: CullType::Back, ..Default::default()},
-                                               frame_input.viewport, &t1, &camera)?;
+                    m.mesh.mesh.render_geometry(RenderStates {cull: CullType::Back, ..Default::default()},
+                                                   frame_input.viewport, &m.to_world(), &camera)?;
+                }
 
                 let points = &image0_control_points;
 
