@@ -93,12 +93,12 @@ fn main() {
 
 
 
-    let pto_file = "test_photos/DSC_9108_12_5 - DSC_9109_12_5.pto";
+    let pto_file = "test_photos/test.pto";
 
     let filepaths = [
         pto_file,
-        "test_photos/DSC_9108_12_5.JPG",
-        "test_photos/DSC_9109_12_5.JPG"
+        "test_photos/test1.jpg",
+        "test_photos/test2.jpg"
     ];
 
     Loader::load(&filepaths, move |loaded|
@@ -281,6 +281,10 @@ fn main() {
 
                 //world units
                 m.translate
+
+                    //flip y-coords
+                    .concat(&Mat4::from_nonuniform_scale(1.0, -1.0, 1.0))
+
                     .concat(&to_v)
 
                     .concat(&m.scale)
@@ -309,7 +313,7 @@ fn main() {
                     let t1 = Mat4::from_translation(Vec3::new(0.0,0.0,1.0)).concat(&t1);
 
                     let t1 = convert_photo_px_to_world(v, &photos[0]).concat(&t1);
-                    orange_mesh.render_geometry(RenderStates {cull: CullType::Back, ..Default::default()},
+                    orange_mesh.render_geometry(RenderStates {cull: CullType::None, ..Default::default()},
                                                frame_input.viewport, &t1, &camera)?;
                 }
 
@@ -321,7 +325,7 @@ fn main() {
                     let t1 = Mat4::from_translation(Vec3::new(0.0,0.0,1.0)).concat(&t1);
 
                     let t1 = convert_photo_px_to_world(v, &photos[1]).concat(&t1);
-                    green_mesh.render_geometry(RenderStates {cull: CullType::Back, ..Default::default()},
+                    green_mesh.render_geometry(RenderStates {cull: CullType::None, ..Default::default()},
                                                frame_input.viewport, &t1, &camera)?;
                 }
 
