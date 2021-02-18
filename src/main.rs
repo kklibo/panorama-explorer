@@ -41,7 +41,7 @@ fn load_mesh_from_filepath(context: &Context, loaded: &mut Loaded, image_filepat
     LoadedImageMesh {mesh, pixel_width: image.width, pixel_height: image.height}
 }
 
-fn test_mesh(context: &Context) -> PhongDeferredMesh {
+fn color_mesh(context: &Context, color: &Vec4) -> PhongDeferredMesh {
 
     let mut cpu_mesh = CPUMesh {
         positions: square_positions(),
@@ -51,7 +51,7 @@ fn test_mesh(context: &Context) -> PhongDeferredMesh {
     cpu_mesh.compute_normals();
 
     let material = PhongMaterial {
-        color_source: ColorSource::Color(Vec4::new(0.8,0.5, 0.2, 1.0)),
+        color_source: ColorSource::Color(color.clone()),
 
         ..Default::default()
     };
@@ -128,12 +128,20 @@ fn main() {
             info!("({:?}, {:?}, {:?})", x,y,z);
         }
 
+        let image1_control_points =
+            pairs.iter().filter_map(|(cp1, cp2)| {
+                match cp2.image_id {
+                    1 => Some(Vec3::new(cp2.x_coord as f32, cp2.y_coord as f32, 0 as f32)),
+                    _ => None,
+                }
+            }).collect::<Vec<Vec3>>();
 
         let meshes = filepaths.iter().skip(1).map(|x| {
             load_mesh_from_filepath(&context, loaded, x)
         }).collect::<Vec<_>>();
 
-        let test_mesh = test_mesh(&context);
+        let orange_mesh = color_mesh(&context, &Vec4::new(0.8,0.5, 0.2, 1.0));
+        let green_mesh = color_mesh(&context, &Vec4::new(0.2,0.8, 0.2, 1.0));
 
         let ambient_light = AmbientLight {intensity: 0.4, color: vec3(1.0, 1.0, 1.0)};
         let directional_light = DirectionalLight::new(&context, 1.0, &vec3(1.0, 1.0, 1.0), &vec3(0.0, -1.0, -1.0)).unwrap();
@@ -301,7 +309,19 @@ fn main() {
                     let t1 = Mat4::from_translation(Vec3::new(0.0,0.0,1.0)).concat(&t1);
 
                     let t1 = convert_photo_px_to_world(v, &photos[0]).concat(&t1);
-                    test_mesh.render_geometry(RenderStates {cull: CullType::Back, ..Default::default()},
+                    orange_mesh.render_geometry(RenderStates {cull: CullType::Back, ..Default::default()},
+                                               frame_input.viewport, &t1, &camera)?;
+                }
+
+                let points = &image1_control_points;
+
+                for &v in points {
+                    let t1 = Mat4::from_nonuniform_scale(10.0,10.0,1.0);
+                    let t1 = Mat4::from_angle_z(cgmath::Deg(45.0)).concat(&t1);
+                    let t1 = Mat4::from_translation(Vec3::new(0.0,0.0,1.0)).concat(&t1);
+
+                    let t1 = convert_photo_px_to_world(v, &photos[1]).concat(&t1);
+                    green_mesh.render_geometry(RenderStates {cull: CullType::Back, ..Default::default()},
                                                frame_input.viewport, &t1, &camera)?;
                 }
 
