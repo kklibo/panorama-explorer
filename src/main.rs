@@ -29,7 +29,7 @@ fn load_mesh_from_filepath(context: &Context, loaded: &mut Loaded, image_filepat
     let material = PhongMaterial {
         color_source: ColorSource::Texture(std::rc::Rc::new(
             texture::Texture2D::new_with_u8(&context,
-                Interpolation::Linear, Interpolation::Linear,
+                Interpolation::Nearest, Interpolation::Nearest,
                 None, Wrapping::ClampToEdge, Wrapping::ClampToEdge,
                 &image).unwrap())),
 
@@ -39,6 +39,26 @@ fn load_mesh_from_filepath(context: &Context, loaded: &mut Loaded, image_filepat
     let mesh = PhongDeferredMesh::new(&context, &cpu_mesh, &material).unwrap();
 
     LoadedImageMesh {mesh, pixel_width: image.width, pixel_height: image.height}
+}
+
+fn color_mesh(context: &Context, color: &Vec4) -> PhongDeferredMesh {
+
+    let mut cpu_mesh = CPUMesh {
+        positions: square_positions(),
+
+        ..Default::default()
+    };
+    cpu_mesh.compute_normals();
+
+    let material = PhongMaterial {
+        color_source: ColorSource::Color(color.clone()),
+
+        ..Default::default()
+    };
+
+    let mesh = PhongDeferredMesh::new(&context, &cpu_mesh, &material).unwrap();
+
+    mesh
 }
 
 fn main() {
@@ -72,16 +92,56 @@ fn main() {
                                  10.0);
 
 
-    let jpg_filepaths = [
-        "test_photos/DSC_9108_12_5.JPG",
-        "test_photos/DSC_9109_12_5.JPG"
+
+    let pto_file = "test_photos/test.pto";
+
+    let filepaths = [
+        pto_file,
+        "test_photos/test1.jpg",
+        "test_photos/test2.jpg"
     ];
 
-    Loader::load(&jpg_filepaths, move |loaded|
+    Loader::load(&filepaths, move |loaded|
     {
-        let meshes = jpg_filepaths.iter().map(|x| {
+        //let mut pairs = pairs_clone.lock().unwrap();
+
+        let file_u8 = Loader::get(loaded, pto_file).unwrap();
+        let s = std::str::from_utf8(file_u8).unwrap();
+
+        let pairs = read_pto::read_control_point_pairs(s).unwrap();
+
+        for (ref cp1, ref cp2) in &(*pairs) {
+            info!("({:?}, {:?})", cp1, cp2);
+        }
+
+        info!("pairs size: {}", (*pairs).len());
+
+        let image0_control_points =
+            pairs.iter().filter_map(|(cp1, cp2)| {
+                match cp1.image_id {
+                    0 => Some(Vec3::new(cp1.x_coord as f32, cp1.y_coord as f32, 0 as f32)),
+                    _ => None,
+                }
+            }).collect::<Vec<Vec3>>();
+
+        for &Vec3{x,y,z} in &image0_control_points {
+            info!("({:?}, {:?}, {:?})", x,y,z);
+        }
+
+        let image1_control_points =
+            pairs.iter().filter_map(|(cp1, cp2)| {
+                match cp2.image_id {
+                    1 => Some(Vec3::new(cp2.x_coord as f32, cp2.y_coord as f32, 0 as f32)),
+                    _ => None,
+                }
+            }).collect::<Vec<Vec3>>();
+
+        let meshes = filepaths.iter().skip(1).map(|x| {
             load_mesh_from_filepath(&context, loaded, x)
         }).collect::<Vec<_>>();
+
+        let orange_mesh = color_mesh(&context, &Vec4::new(0.8,0.5, 0.2, 1.0));
+        let green_mesh = color_mesh(&context, &Vec4::new(0.2,0.8, 0.2, 1.0));
 
         let ambient_light = AmbientLight {intensity: 0.4, color: vec3(1.0, 1.0, 1.0)};
         let directional_light = DirectionalLight::new(&context, 1.0, &vec3(1.0, 1.0, 1.0), &vec3(0.0, -1.0, -1.0)).unwrap();
@@ -121,8 +181,8 @@ fn main() {
                     Event::MouseMotion {delta, position} => {
 
                         if let Some(ref mut pan) = active_pan {
-                            info!("mouse delta: {:?} {:?}", delta.0, delta.1);
-                            info!("mouse position: {:?} {:?}", position.0, position.1);
+                        //    info!("mouse delta: {:?} {:?}", delta.0, delta.1);
+                        //    info!("mouse position: {:?} {:?}", position.0, position.1);
 
                             let camera_position_x = pan.camera_start.x - ((position.0 - pan.mouse_start.0) * viewport_geometry.world_units_per_pixel()) as f32;
                             let camera_position_y = pan.camera_start.y + ((position.1 - pan.mouse_start.1) * viewport_geometry.world_units_per_pixel()) as f32;
@@ -170,24 +230,104 @@ fn main() {
                 }
             }
 
+
+
+            //todo: rename this?
+            struct Photo<'a> {
+
+                pub mesh: &'a PhongDeferredMesh,
+                pub scale: Mat4,
+                pub translate: Mat4,
+
+            }
+
+            impl<'a> Photo<'a> {
+
+                pub fn from_loaded_image_mesh(m: &LoadedImageMesh) -> Photo {
+
+                    let scale = Mat4::from_nonuniform_scale(m.pixel_width as f32,m.pixel_height as f32,1 as f32);
+                    let translate = Mat4::from_translation(Vec3::new(0f32, 0f32, 0f32));
+
+                    Photo {
+                        mesh: &m.mesh,
+                        scale,
+                        translate,
+                    }
+                }
+
+                pub fn to_world(&self) -> Mat4 {
+
+                    self.translate.concat(&self.scale)
+
+                }
+            }
+
+
+
+            let mut photos = [
+                Photo::from_loaded_image_mesh(&meshes[0]),
+                Photo::from_loaded_image_mesh(&meshes[1]),
+            ];
+            photos[1].translate = Mat4::from_translation(cgmath::Vector3::new(500f32, 0f32, 0f32));
+
+
+
+            fn convert_photo_px_to_world(v: Vec3, m: &Photo) -> Mat4 {
+
+                let to_bottom_left = Mat4::from_translation(Vec3::new(-0.5,-0.5,0.0));
+                let to_v = Mat4::from_translation(v);
+
+                //todo: remove unwrap
+
+                //world units
+                m.translate
+
+                    //flip y-coords
+                    .concat(&Mat4::from_nonuniform_scale(1.0, -1.0, 1.0))
+
+                    .concat(&to_v)
+
+                    .concat(&m.scale)
+                        //scaled to photo space
+                        .concat(&to_bottom_left)
+                    .concat(&m.scale.invert().unwrap())
+
+            }
+
+
             // draw
             // Geometry pass
             pipeline.geometry_pass(frame_input.viewport.width, frame_input.viewport.height, &|| {
 
-                let t1 = Mat4::from_nonuniform_scale(meshes[0].pixel_width as f32,meshes[0].pixel_height as f32,1f32);
-                //let t2 = Mat4::from_scale(1f32/meshes[0].pixel_width as f32).concat(&t1);
-                //let transformation = t2;
 
-                meshes[0].mesh.render_geometry(RenderStates {cull: CullType::Back, ..Default::default()},
+                for m in &photos {
+
+                    m.mesh.render_geometry(RenderStates {cull: CullType::Back, ..Default::default()},
+                                                   frame_input.viewport, &m.to_world(), &camera)?;
+                }
+
+                let points = &image0_control_points;
+
+                for &v in points {
+                    let t1 = Mat4::from_nonuniform_scale(10.0,10.0,1.0);
+                    let t1 = Mat4::from_translation(Vec3::new(0.0,0.0,1.0)).concat(&t1);
+
+                    let t1 = convert_photo_px_to_world(v, &photos[0]).concat(&t1);
+                    orange_mesh.render_geometry(RenderStates {cull: CullType::None, ..Default::default()},
                                                frame_input.viewport, &t1, &camera)?;
+                }
 
-                let t1 = Mat4::from_nonuniform_scale(meshes[1].pixel_width as f32,meshes[1].pixel_height as f32,1f32);
-                let t1= Mat4::from_translation(cgmath::Vector3::new(1000f32, 0f32, 0f32)).concat(&t1);
-                //let t2 = Mat4::from_scale(1f32/meshes[1].pixel_width as f32).concat(&t1);
-                //let transformation = t2;
+                let points = &image1_control_points;
 
-                meshes[1].mesh.render_geometry(RenderStates {cull: CullType::Back, ..Default::default()},
+                for &v in points {
+                    let t1 = Mat4::from_nonuniform_scale(10.0,10.0,1.0);
+                    let t1 = Mat4::from_angle_z(cgmath::Deg(45.0)).concat(&t1);
+                    let t1 = Mat4::from_translation(Vec3::new(0.0,0.0,1.0)).concat(&t1);
+
+                    let t1 = convert_photo_px_to_world(v, &photos[1]).concat(&t1);
+                    green_mesh.render_geometry(RenderStates {cull: CullType::None, ..Default::default()},
                                                frame_input.viewport, &t1, &camera)?;
+                }
 
                 Ok(())
             }).unwrap();
@@ -203,12 +343,12 @@ fn main() {
 
 fn square_positions() -> Vec<f32> {
     vec![
-        -1.0, -1.0, 0.0,
-        1.0, -1.0, 0.0,
-        1.0, 1.0, 0.0,
-        1.0, 1.0, 0.0,
-        -1.0, 1.0, 0.0,
-        -1.0, -1.0, 0.0,
+        -0.5, -0.5, 0.0,
+        0.5, -0.5, 0.0,
+        0.5, 0.5, 0.0,
+        0.5, 0.5, 0.0,
+        -0.5, 0.5, 0.0,
+        -0.5, -0.5, 0.0,
     ]
 }
 
