@@ -67,7 +67,7 @@ fn main() {
         env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
     }
 
-    let mut window = Window::new("panorama_tool", None).unwrap();
+    let window = Window::new("panorama_tool", None).unwrap();
     let context = window.gl();
 
     let mut viewport_geometry = ViewportGeometry::try_new(
@@ -117,7 +117,7 @@ fn main() {
         info!("pairs size: {}", (*pairs).len());
 
         let image0_control_points =
-            pairs.iter().filter_map(|(cp1, cp2)| {
+            pairs.iter().filter_map(|(cp1, _cp2)| {
                 match cp1.image_id {
                     0 => Some(Vec3::new(cp1.x_coord as f32, cp1.y_coord as f32, 0 as f32)),
                     _ => None,
@@ -129,7 +129,7 @@ fn main() {
         }
 
         let image1_control_points =
-            pairs.iter().filter_map(|(cp1, cp2)| {
+            pairs.iter().filter_map(|(_cp1, cp2)| {
                 match cp2.image_id {
                     1 => Some(Vec3::new(cp2.x_coord as f32, cp2.y_coord as f32, 0 as f32)),
                     _ => None,
@@ -178,7 +178,7 @@ fn main() {
                         };
 
                     },
-                    Event::MouseMotion {delta, position} => {
+                    Event::MouseMotion {position, ..} => {
 
                         if let Some(ref mut pan) = active_pan {
                         //    info!("mouse delta: {:?} {:?}", delta.0, delta.1);
@@ -232,7 +232,7 @@ fn main() {
 
 
 
-            //todo: rename this?
+
             struct Photo<'a> {
 
                 pub mesh: &'a PhongDeferredMesh,
