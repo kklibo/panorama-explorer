@@ -3,7 +3,7 @@ use std::error::Error;
 use std::fmt::{Display, Formatter};
 use std::num::NonZeroUsize;
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct ViewportGeometry {
     pub zoom_scale: f64,
     pub zoom_value: u32,
@@ -13,7 +13,7 @@ pub struct ViewportGeometry {
     height_in_pixels: NonZeroUsize,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub enum PixelDimensionError {
     ZeroWidth,
     ZeroHeight,
@@ -119,6 +119,7 @@ impl ViewportGeometry {
     }
 }
 
+#[derive(Debug, PartialOrd, PartialEq)]
 pub struct ScreenCoords {
     /// x location in screen units: [-0.5,0.5], positive is right
     pub x: f64,
@@ -126,6 +127,7 @@ pub struct ScreenCoords {
     pub y: f64,
 }
 
+#[derive(Debug, PartialOrd, PartialEq)]
 pub struct PixelCoords {
     /// x location in pixels: [0.0, width], positive is right
     pub x: f64,
@@ -133,6 +135,7 @@ pub struct PixelCoords {
     pub y: f64,
 }
 
+#[derive(Debug, PartialOrd, PartialEq)]
 pub struct WorldCoords {
     /// x location in world units: [left, right]
     pub x: f64,
@@ -141,10 +144,11 @@ pub struct WorldCoords {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
 
     use super::*;
     use assert_matches::*;
+    use assert_approx_eq::assert_approx_eq;
 
     #[test]
     fn try_new_test() {
@@ -176,14 +180,192 @@ mod test {
             Err(PixelDimensionError::ZeroWidthAndHeight)
         );
 
-        assert_matches!(
-            ViewportGeometry::try_new(
+        let res = ViewportGeometry::try_new(
                 1_f64, 10_u32, 1_u32, 15_u32,
                 100_usize,
-                100_usize,
-            ),
-            Ok(_)
-        );
+                200_usize,
+            ).unwrap();
+
+        assert_eq!(res.zoom_scale, 1_f64);
+        assert_eq!(res.zoom_value, 10_u32);
+        assert_eq!(res.zoom_min, 1_u32);
+        assert_eq!(res.zoom_max, 15_u32);
+        assert_eq!(res.width_in_pixels, NonZeroUsize::new(100_usize).unwrap());
+        assert_eq!(res.height_in_pixels, NonZeroUsize::new(200_usize).unwrap());
+    }
+
+    #[test]
+    fn zoom_in_test() {
+
+        let v = ViewportGeometry::try_new(1.0, 0,0,10,100,200).unwrap();
+
+        {
+            //failed zoom: at lower limit
+            let mut v = v;
+            v.zoom_value = 10;
+            v.zoom_min = 10;
+            v.zoom_in();
+            assert_eq!(v.zoom_value, 10);
+        }
+
+        {
+            //failed zoom: at lower limit of 0
+            let mut v = v;
+            v.zoom_value = 0;
+            v.zoom_min = 0;
+            v.zoom_in();
+            assert_eq!(v.zoom_value, 0);
+        }
+
+        {
+            //successful zoom
+            let mut v = v;
+            v.zoom_value = 10;
+            v.zoom_min = 0;
+            v.zoom_in();
+            assert_eq!(v.zoom_value, 9);
+        }
+
+        {
+            //successful zoom to 0
+            let mut v = v;
+            v.zoom_value = 1;
+            v.zoom_min = 0;
+            v.zoom_in();
+            assert_eq!(v.zoom_value, 0);
+        }
+    }
+
+    #[test]
+    fn zoom_out_test() {
+
+        let v = ViewportGeometry::try_new(1.0, 0,0,10,100,200).unwrap();
+
+        {
+            //failed zoom: at upper limit
+            let mut v = v;
+            v.zoom_value = 10;
+            v.zoom_max = 10;
+            v.zoom_out();
+            assert_eq!(v.zoom_value, 10);
+        }
+
+        {
+            //failed zoom: at upper limit of u32::MAX
+            let mut v = v;
+            v.zoom_value = u32::MAX;
+            v.zoom_max = u32::MAX;
+            v.zoom_out();
+            assert_eq!(v.zoom_value, u32::MAX);
+        }
+
+        {
+            //successful zoom
+            let mut v = v;
+            v.zoom_value = 0;
+            v.zoom_max = 10;
+            v.zoom_out();
+            assert_eq!(v.zoom_value, 1);
+        }
+
+        {
+            //successful zoom to u32::MAX
+            let mut v = v;
+            v.zoom_value = u32::MAX - 1;
+            v.zoom_max = u32::MAX;
+            v.zoom_out();
+            assert_eq!(v.zoom_value, u32::MAX);
+        }
+    }
+
+    #[test]
+    fn width_in_world_units_test() {
+        let zoom_value = 10 as u32;
+        let zoom_scale = 2 as f64;
+        let v = ViewportGeometry::try_new(zoom_scale, zoom_value, 0, 10, 400, 200).unwrap();
+
+        assert_approx_eq!(v.width_in_world_units(), 2048 as f64);
+    }
+
+    #[test]
+    fn height_in_world_units_test() {
+        let zoom_value = 10 as u32;
+        let zoom_scale = 2 as f64;
+        let width_in_pixels = 400 as usize;
+        let height_in_pixels = 200 as usize;
+        let v = ViewportGeometry::try_new(zoom_scale, zoom_value, 0, 10, width_in_pixels, height_in_pixels).unwrap();
+
+        assert_approx_eq!(v.height_in_world_units(), 1024 as f64);
+    }
+
+    #[test]
+    fn world_units_per_pixel_test() {
+        let zoom_value = 10 as u32;
+        let zoom_scale = 2 as f64;
+        let width_in_pixels = 1024 as usize;
+        let height_in_pixels = 512 as usize;
+        let v = ViewportGeometry::try_new(zoom_scale, zoom_value, 0, 10, width_in_pixels, height_in_pixels).unwrap();
+
+        assert_approx_eq!(v.world_units_per_pixel(), 2 as f64);
+    }
+
+    #[test]
+    fn convert_pixel_to_screen_test() {
+        let zoom_value = 10 as u32;
+        let zoom_scale = 2 as f64;
+        let width_in_pixels = 1024 as usize;
+        let height_in_pixels = 512 as usize;
+        let v = ViewportGeometry::try_new(zoom_scale, zoom_value, 0, 10, width_in_pixels, height_in_pixels).unwrap();
+
+        {
+            let pixel_coords = PixelCoords { x: 0.0, y: 0.0 };
+            let ScreenCoords { x, y } = v.convert_pixel_to_screen(pixel_coords);
+            assert_approx_eq!(x, -0.5);
+            assert_approx_eq!(y, 0.5);
+        }
+
+        {
+            let pixel_coords = PixelCoords { x: 1024.0, y: 512.0 };
+            let ScreenCoords { x, y } = v.convert_pixel_to_screen(pixel_coords);
+            assert_approx_eq!(x, 0.5);
+            assert_approx_eq!(y, -0.5);
+        }
+    }
+
+    #[test]
+    fn convert_screen_to_world_at_origin_test() {
+        let zoom_value = 10 as u32;
+        let zoom_scale = 2 as f64;
+        let width_in_pixels = 400 as usize;
+        let height_in_pixels = 200 as usize;
+        let v = ViewportGeometry::try_new(zoom_scale, zoom_value, 0, 10, width_in_pixels, height_in_pixels).unwrap();
+
+        let screen_coords = ScreenCoords{x: 0.0, y: 0.0};
+        let WorldCoords{x, y} = v.convert_screen_to_world_at_origin( &screen_coords);
+        assert_approx_eq!(x, 0.0);
+        assert_approx_eq!(y, 0.0);
+
+        let screen_coords = ScreenCoords{x: -0.5, y: 0.5};
+        let WorldCoords{x, y} = v.convert_screen_to_world_at_origin( &screen_coords);
+        assert_approx_eq!(x, -1024.0);
+        assert_approx_eq!(y, 512.0);
+    }
+
+    #[test]
+    fn size_in_world_units_test() {
+        let zoom_value = 10 as u32;
+        let zoom_scale = 2 as f64;
+        let v = ViewportGeometry::try_new(zoom_scale, zoom_value, 0, 10, 400, 200).unwrap();
+
+        assert_approx_eq!(v.size_in_world_units(), 2048 as f64);
+    }
+
+    #[test]
+    fn aspect_ratio_x_to_y_test() {
+        let (width, height) = (100_usize, 200_usize);
+        let v = ViewportGeometry::try_new(1.0, 0, 0, 10, width, height).unwrap();
+
+        assert_approx_eq!(v.aspect_ratio_x_to_y(), 0.5);
     }
 
 

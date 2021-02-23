@@ -17,7 +17,7 @@ pub struct ControlPoint {
 }
 
 impl ControlPoint {
-    fn new(image_id: u64, x_coord: f64, y_coord: f64) -> ControlPoint
+    pub fn new(image_id: u64, x_coord: f64, y_coord: f64) -> ControlPoint
     {
         ControlPoint{image_id, x_coord, y_coord}
     }
