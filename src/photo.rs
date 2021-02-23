@@ -1,5 +1,4 @@
 use three_d::*;
-use log::info;
 pub use crate::LoadedImageMesh;
 use crate::viewport_geometry::WorldCoords;
 
@@ -7,9 +6,7 @@ pub struct Photo<'a> {
 
     pub mesh: &'a PhongDeferredMesh,
     scale: Mat4,
-    //add inverse
-
-    translate: Mat4,
+    translate: Mat4, //in world coord units
 
 }
 
@@ -44,19 +41,18 @@ pub fn convert_photo_px_to_world(v: Vec3, m: &Photo) -> Mat4 {
     let to_bottom_left = Mat4::from_translation(Vec3::new(-0.5,-0.5,0.0));
     let to_v = Mat4::from_translation(v);
 
-    //todo: remove unwrap
-
-    //world units
-    m.translate
-
+    let translation_and_scale =
+        m.translate
         //flip y-coords
         .concat(&Mat4::from_nonuniform_scale(1.0, -1.0, 1.0))
-
         .concat(&to_v)
-
         .concat(&m.scale)
         //scaled to photo space
-        .concat(&to_bottom_left)
-        .concat(&m.scale.invert().unwrap())
+        .concat(&to_bottom_left);
 
+
+    let mut just_translation = Mat4::identity();
+    just_translation.w = translation_and_scale.w;
+
+    just_translation
 }
