@@ -6,7 +6,7 @@ mod viewport_geometry;
 mod read_pto;
 mod photo;
 
-use viewport_geometry::{ViewportGeometry, PixelCoords};
+use viewport_geometry::{ViewportGeometry, PixelCoords, WorldCoords};
 use photo::{Photo, convert_photo_px_to_world};
 
 pub struct LoadedImageMesh {
@@ -236,7 +236,7 @@ fn main() {
                 Photo::from_loaded_image_mesh(&meshes[0]),
                 Photo::from_loaded_image_mesh(&meshes[1]),
             ];
-            photos[1].translate = Mat4::from_translation(cgmath::Vector3::new(500f32, 0f32, 0f32));
+            photos[1].set_translation(WorldCoords{x: 500.0, y: 0.0});
 
 
             // draw

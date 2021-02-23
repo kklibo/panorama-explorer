@@ -1,13 +1,15 @@
 use three_d::*;
 use log::info;
 pub use crate::LoadedImageMesh;
-
+use crate::viewport_geometry::WorldCoords;
 
 pub struct Photo<'a> {
 
     pub mesh: &'a PhongDeferredMesh,
-    pub scale: Mat4,
-    pub translate: Mat4,
+    scale: Mat4,
+    //add inverse
+
+    translate: Mat4,
 
 }
 
@@ -29,6 +31,11 @@ impl<'a> Photo<'a> {
 
         self.translate.concat(&self.scale)
 
+    }
+
+    pub fn set_translation(&mut self, center: WorldCoords) {
+
+        self.translate = Mat4::from_translation(cgmath::Vector3::new(center.x as f32, center.y as f32, 0f32));
     }
 }
 
