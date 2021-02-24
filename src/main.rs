@@ -26,21 +26,28 @@ fn load_mesh_from_filepath(context: &Context, loaded: &mut Loaded, image_filepat
     };
     cpu_mesh.compute_normals();
 
-    let image = Loader::get_image(loaded, image_filepath).unwrap();
+    let mut cpu_texture = Loader::get_texture(loaded, image_filepath).unwrap();
+    cpu_texture.min_filter = Interpolation::Nearest;
+    cpu_texture.mag_filter = Interpolation::Nearest;
+    cpu_texture.mip_map_filter = None;
+    cpu_texture.wrap_s = Wrapping::ClampToEdge;
+    cpu_texture.wrap_t = Wrapping::ClampToEdge;
+    cpu_texture.wrap_r = Wrapping::ClampToEdge;
+
+    let texture = Texture2D::new_with_u8(&context, &cpu_texture).unwrap();
+
+    let pixel_width = (&texture).width() as u32;
+    let pixel_height =  (&texture).height() as u32;
 
     let material = PhongMaterial {
-        color_source: ColorSource::Texture(std::rc::Rc::new(
-            texture::Texture2D::new_with_u8(&context,
-                Interpolation::Nearest, Interpolation::Nearest,
-                None, Wrapping::ClampToEdge, Wrapping::ClampToEdge,
-                &image).unwrap())),
+        color_source: ColorSource::Texture(std::rc::Rc::new(texture)),
 
         ..Default::default()
     };
 
     let mesh = PhongDeferredMesh::new(&context, &cpu_mesh, &material).unwrap();
 
-    LoadedImageMesh {mesh, pixel_width: image.width, pixel_height: image.height}
+    LoadedImageMesh {mesh, pixel_width, pixel_height}
 }
 
 fn color_mesh(context: &Context, color: &Vec4) -> PhongDeferredMesh {
