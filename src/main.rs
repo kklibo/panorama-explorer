@@ -11,9 +11,10 @@ use photo::{Photo, convert_photo_px_to_world};
 
 pub struct LoadedImageMesh {
 
-    pub mesh: PhongDeferredMesh,
-    pub pixel_width: u32,
+    pub mesh: Mesh,
+    pub pixel_width: u32,   //remove these?
     pub pixel_height: u32,
+    pub texture_2d: Texture2D,
 }
 
 fn load_mesh_from_filepath(context: &Context, loaded: &mut Loaded, image_filepath: &str) -> LoadedImageMesh {
@@ -34,23 +35,17 @@ fn load_mesh_from_filepath(context: &Context, loaded: &mut Loaded, image_filepat
     cpu_texture.wrap_t = Wrapping::ClampToEdge;
     cpu_texture.wrap_r = Wrapping::ClampToEdge;
 
-    let texture = Texture2D::new_with_u8(&context, &cpu_texture).unwrap();
+    let texture_2d = Texture2D::new_with_u8(&context, &cpu_texture).unwrap();
 
-    let pixel_width = (&texture).width() as u32;
-    let pixel_height =  (&texture).height() as u32;
+    let pixel_width = (&texture_2d).width() as u32;
+    let pixel_height =  (&texture_2d).height() as u32;
 
-    let material = PhongMaterial {
-        color_source: ColorSource::Texture(std::rc::Rc::new(texture)),
+    let mesh = Mesh::new(&context, &cpu_mesh).unwrap();
 
-        ..Default::default()
-    };
-
-    let mesh = PhongDeferredMesh::new(&context, &cpu_mesh, &material).unwrap();
-
-    LoadedImageMesh {mesh, pixel_width, pixel_height}
+    LoadedImageMesh {mesh, pixel_width, pixel_height, texture_2d}
 }
 
-fn color_mesh(context: &Context, color: &Vec4) -> PhongDeferredMesh {
+fn color_mesh(context: &Context, color: &Vec4) -> Mesh {
 
     let mut cpu_mesh = CPUMesh {
         positions: square_positions(),
@@ -59,13 +54,7 @@ fn color_mesh(context: &Context, color: &Vec4) -> PhongDeferredMesh {
     };
     cpu_mesh.compute_normals();
 
-    let material = PhongMaterial {
-        color_source: ColorSource::Color(color.clone()),
-
-        ..Default::default()
-    };
-
-    let mesh = PhongDeferredMesh::new(&context, &cpu_mesh, &material).unwrap();
+    let mesh = Mesh::new(&context, &cpu_mesh).unwrap();
 
     mesh
 }
@@ -90,7 +79,6 @@ fn main() {
 
 
     // Renderer
-    let mut pipeline = PhongDeferredPipeline::new(&context).unwrap();
     let mut camera =
         Camera::new_orthographic(&context,
                                  vec3(0.0, 0.0, 5.0),
@@ -151,8 +139,7 @@ fn main() {
         let orange_mesh = color_mesh(&context, &Vec4::new(0.8,0.5, 0.2, 1.0));
         let green_mesh = color_mesh(&context, &Vec4::new(0.2,0.8, 0.2, 1.0));
 
-        let ambient_light = AmbientLight {intensity: 0.4, color: vec3(1.0, 1.0, 1.0)};
-        let directional_light = DirectionalLight::new(&context, 1.0, &vec3(1.0, 1.0, 1.0), &vec3(0.0, -1.0, -1.0)).unwrap();
+        let program = Mesh::create_program(&context, include_str!("program1.frag")).unwrap();
 
         // main loop
 
@@ -229,11 +216,7 @@ fn main() {
                                                            10.0);
                     },
                     Event::Key { state, kind } => {
-                        if kind == "R" && *state == State::Pressed
-                        {
-                            pipeline.next_debug_type();
-                            info!("{:?}", pipeline.debug_type());
-                        }
+
                     }
                 }
             }
@@ -247,13 +230,13 @@ fn main() {
 
 
             // draw
-            // Geometry pass
-            pipeline.geometry_pass(frame_input.viewport.width, frame_input.viewport.height, &|| {
-
+            Screen::write(&context, Some(&vec4(0.2, 0.2, 0.2, 1.0)), Some(1.0), || {
 
                 for m in &photos {
 
-                    m.mesh.render_geometry(RenderStates {cull: CullType::Back, ..Default::default()},
+                    program.use_texture(&m.loaded_image_mesh.texture_2d, "tex");
+
+                    m.loaded_image_mesh.mesh.render(&program, RenderStates {cull: CullType::Back, ..Default::default()},
                                                    frame_input.viewport, &m.to_world(), &camera)?;
                 }
 
@@ -264,7 +247,7 @@ fn main() {
                     let t1 = Mat4::from_translation(Vec3::new(0.0,0.0,1.0)).concat(&t1);
 
                     let t1 = convert_photo_px_to_world(v, &photos[0]).concat(&t1);
-                    orange_mesh.render_geometry(RenderStates {cull: CullType::None, ..Default::default()},
+                    orange_mesh.render(&program, RenderStates {cull: CullType::None, ..Default::default()},
                                                frame_input.viewport, &t1, &camera)?;
                 }
 
@@ -276,15 +259,10 @@ fn main() {
                     let t1 = Mat4::from_translation(Vec3::new(0.0,0.0,1.0)).concat(&t1);
 
                     let t1 = convert_photo_px_to_world(v, &photos[1]).concat(&t1);
-                    green_mesh.render_geometry(RenderStates {cull: CullType::None, ..Default::default()},
+                    green_mesh.render(&program, RenderStates {cull: CullType::None, ..Default::default()},
                                                frame_input.viewport, &t1, &camera)?;
                 }
 
-                Ok(())
-            }).unwrap();
-
-            Screen::write(&context, Some(&vec4(0.2, 0.2, 0.2, 1.0)), Some(1.0), || {
-                pipeline.light_pass(frame_input.viewport, &camera, Some(&ambient_light), &[&directional_light], &[], &[])?;
                 Ok(())
             }).unwrap();
 

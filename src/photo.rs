@@ -4,7 +4,7 @@ use crate::viewport_geometry::WorldCoords;
 
 pub struct Photo<'a> {
 
-    pub mesh: &'a PhongDeferredMesh,
+    pub loaded_image_mesh: &'a LoadedImageMesh,
     scale: Mat4,
     translate: Mat4, //in world coord units
 
@@ -18,7 +18,7 @@ impl<'a> Photo<'a> {
         let translate = Mat4::from_translation(Vec3::new(0f32, 0f32, 0f32));
 
         Photo {
-            mesh: &m.mesh,
+            loaded_image_mesh: &m,
             scale,
             translate,
         }
