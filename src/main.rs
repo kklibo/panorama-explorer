@@ -40,7 +40,7 @@ fn load_mesh_from_filepath(context: &Context, loaded: &mut Loaded, image_filepat
     LoadedImageMesh {mesh, texture_2d}
 }
 
-fn color_mesh(context: &Context, color: &Vec4) -> Mesh {
+fn color_mesh(context: &Context) -> Mesh {
 
     let mut cpu_mesh = CPUMesh {
         positions: square_positions(),
@@ -131,10 +131,10 @@ fn main() {
             load_mesh_from_filepath(&context, loaded, x)
         }).collect::<Vec<_>>();
 
-        let orange_mesh = color_mesh(&context, &Vec4::new(0.8,0.5, 0.2, 1.0));
-        let green_mesh = color_mesh(&context, &Vec4::new(0.2,0.8, 0.2, 1.0));
+        let color_mesh = color_mesh(&context);
 
-        let program = Mesh::create_program(&context, include_str!("program1.frag")).unwrap();
+        let texture_program = Mesh::create_program(&context, include_str!("texture.frag")).unwrap();
+        let   color_program = Mesh::create_program(&context, include_str!(  "color.frag")).unwrap();
 
         // main loop
 
@@ -210,7 +210,7 @@ fn main() {
                                                            viewport_geometry.height_in_world_units() as f32,
                                                            10.0);
                     },
-                    Event::Key { state, kind } => {
+                    Event::Key { state: _, kind: _ } => {
 
                     }
                 }
@@ -229,9 +229,9 @@ fn main() {
 
                 for m in &photos {
 
-                    program.use_texture(&m.loaded_image_mesh.texture_2d, "tex");
+                    texture_program.use_texture(&m.loaded_image_mesh.texture_2d, "tex").unwrap();
 
-                    m.loaded_image_mesh.mesh.render(&program, RenderStates {cull: CullType::Back, ..Default::default()},
+                    m.loaded_image_mesh.mesh.render(&texture_program, RenderStates {cull: CullType::Back, ..Default::default()},
                                                    frame_input.viewport, &m.to_world(), &camera)?;
                 }
 
@@ -242,7 +242,10 @@ fn main() {
                     let t1 = Mat4::from_translation(Vec3::new(0.0,0.0,1.0)).concat(&t1);
 
                     let t1 = convert_photo_px_to_world(v, &photos[0]).concat(&t1);
-                    orange_mesh.render(&program, RenderStates {cull: CullType::None, ..Default::default()},
+
+
+                    color_program.add_uniform_vec4("color", &Vec4::new(0.8,0.5, 0.2, 1.0)).unwrap();
+                    color_mesh.render(&color_program, RenderStates {cull: CullType::None, ..Default::default()},
                                                frame_input.viewport, &t1, &camera)?;
                 }
 
@@ -254,7 +257,9 @@ fn main() {
                     let t1 = Mat4::from_translation(Vec3::new(0.0,0.0,1.0)).concat(&t1);
 
                     let t1 = convert_photo_px_to_world(v, &photos[1]).concat(&t1);
-                    green_mesh.render(&program, RenderStates {cull: CullType::None, ..Default::default()},
+
+                    color_program.add_uniform_vec4("color", &Vec4::new(0.2,0.8, 0.2, 1.0)).unwrap();
+                    color_mesh.render(&color_program, RenderStates {cull: CullType::None, ..Default::default()},
                                                frame_input.viewport, &t1, &camera)?;
                 }
 
