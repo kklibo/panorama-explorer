@@ -12,8 +12,6 @@ use photo::{Photo, convert_photo_px_to_world};
 pub struct LoadedImageMesh {
 
     pub mesh: Mesh,
-    pub pixel_width: u32,   //remove these?
-    pub pixel_height: u32,
     pub texture_2d: Texture2D,
 }
 
@@ -37,12 +35,9 @@ fn load_mesh_from_filepath(context: &Context, loaded: &mut Loaded, image_filepat
 
     let texture_2d = Texture2D::new_with_u8(&context, &cpu_texture).unwrap();
 
-    let pixel_width = (&texture_2d).width() as u32;
-    let pixel_height =  (&texture_2d).height() as u32;
-
     let mesh = Mesh::new(&context, &cpu_mesh).unwrap();
 
-    LoadedImageMesh {mesh, pixel_width, pixel_height, texture_2d}
+    LoadedImageMesh {mesh, texture_2d}
 }
 
 fn color_mesh(context: &Context, color: &Vec4) -> Mesh {
