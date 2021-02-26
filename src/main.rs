@@ -282,6 +282,17 @@ fn main() {
                 Ok(())
             }).unwrap();
 
+
+            //set entire display buffer alpha to 1.0: prevents web browser pass-through transparency problem
+            let clear_alpha = ClearState {
+                red: None,
+                green: None,
+                blue: None,
+                alpha: Some(1.0),
+                depth: None,
+            };
+            Screen::write(&context, &clear_alpha, || {Ok(())}).unwrap();
+
         }).unwrap();
     });
 }
