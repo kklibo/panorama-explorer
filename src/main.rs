@@ -235,6 +235,23 @@ fn main() {
                                                    frame_input.viewport, &m.to_world(), &camera)?;
                 }
 
+
+                let render_states = RenderStates {
+                    cull: CullType::None,
+
+                    blend: Some( BlendParameters {
+                        source_rgb_multiplier: BlendMultiplierType::SrcAlpha,
+                        source_alpha_multiplier: BlendMultiplierType::One,
+                        destination_rgb_multiplier: BlendMultiplierType::OneMinusSrcAlpha,
+                        destination_alpha_multiplier: BlendMultiplierType::Zero,
+                        ..Default::default()} ),
+
+                    depth_mask: false,
+                    depth_test: DepthTestType::Always,
+
+                    ..Default::default()
+                };
+
                 let points = &image0_control_points;
 
                 for &v in points {
@@ -244,9 +261,8 @@ fn main() {
                     let t1 = convert_photo_px_to_world(v, &photos[0]).concat(&t1);
 
 
-                    color_program.add_uniform_vec4("color", &Vec4::new(0.8,0.5, 0.2, 1.0)).unwrap();
-                    color_mesh.render(&color_program, RenderStates {cull: CullType::None, ..Default::default()},
-                                               frame_input.viewport, &t1, &camera)?;
+                    color_program.add_uniform_vec4("color", &Vec4::new(0.8,0.5, 0.2, 0.5)).unwrap();
+                    color_mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
                 }
 
                 let points = &image1_control_points;
@@ -258,9 +274,8 @@ fn main() {
 
                     let t1 = convert_photo_px_to_world(v, &photos[1]).concat(&t1);
 
-                    color_program.add_uniform_vec4("color", &Vec4::new(0.2,0.8, 0.2, 1.0)).unwrap();
-                    color_mesh.render(&color_program, RenderStates {cull: CullType::None, ..Default::default()},
-                                               frame_input.viewport, &t1, &camera)?;
+                    color_program.add_uniform_vec4("color", &Vec4::new(0.2,0.8, 0.2, 0.5)).unwrap();
+                    color_mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
                 }
 
                 Ok(())
