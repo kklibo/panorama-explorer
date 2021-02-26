@@ -133,8 +133,8 @@ fn main() {
 
         let color_mesh = color_mesh(&context);
 
-        let texture_program = Mesh::create_program(&context, include_str!("texture.frag")).unwrap();
-        let   color_program = Mesh::create_program(&context, include_str!(  "color.frag")).unwrap();
+        let texture_program = MeshProgram::new(&context, include_str!("texture.frag")).unwrap();
+        let   color_program = MeshProgram::new(&context, include_str!(  "color.frag")).unwrap();
 
         // main loop
 
@@ -225,7 +225,7 @@ fn main() {
 
 
             // draw
-            Screen::write(&context, Some(&vec4(0.2, 0.2, 0.2, 1.0)), Some(1.0), || {
+            Screen::write(&context, &ClearState::color_and_depth(0.2, 0.2, 0.2, 1.0, 1.0), || {
 
                 let render_states = RenderStates {
                     cull: CullType::None,
