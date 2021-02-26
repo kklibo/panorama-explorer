@@ -227,15 +227,6 @@ fn main() {
             // draw
             Screen::write(&context, Some(&vec4(0.2, 0.2, 0.2, 1.0)), Some(1.0), || {
 
-                for m in &photos {
-
-                    texture_program.use_texture(&m.loaded_image_mesh.texture_2d, "tex").unwrap();
-
-                    m.loaded_image_mesh.mesh.render(&texture_program, RenderStates {cull: CullType::Back, ..Default::default()},
-                                                   frame_input.viewport, &m.to_world(), &camera)?;
-                }
-
-
                 let render_states = RenderStates {
                     cull: CullType::None,
 
@@ -251,6 +242,16 @@ fn main() {
 
                     ..Default::default()
                 };
+
+
+                for m in &photos {
+
+                    texture_program.use_texture(&m.loaded_image_mesh.texture_2d, "tex").unwrap();
+
+                    m.loaded_image_mesh.mesh.render(&texture_program, render_states,
+                                                   frame_input.viewport, &m.to_world(), &camera)?;
+                }
+
 
                 let points = &image0_control_points;
 
