@@ -1,24 +1,26 @@
+use std::rc::Rc;
+
 use three_d::*;
 pub use crate::LoadedImageMesh;
 use crate::viewport_geometry::WorldCoords;
 
-pub struct Photo<'a> {
+pub struct Photo {
 
-    pub loaded_image_mesh: &'a LoadedImageMesh,
+    pub loaded_image_mesh: Rc<LoadedImageMesh>,
     scale: Mat4,
     translate: Mat4, //in world coord units
 
 }
 
-impl<'a> Photo<'a> {
+impl Photo {
 
-    pub fn from_loaded_image_mesh(m: &LoadedImageMesh) -> Photo {
+    pub fn from_loaded_image_mesh(m: Rc<LoadedImageMesh>) -> Photo {
 
         let scale = Mat4::from_nonuniform_scale(m.texture_2d.width() as f32,m.texture_2d.height() as f32,1 as f32);
         let translate = Mat4::from_translation(Vec3::new(0f32, 0f32, 0f32));
 
         Photo {
-            loaded_image_mesh: &m,
+            loaded_image_mesh: m,
             scale,
             translate,
         }

@@ -1,3 +1,4 @@
+use std::rc::Rc;
 
 use three_d::*;
 use log::info;
@@ -127,9 +128,15 @@ fn main() {
                 }
             }).collect::<Vec<Vec3>>();
 
-        let meshes = filepaths.iter().skip(1).map(|x| {
-            load_mesh_from_filepath(&context, loaded, x)
-        }).collect::<Vec<_>>();
+        let meshes: Vec<Rc<LoadedImageMesh>> = filepaths.iter().skip(1).map(|x| {
+            Rc::new(load_mesh_from_filepath(&context, loaded, x))
+        }).collect();
+
+        let mut photos = [
+            Photo::from_loaded_image_mesh(meshes[0].clone()),
+            Photo::from_loaded_image_mesh(meshes[1].clone()),
+        ];
+        photos[1].set_translation(WorldCoords{x: 500.0, y: 0.0});
 
         let color_mesh = color_mesh(&context);
 
@@ -219,13 +226,6 @@ fn main() {
                 vec3(camera_position.x as f32, camera_position.y as f32, 0.0),
                 vec3(0.0, 1.0, 0.0)
             );
-
-
-            let mut photos = [
-                Photo::from_loaded_image_mesh(&meshes[0]),
-                Photo::from_loaded_image_mesh(&meshes[1]),
-            ];
-            photos[1].set_translation(WorldCoords{x: 500.0, y: 0.0});
 
 
             // draw
