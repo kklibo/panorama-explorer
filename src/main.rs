@@ -156,7 +156,7 @@ fn main() {
 
             for event in frame_input.events.iter() {
                 match event {
-                    Event::MouseClick {state, button, position} => {
+                    Event::MouseClick {state, button, position, ..} => {
                         info!("MouseClick: mouse position: {:?} {:?}", position.0, position.1);
 
                         active_pan =
@@ -179,7 +179,7 @@ fn main() {
                             camera_position.y = pan.camera_start.y as f64 + ((position.1 - pan.mouse_start.1) * viewport_geometry.world_units_per_pixel());
                         }
                     },
-                    Event::MouseWheel {delta, position} => {
+                    Event::MouseWheel {delta, position, ..} => {
                         info!("{:?}", delta);
 
                         let pixel_coords = PixelCoords{x: position.0, y: position.1};
@@ -193,7 +193,7 @@ fn main() {
                         camera_position.y += to_cursor.y;
 
                         //un-reverse direction in web mode (not sure why it's backwards)
-                        match (*delta > 0.0, cfg!(target_arch = "wasm32")) {
+                        match (delta.1 > 0.0, cfg!(target_arch = "wasm32")) {
                             (true, true) | (false, false) => viewport_geometry.zoom_out(),
                             (true, false) | (false, true) => viewport_geometry.zoom_in(),
                         }
@@ -207,9 +207,10 @@ fn main() {
                                                            viewport_geometry.height_in_world_units() as f32,
                                                            10.0);
                     },
-                    Event::Key { state: _, kind: _ } => {
+                    Event::Key { state: _, kind: _ , ..} => {
 
-                    }
+                    },
+                    _ => {},
                 }
             }
 
@@ -240,7 +241,7 @@ fn main() {
                         destination_alpha_multiplier: BlendMultiplierType::Zero,
                         ..Default::default()} ),
 
-                    depth_mask: false,
+                    write_mask: WriteMask::COLOR,
                     depth_test: DepthTestType::Always,
 
                     ..Default::default()
