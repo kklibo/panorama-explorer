@@ -197,6 +197,15 @@ fn main() {
                             false => None,
                         };
 
+                        if *button == MouseButton::Right && *state == State::Pressed {
+
+                            for (i, ph) in photos.iter().enumerate() {
+                                if ph.contains(world_coords) {
+                                    info!("clicked on photos[{}]", i);
+                                }
+                            }
+                        }
+
                     },
                     Event::MouseMotion {position, ..} => {
 

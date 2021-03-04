@@ -36,6 +36,24 @@ impl Photo {
 
         self.translate = Mat4::from_translation(cgmath::Vector3::new(center.x as f32, center.y as f32, 0f32));
     }
+
+    pub fn contains(&self, point: WorldCoords) -> bool {
+
+        let bottom_left_corner_world_coords = self.to_world() * Vec4::new(-0.5,-0.5,0.0, 1.0);
+        let   top_right_corner_world_coords = self.to_world() * Vec4::new( 0.5, 0.5,0.0, 1.0);
+
+        log::info!("contains: bottom left: {}, {}", bottom_left_corner_world_coords.x, bottom_left_corner_world_coords.y);
+        log::info!("            top right: {}, {}", top_right_corner_world_coords.x, top_right_corner_world_coords.y);
+        log::info!("                  scale: {:?}", self.scale);
+        log::info!("              translate: {:?}", self.translate);
+
+
+        bottom_left_corner_world_coords.x <= point.x as f32 &&
+        point.x as f32 <= top_right_corner_world_coords.x &&
+
+        bottom_left_corner_world_coords.y <= point.y as f32 &&
+        point.y as f32 <= top_right_corner_world_coords.y
+    }
 }
 
 pub fn convert_photo_px_to_world(v: Vec3, m: &Photo) -> Mat4 {
