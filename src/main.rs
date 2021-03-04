@@ -7,7 +7,7 @@ mod viewport_geometry;
 mod read_pto;
 mod photo;
 
-use viewport_geometry::{ViewportGeometry, PixelCoords, WorldCoords};
+use viewport_geometry::{ViewportGeometry, PixelCoords, WorldCoords, ScreenCoords};
 use photo::{Photo, convert_photo_px_to_world};
 
 pub struct LoadedImageMesh {
@@ -143,6 +143,21 @@ fn main() {
         let texture_program = MeshProgram::new(&context, include_str!("texture.frag")).unwrap();
         let   color_program = MeshProgram::new(&context, include_str!(  "color.frag")).unwrap();
 
+
+        fn pixels_to_world(
+            pixel_coords: &PixelCoords,
+            viewport_geometry: &ViewportGeometry,
+            camera_position: &WorldCoords
+        ) -> WorldCoords {
+
+            let screen_coords = viewport_geometry.convert_pixel_to_screen(pixel_coords);
+
+            viewport_geometry.convert_screen_to_world_at_origin(&screen_coords) + *camera_position
+        }
+
+
+
+
         // main loop
 
         struct Pan {
@@ -165,6 +180,13 @@ fn main() {
                 match event {
                     Event::MouseClick {state, button, position, ..} => {
                         info!("MouseClick: mouse position: {:?} {:?}", position.0, position.1);
+
+                        let world_coords = pixels_to_world(
+                            &PixelCoords{x: position.0, y: position.1},
+                            &viewport_geometry,
+                            &camera_position,
+                        );
+                        info!("  WorldCoords: {{{:?}, {:?}}}", world_coords.x, world_coords.y);
 
                         active_pan =
                         match *button == MouseButton::Left && *state == State::Pressed {
@@ -190,7 +212,7 @@ fn main() {
                         info!("{:?}", delta);
 
                         let pixel_coords = PixelCoords{x: position.0, y: position.1};
-                        let screen_coords = viewport_geometry.convert_pixel_to_screen(pixel_coords);
+                        let screen_coords = viewport_geometry.convert_pixel_to_screen(&pixel_coords);
 
                         info!("cursor_screen {:?},{:?}", screen_coords.x, screen_coords.y);
 

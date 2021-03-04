@@ -2,6 +2,7 @@
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 use std::num::NonZeroUsize;
+use std::ops::Add;
 
 #[derive(Debug, Copy, Clone)]
 pub struct ViewportGeometry {
@@ -94,7 +95,7 @@ impl ViewportGeometry {
         self.size_in_world_units() / self.width_in_pixels.get() as f64
     }
 
-    pub fn convert_pixel_to_screen(&self, position: PixelCoords) -> ScreenCoords {
+    pub fn convert_pixel_to_screen(&self, position: &PixelCoords) -> ScreenCoords {
 
         let x = position.x / self.width_in_pixels.get() as f64 - 0.5_f64;
         let y = 1_f64 - (position.y / self.height_in_pixels.get() as f64) - 0.5_f64;
@@ -135,12 +136,20 @@ pub struct PixelCoords {
     pub y: f64,
 }
 
-#[derive(Debug, PartialOrd, PartialEq)]
+#[derive(Debug, PartialOrd, PartialEq, Copy, Clone)]
 pub struct WorldCoords {
     /// x location in world units: [left, right]
     pub x: f64,
     /// y location in world units: [bottom, top]
     pub y: f64,
+}
+
+impl Add for WorldCoords {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        WorldCoords{ x: self.x + rhs.x, y: self.y + rhs.y }
+    }
 }
 
 #[cfg(test)]
