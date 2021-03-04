@@ -91,7 +91,9 @@ fn main() {
     let filepaths = [
         pto_file,
         "test_photos/test1.jpg",
-        "test_photos/test2.jpg"
+        "test_photos/test2.jpg",
+    //    "test_photos/DSC_9108_12_5.JPG",
+    //    "test_photos/DSC_9109_12_5.JPG",
     ];
 
     Loader::load(&filepaths, move |loaded|
@@ -167,6 +169,13 @@ fn main() {
         let mut active_pan: Option<Pan> = None;
         let mut camera_position = WorldCoords{x: 0.0, y: 0.0};
 
+        struct Drag {
+            mouse_start: (f64,f64),
+            photo_start: WorldCoords,
+            photo_index: usize, //replace this
+        }
+        let mut active_drag: Option<Drag> = None;
+
         window.render_loop(move |frame_input|
         {
             viewport_geometry.set_pixel_dimensions(frame_input.viewport.width, frame_input.viewport.height).unwrap();
@@ -202,8 +211,19 @@ fn main() {
                             for (i, ph) in photos.iter().enumerate() {
                                 if ph.contains(world_coords) {
                                     info!("clicked on photos[{}]", i);
+
+                                    active_drag = Some(Drag {
+                                        mouse_start: *position,
+                                        photo_start: ph.translation(),
+                                        photo_index: i,
+                                    });
+
+                                    info!("  translation: {:?}", ph.translation());
                                 }
                             }
+                        }
+                        else {
+                            active_drag = None;
                         }
 
                     },
@@ -216,6 +236,19 @@ fn main() {
                             camera_position.x = pan.camera_start.x as f64 - ((position.0 - pan.mouse_start.0) * viewport_geometry.world_units_per_pixel());
                             camera_position.y = pan.camera_start.y as f64 + ((position.1 - pan.mouse_start.1) * viewport_geometry.world_units_per_pixel());
                         }
+
+                        if let Some(ref mut drag) = active_drag {
+
+                            let new_translation = WorldCoords {
+                                x: drag.photo_start.x as f64 + ((position.0 - drag.mouse_start.0) * viewport_geometry.world_units_per_pixel()),
+                                y: drag.photo_start.y as f64 - ((position.1 - drag.mouse_start.1) * viewport_geometry.world_units_per_pixel()),
+                            };
+
+                            photos[drag.photo_index].set_translation(new_translation);
+
+                        }
+
+
                     },
                     Event::MouseWheel {delta, position, ..} => {
                         info!("{:?}", delta);

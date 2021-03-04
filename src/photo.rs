@@ -37,6 +37,12 @@ impl Photo {
         self.translate = Mat4::from_translation(cgmath::Vector3::new(center.x as f32, center.y as f32, 0f32));
     }
 
+    pub fn translation(&self) -> WorldCoords {
+
+        let translate_vec = self.translate * Vec4::new(0.0, 0.0, 0.0, 1.0);
+        WorldCoords { x: translate_vec.x as f64, y: translate_vec.y as f64 }
+    }
+
     pub fn contains(&self, point: WorldCoords) -> bool {
 
         let bottom_left_corner_world_coords = self.to_world() * Vec4::new(-0.5,-0.5,0.0, 1.0);
