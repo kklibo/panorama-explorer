@@ -1,3 +1,4 @@
+use std::rc::Rc;
 
 use three_d::*;
 use log::info;
@@ -6,7 +7,7 @@ mod viewport_geometry;
 mod read_pto;
 mod photo;
 
-use viewport_geometry::{ViewportGeometry, PixelCoords, WorldCoords};
+use viewport_geometry::{ViewportGeometry, PixelCoords, WorldCoords, ScreenCoords};
 use photo::{Photo, convert_photo_px_to_world};
 
 pub struct LoadedImageMesh {
@@ -64,6 +65,7 @@ fn main() {
     let context = window.gl();
 
     let mut viewport_geometry = ViewportGeometry::try_new(
+        WorldCoords{x:0.0, y:0.0},
         1_f64,
         10_u32,
         1_u32,
@@ -90,7 +92,9 @@ fn main() {
     let filepaths = [
         pto_file,
         "test_photos/test1.jpg",
-        "test_photos/test2.jpg"
+        "test_photos/test2.jpg",
+    //    "test_photos/DSC_9108_12_5.JPG",
+    //    "test_photos/DSC_9109_12_5.JPG",
     ];
 
     Loader::load(&filepaths, move |loaded|
@@ -127,14 +131,21 @@ fn main() {
                 }
             }).collect::<Vec<Vec3>>();
 
-        let meshes = filepaths.iter().skip(1).map(|x| {
-            load_mesh_from_filepath(&context, loaded, x)
-        }).collect::<Vec<_>>();
+        let meshes: Vec<Rc<LoadedImageMesh>> = filepaths.iter().skip(1).map(|x| {
+            Rc::new(load_mesh_from_filepath(&context, loaded, x))
+        }).collect();
+
+        let mut photos = [
+            Photo::from_loaded_image_mesh(meshes[0].clone()),
+            Photo::from_loaded_image_mesh(meshes[1].clone()),
+        ];
+        photos[1].set_translation(WorldCoords{x: 500.0, y: 0.0});
 
         let color_mesh = color_mesh(&context);
 
         let texture_program = MeshProgram::new(&context, include_str!("texture.frag")).unwrap();
         let   color_program = MeshProgram::new(&context, include_str!(  "color.frag")).unwrap();
+
 
         // main loop
 
@@ -143,6 +154,13 @@ fn main() {
             camera_start: Vec3,
         }
         let mut active_pan: Option<Pan> = None;
+
+        struct Drag {
+            mouse_start: (f64,f64),
+            photo_start: WorldCoords,
+            photo_index: usize, //replace this
+        }
+        let mut active_drag: Option<Drag> = None;
 
         window.render_loop(move |frame_input|
         {
@@ -155,8 +173,12 @@ fn main() {
 
             for event in frame_input.events.iter() {
                 match event {
-                    Event::MouseClick {state, button, position} => {
+                    Event::MouseClick {state, button, position, ..} => {
                         info!("MouseClick: mouse position: {:?} {:?}", position.0, position.1);
+
+                        let world_coords =
+                        viewport_geometry.pixels_to_world(&PixelCoords{x: position.0, y: position.1});
+                        info!("  WorldCoords: {{{:?}, {:?}}}", world_coords.x, world_coords.y);
 
                         active_pan =
                         match *button == MouseButton::Left && *state == State::Pressed {
@@ -167,6 +189,26 @@ fn main() {
                             false => None,
                         };
 
+                        if *button == MouseButton::Right && *state == State::Pressed {
+
+                            for (i, ph) in photos.iter().enumerate() {
+                                if ph.contains(world_coords) {
+                                    info!("clicked on photos[{}]", i);
+
+                                    active_drag = Some(Drag {
+                                        mouse_start: *position,
+                                        photo_start: ph.translation(),
+                                        photo_index: i,
+                                    });
+
+                                    info!("  translation: {:?}", ph.translation());
+                                }
+                            }
+                        }
+                        else {
+                            active_drag = None;
+                        }
+
                     },
                     Event::MouseMotion {position, ..} => {
 
@@ -174,54 +216,63 @@ fn main() {
                         //    info!("mouse delta: {:?} {:?}", delta.0, delta.1);
                         //    info!("mouse position: {:?} {:?}", position.0, position.1);
 
-                            let camera_position_x = pan.camera_start.x - ((position.0 - pan.mouse_start.0) * viewport_geometry.world_units_per_pixel()) as f32;
-                            let camera_position_y = pan.camera_start.y + ((position.1 - pan.mouse_start.1) * viewport_geometry.world_units_per_pixel()) as f32;
-
-                            camera.set_view(
-                                vec3(camera_position_x as f32, camera_position_y as f32, 5.0),
-                                vec3(camera_position_x as f32, camera_position_y as f32, 0.0),
-                                vec3(0.0, 1.0, 0.0)
-                            );
+                            viewport_geometry.camera_position.x = pan.camera_start.x as f64 - ((position.0 - pan.mouse_start.0) * viewport_geometry.world_units_per_pixel());
+                            viewport_geometry.camera_position.y = pan.camera_start.y as f64 + ((position.1 - pan.mouse_start.1) * viewport_geometry.world_units_per_pixel());
                         }
+
+                        if let Some(ref mut drag) = active_drag {
+
+                            let new_translation = WorldCoords {
+                                x: drag.photo_start.x as f64 + ((position.0 - drag.mouse_start.0) * viewport_geometry.world_units_per_pixel()),
+                                y: drag.photo_start.y as f64 - ((position.1 - drag.mouse_start.1) * viewport_geometry.world_units_per_pixel()),
+                            };
+
+                            photos[drag.photo_index].set_translation(new_translation);
+
+                        }
+
+
                     },
-                    Event::MouseWheel {delta, position} => {
+                    Event::MouseWheel {delta, position, ..} => {
                         info!("{:?}", delta);
 
                         let pixel_coords = PixelCoords{x: position.0, y: position.1};
-                        let screen_coords = viewport_geometry.convert_pixel_to_screen(pixel_coords);
+                        let screen_coords = viewport_geometry.convert_pixel_to_screen(&pixel_coords);
 
                         info!("cursor_screen {:?},{:?}", screen_coords.x, screen_coords.y);
 
                         //center the zoom action on the cursor
                         let to_cursor = viewport_geometry.convert_screen_to_world_at_origin(&screen_coords);
-                        camera.translate(&Vec3::new(to_cursor.x as f32, to_cursor.y as f32, 0.0));
+                        viewport_geometry.camera_position.x += to_cursor.x;
+                        viewport_geometry.camera_position.y += to_cursor.y;
 
                         //un-reverse direction in web mode (not sure why it's backwards)
-                        match (*delta > 0.0, cfg!(target_arch = "wasm32")) {
+                        match (delta.1 > 0.0, cfg!(target_arch = "wasm32")) {
                             (true, true) | (false, false) => viewport_geometry.zoom_out(),
                             (true, false) | (false, true) => viewport_geometry.zoom_in(),
                         }
 
                         //and translate back, at the new zoom level
                         let to_cursor = viewport_geometry.convert_screen_to_world_at_origin(&screen_coords);
-                        camera.translate(&Vec3::new(-to_cursor.x as f32, -to_cursor.y as f32, 0.0));
+                        viewport_geometry.camera_position.x -= to_cursor.x;
+                        viewport_geometry.camera_position.y -= to_cursor.y;
 
                         camera.set_orthographic_projection(viewport_geometry.width_in_world_units() as f32,
                                                            viewport_geometry.height_in_world_units() as f32,
                                                            10.0);
                     },
-                    Event::Key { state: _, kind: _ } => {
+                    Event::Key { state: _, kind: _ , ..} => {
 
-                    }
+                    },
+                    _ => {},
                 }
             }
 
-
-            let mut photos = [
-                Photo::from_loaded_image_mesh(&meshes[0]),
-                Photo::from_loaded_image_mesh(&meshes[1]),
-            ];
-            photos[1].set_translation(WorldCoords{x: 500.0, y: 0.0});
+            camera.set_view(
+                vec3(viewport_geometry.camera_position.x as f32, viewport_geometry.camera_position.y as f32, 5.0),
+                vec3(viewport_geometry.camera_position.x as f32, viewport_geometry.camera_position.y as f32, 0.0),
+                vec3(0.0, 1.0, 0.0)
+            );
 
 
             // draw
@@ -237,7 +288,7 @@ fn main() {
                         destination_alpha_multiplier: BlendMultiplierType::Zero,
                         ..Default::default()} ),
 
-                    depth_mask: false,
+                    write_mask: WriteMask::COLOR,
                     depth_test: DepthTestType::Always,
 
                     ..Default::default()

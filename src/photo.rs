@@ -1,24 +1,26 @@
+use std::rc::Rc;
+
 use three_d::*;
 pub use crate::LoadedImageMesh;
 use crate::viewport_geometry::WorldCoords;
 
-pub struct Photo<'a> {
+pub struct Photo {
 
-    pub loaded_image_mesh: &'a LoadedImageMesh,
+    pub loaded_image_mesh: Rc<LoadedImageMesh>,
     scale: Mat4,
     translate: Mat4, //in world coord units
 
 }
 
-impl<'a> Photo<'a> {
+impl Photo {
 
-    pub fn from_loaded_image_mesh(m: &LoadedImageMesh) -> Photo {
+    pub fn from_loaded_image_mesh(m: Rc<LoadedImageMesh>) -> Photo {
 
         let scale = Mat4::from_nonuniform_scale(m.texture_2d.width() as f32,m.texture_2d.height() as f32,1 as f32);
         let translate = Mat4::from_translation(Vec3::new(0f32, 0f32, 0f32));
 
         Photo {
-            loaded_image_mesh: &m,
+            loaded_image_mesh: m,
             scale,
             translate,
         }
@@ -33,6 +35,30 @@ impl<'a> Photo<'a> {
     pub fn set_translation(&mut self, center: WorldCoords) {
 
         self.translate = Mat4::from_translation(cgmath::Vector3::new(center.x as f32, center.y as f32, 0f32));
+    }
+
+    pub fn translation(&self) -> WorldCoords {
+
+        let translate_vec = self.translate * Vec4::new(0.0, 0.0, 0.0, 1.0);
+        WorldCoords { x: translate_vec.x as f64, y: translate_vec.y as f64 }
+    }
+
+    pub fn contains(&self, point: WorldCoords) -> bool {
+
+        let bottom_left_corner_world_coords = self.to_world() * Vec4::new(-0.5,-0.5,0.0, 1.0);
+        let   top_right_corner_world_coords = self.to_world() * Vec4::new( 0.5, 0.5,0.0, 1.0);
+
+        log::info!("contains: bottom left: {}, {}", bottom_left_corner_world_coords.x, bottom_left_corner_world_coords.y);
+        log::info!("            top right: {}, {}", top_right_corner_world_coords.x, top_right_corner_world_coords.y);
+        log::info!("                  scale: {:?}", self.scale);
+        log::info!("              translate: {:?}", self.translate);
+
+
+        bottom_left_corner_world_coords.x <= point.x as f32 &&
+        point.x as f32 <= top_right_corner_world_coords.x &&
+
+        bottom_left_corner_world_coords.y <= point.y as f32 &&
+        point.y as f32 <= top_right_corner_world_coords.y
     }
 }
 
