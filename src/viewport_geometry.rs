@@ -6,6 +6,7 @@ use std::ops::Add;
 
 #[derive(Debug, Copy, Clone)]
 pub struct ViewportGeometry {
+    pub camera_position: WorldCoords,
     pub zoom_scale: f64,
     pub zoom_value: u32,
     pub zoom_min: u32,
@@ -32,6 +33,7 @@ impl Error for PixelDimensionError {}
 impl ViewportGeometry {
 
     pub fn try_new(
+        camera_position: WorldCoords,
         zoom_scale: f64,
         zoom_value: u32,
         zoom_min: u32,
@@ -43,7 +45,7 @@ impl ViewportGeometry {
         let (width_in_pixels, height_in_pixels) = Self::check_pixel_dimensions(width_in_pixels, height_in_pixels)?;
 
         Ok( ViewportGeometry {
-            zoom_scale, zoom_value, zoom_min, zoom_max, width_in_pixels, height_in_pixels
+            camera_position, zoom_scale, zoom_value, zoom_min, zoom_max, width_in_pixels, height_in_pixels
         })
     }
 
@@ -101,6 +103,13 @@ impl ViewportGeometry {
         let y = 1_f64 - (position.y / self.height_in_pixels.get() as f64) - 0.5_f64;
 
         ScreenCoords{x,y}
+    }
+
+    pub fn pixels_to_world(&self, pixel_coords: &PixelCoords) -> WorldCoords {
+
+        let screen_coords = self.convert_pixel_to_screen(pixel_coords);
+
+        self.convert_screen_to_world_at_origin(&screen_coords) + self.camera_position
     }
 
     //remove/replace this?

@@ -65,6 +65,7 @@ fn main() {
     let context = window.gl();
 
     let mut viewport_geometry = ViewportGeometry::try_new(
+        WorldCoords{x:0.0, y:0.0},
         1_f64,
         10_u32,
         1_u32,
@@ -146,20 +147,6 @@ fn main() {
         let   color_program = MeshProgram::new(&context, include_str!(  "color.frag")).unwrap();
 
 
-        fn pixels_to_world(
-            pixel_coords: &PixelCoords,
-            viewport_geometry: &ViewportGeometry,
-            camera_position: &WorldCoords
-        ) -> WorldCoords {
-
-            let screen_coords = viewport_geometry.convert_pixel_to_screen(pixel_coords);
-
-            viewport_geometry.convert_screen_to_world_at_origin(&screen_coords) + *camera_position
-        }
-
-
-
-
         // main loop
 
         struct Pan {
@@ -167,7 +154,6 @@ fn main() {
             camera_start: Vec3,
         }
         let mut active_pan: Option<Pan> = None;
-        let mut camera_position = WorldCoords{x: 0.0, y: 0.0};
 
         struct Drag {
             mouse_start: (f64,f64),
@@ -190,11 +176,8 @@ fn main() {
                     Event::MouseClick {state, button, position, ..} => {
                         info!("MouseClick: mouse position: {:?} {:?}", position.0, position.1);
 
-                        let world_coords = pixels_to_world(
-                            &PixelCoords{x: position.0, y: position.1},
-                            &viewport_geometry,
-                            &camera_position,
-                        );
+                        let world_coords =
+                        viewport_geometry.pixels_to_world(&PixelCoords{x: position.0, y: position.1});
                         info!("  WorldCoords: {{{:?}, {:?}}}", world_coords.x, world_coords.y);
 
                         active_pan =
@@ -233,8 +216,8 @@ fn main() {
                         //    info!("mouse delta: {:?} {:?}", delta.0, delta.1);
                         //    info!("mouse position: {:?} {:?}", position.0, position.1);
 
-                            camera_position.x = pan.camera_start.x as f64 - ((position.0 - pan.mouse_start.0) * viewport_geometry.world_units_per_pixel());
-                            camera_position.y = pan.camera_start.y as f64 + ((position.1 - pan.mouse_start.1) * viewport_geometry.world_units_per_pixel());
+                            viewport_geometry.camera_position.x = pan.camera_start.x as f64 - ((position.0 - pan.mouse_start.0) * viewport_geometry.world_units_per_pixel());
+                            viewport_geometry.camera_position.y = pan.camera_start.y as f64 + ((position.1 - pan.mouse_start.1) * viewport_geometry.world_units_per_pixel());
                         }
 
                         if let Some(ref mut drag) = active_drag {
@@ -260,8 +243,8 @@ fn main() {
 
                         //center the zoom action on the cursor
                         let to_cursor = viewport_geometry.convert_screen_to_world_at_origin(&screen_coords);
-                        camera_position.x += to_cursor.x;
-                        camera_position.y += to_cursor.y;
+                        viewport_geometry.camera_position.x += to_cursor.x;
+                        viewport_geometry.camera_position.y += to_cursor.y;
 
                         //un-reverse direction in web mode (not sure why it's backwards)
                         match (delta.1 > 0.0, cfg!(target_arch = "wasm32")) {
@@ -271,8 +254,8 @@ fn main() {
 
                         //and translate back, at the new zoom level
                         let to_cursor = viewport_geometry.convert_screen_to_world_at_origin(&screen_coords);
-                        camera_position.x -= to_cursor.x;
-                        camera_position.y -= to_cursor.y;
+                        viewport_geometry.camera_position.x -= to_cursor.x;
+                        viewport_geometry.camera_position.y -= to_cursor.y;
 
                         camera.set_orthographic_projection(viewport_geometry.width_in_world_units() as f32,
                                                            viewport_geometry.height_in_world_units() as f32,
@@ -286,8 +269,8 @@ fn main() {
             }
 
             camera.set_view(
-                vec3(camera_position.x as f32, camera_position.y as f32, 5.0),
-                vec3(camera_position.x as f32, camera_position.y as f32, 0.0),
+                vec3(viewport_geometry.camera_position.x as f32, viewport_geometry.camera_position.y as f32, 5.0),
+                vec3(viewport_geometry.camera_position.x as f32, viewport_geometry.camera_position.y as f32, 0.0),
                 vec3(0.0, 1.0, 0.0)
             );
 
