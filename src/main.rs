@@ -93,10 +93,12 @@ fn main() {
 
     let filepaths = [
         pto_file,
-        "test_photos/test1.jpg",
-        "test_photos/test2.jpg",
-    //    "test_photos/DSC_9108_12_5.JPG",
-    //    "test_photos/DSC_9109_12_5.JPG",
+    //    "test_photos/test1_border.jpg",
+    //    "test_photos/test2_border.jpg",
+    //    "test_photos/test1.jpg",
+    //    "test_photos/test2.jpg",
+        "test_photos/DSC_9108_12_5.JPG",
+        "test_photos/DSC_9109_12_5.JPG",
     ];
 
     Loader::load(&filepaths, move |loaded|
@@ -145,11 +147,13 @@ fn main() {
 
         let color_mesh = color_mesh(&context);
 
-        let texture_program = MeshProgram::new(&context, include_str!("texture.frag")).unwrap();
-        let   color_program = MeshProgram::new(&context, include_str!(  "color.frag")).unwrap();
+        let        texture_program = MeshProgram::new(&context, include_str!(       "texture.frag")).unwrap();
+        let texture_dewarp_program = MeshProgram::new(&context, include_str!("texture_dewarp.frag")).unwrap();
+        let          color_program = MeshProgram::new(&context, include_str!(         "color.frag")).unwrap();
 
 
         // main loop
+        let mut use_dewarp_shader = false;
 
         struct Pan {
             mouse_start: (f64,f64),
@@ -269,8 +273,11 @@ fn main() {
                                                            viewport_geometry.height_in_world_units() as f32,
                                                            10.0).unwrap();
                     },
-                    Event::Key { state: _, kind: _ , ..} => {
-
+                    Event::Key { state, kind, ..} => {
+                        if *kind == Key::S && *state == State::Pressed
+                        {
+                            use_dewarp_shader = !use_dewarp_shader;
+                        }
                     },
                     _ => {},
                 }
@@ -304,12 +311,19 @@ fn main() {
                     };
 
 
-                    for m in &photos {
-                        texture_program.use_texture(&m.loaded_image_mesh.texture_2d, "tex").unwrap();
+                for m in &photos {
 
-                        m.loaded_image_mesh.mesh.render(&texture_program, render_states,
-                                                        frame_input.viewport, &m.to_world(), &camera)?;
-                    }
+                    let program = match use_dewarp_shader
+                    {
+                        true => &texture_dewarp_program,
+                        false => &texture_program,
+                    };
+
+                    program.use_texture(&m.loaded_image_mesh.texture_2d, "tex").unwrap();
+
+                    m.loaded_image_mesh.mesh.render(program, render_states,
+                                                   frame_input.viewport, &m.to_world(), &camera)?;
+                }
 
 
                     let points = &image0_control_points;
