@@ -13,48 +13,30 @@ void main()
 
     float aspect_x_to_y = 3.0/2.0;
 
+    float image_center_x = 0.5;
+    float image_center_y = 0.5;
 
-    float imageWidth = 1;
-    float imageHeight = 1;// / aspect_x_to_y;
-
-    float halfWidth = imageWidth * 0.5;
-    float halfHeight = imageHeight * 0.5;
-
-
-    if (strength == 0) { strength = 0.00001; }
-
-    //float correctionRadius = sqrt(imageWidth*imageWidth + imageHeight*imageHeight) / strength;
-    //float correctionRadius = sqrt((1/aspect_x_to_y)*(1/aspect_x_to_y) + 1) / strength;
-
-
-    float newX = uvs.x - halfWidth;
-    float newY = uvs.y - halfHeight;
+    float newX = uvs.x - image_center_x;
+    float newY = uvs.y - image_center_y;
 
     float X_asp = newX;
     float Y_asp = newY / aspect_x_to_y;
-
-    //float distance = sqrt(newX*newX + newY*newY);
     float distance = sqrt(X_asp*X_asp + Y_asp*Y_asp);
-    //float r = distance / correctionRadius;
+
     float r = distance * strength;
 
     float theta;
     if (r == 0) {theta = 1;}
     else        {theta = atan(r) / r ;}
 
-    float sourceX = halfWidth + theta * newX * zoom;
-    //float sourceY = halfHeight + theta * newY * zoom;
-    float sourceY = halfHeight + (theta * newY * zoom );// / aspect_x_to_y);
-    //float sourceY = halfHeight + theta * Y_asp * zoom;
-
-    //set color of pixel (x, y) to color of source image pixel at (sourceX, sourceY)
+    float sourceX = image_center_x + theta * newX * zoom;
+    float sourceY = image_center_y + theta * newY * zoom;
 
     outColor = texture(tex, vec2(sourceX, 1.0 - sourceY));
 
-    if (r > 0.2 && r < 0.21) { outColor.xyz = vec3(0,0,0); }
+    //debug rings
+    if (distance > 0.2 && distance < 0.21) { outColor.xyz = vec3(0,0,0); }
+    if (distance > 0.49 && distance < 0.5) { outColor.xyz = vec3(0,1,1); }
 
-    if (r > 0.99 && r < 1) { outColor.xyz = vec3(0,1,1); }
-
-    //outColor = texture(tex, vec2(uvs.x, 1.0 - uvs.y));
     outColor.a = 0.5;
 }
