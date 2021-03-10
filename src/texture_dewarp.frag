@@ -1,4 +1,5 @@
 
+uniform float strength;
 uniform sampler2D tex;
 
 in vec3 pos;
@@ -8,7 +9,7 @@ layout (location = 0) out vec4 outColor;
 
 void main()
 {
-    float strength = 0.5;
+    //float strength = 0.5;
     float zoom = 1.0;
 
     float aspect_x_to_y = 3.0/2.0;

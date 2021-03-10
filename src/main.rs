@@ -168,6 +168,8 @@ fn main() {
         }
         let mut active_drag: Option<Drag> = None;
 
+        let mut dewarp_strength: f32 = 0.0;
+
         window.render_loop(move |frame_input|
         {
             viewport_geometry.set_pixel_dimensions(frame_input.viewport.width, frame_input.viewport.height).unwrap();
@@ -276,7 +278,22 @@ fn main() {
                     Event::Key { state, kind, ..} => {
                         if *kind == Key::S && *state == State::Pressed
                         {
+                            redraw = true;
                             use_dewarp_shader = !use_dewarp_shader;
+                        }
+
+                        if *kind == Key::PageUp && *state == State::Pressed
+                        {
+                            redraw = true;
+                            dewarp_strength += 0.1;
+                            texture_dewarp_program.use_uniform_float("strength", &dewarp_strength).unwrap();
+                        }
+
+                        if *kind == Key::PageDown && *state == State::Pressed
+                        {
+                            redraw = true;
+                            dewarp_strength -= 0.1;
+                            texture_dewarp_program.use_uniform_float("strength", &dewarp_strength).unwrap();
                         }
                     },
                     _ => {},
@@ -289,6 +306,10 @@ fn main() {
                 vec3(0.0, 1.0, 0.0)
             ).unwrap();
 
+
+            //temp: window resize needs to trigger redraw, anything else?
+            redraw |= true;
+            //
 
             // draw
             if redraw {
