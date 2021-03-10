@@ -168,7 +168,8 @@ fn main() {
         {
             viewport_geometry.set_pixel_dimensions(frame_input.viewport.width, frame_input.viewport.height).unwrap();
 
-            camera.set_aspect(frame_input.viewport.aspect()).unwrap();
+            let mut redraw = frame_input.first_frame;
+            redraw |= camera.set_aspect(frame_input.viewport.aspect()).unwrap();
             camera.set_orthographic_projection(viewport_geometry.width_in_world_units() as f32,
                                                viewport_geometry.height_in_world_units() as f32,
                                                10.0).unwrap();
@@ -217,12 +218,15 @@ fn main() {
                         if let Some(ref mut pan) = active_pan {
                         //    info!("mouse delta: {:?} {:?}", delta.0, delta.1);
                         //    info!("mouse position: {:?} {:?}", position.0, position.1);
+                            redraw = true;
 
                             viewport_geometry.camera_position.x = pan.camera_start.x as f64 - ((position.0 - pan.mouse_start.0) * viewport_geometry.world_units_per_pixel());
                             viewport_geometry.camera_position.y = pan.camera_start.y as f64 + ((position.1 - pan.mouse_start.1) * viewport_geometry.world_units_per_pixel());
                         }
 
                         if let Some(ref mut drag) = active_drag {
+
+                            redraw = true;
 
                             let new_translation = WorldCoords {
                                 x: drag.photo_start.x as f64 + ((position.0 - drag.mouse_start.0) * viewport_geometry.world_units_per_pixel()),
@@ -237,6 +241,8 @@ fn main() {
                     },
                     Event::MouseWheel {delta, position, ..} => {
                         info!("{:?}", delta);
+
+                        redraw = true;
 
                         let pixel_coords = PixelCoords{x: position.0, y: position.1};
                         let screen_coords = viewport_geometry.convert_pixel_to_screen(&pixel_coords);
@@ -278,75 +284,76 @@ fn main() {
 
 
             // draw
-            Screen::write(&context, &ClearState::color_and_depth(0.2, 0.2, 0.2, 1.0, 1.0), || {
+            if redraw {
+                Screen::write(&context, &ClearState::color_and_depth(0.2, 0.2, 0.2, 1.0, 1.0), || {
+                    let render_states = RenderStates {
+                        cull: CullType::None,
 
-                let render_states = RenderStates {
-                    cull: CullType::None,
+                        blend: Some(BlendParameters {
+                            source_rgb_multiplier: BlendMultiplierType::SrcAlpha,
+                            source_alpha_multiplier: BlendMultiplierType::One,
+                            destination_rgb_multiplier: BlendMultiplierType::OneMinusSrcAlpha,
+                            destination_alpha_multiplier: BlendMultiplierType::Zero,
+                            ..Default::default()
+                        }),
 
-                    blend: Some( BlendParameters {
-                        source_rgb_multiplier: BlendMultiplierType::SrcAlpha,
-                        source_alpha_multiplier: BlendMultiplierType::One,
-                        destination_rgb_multiplier: BlendMultiplierType::OneMinusSrcAlpha,
-                        destination_alpha_multiplier: BlendMultiplierType::Zero,
-                        ..Default::default()} ),
+                        write_mask: WriteMask::COLOR,
+                        depth_test: DepthTestType::Always,
 
-                    write_mask: WriteMask::COLOR,
-                    depth_test: DepthTestType::Always,
+                        ..Default::default()
+                    };
 
-                    ..Default::default()
+
+                    for m in &photos {
+                        texture_program.use_texture(&m.loaded_image_mesh.texture_2d, "tex").unwrap();
+
+                        m.loaded_image_mesh.mesh.render(&texture_program, render_states,
+                                                        frame_input.viewport, &m.to_world(), &camera)?;
+                    }
+
+
+                    let points = &image0_control_points;
+
+                    for &v in points {
+                        let t1 = Mat4::from_nonuniform_scale(10.0, 10.0, 1.0);
+                        let t1 = Mat4::from_translation(Vec3::new(0.0, 0.0, 1.0)).concat(&t1);
+
+                        let t1 = convert_photo_px_to_world(v, &photos[0]).concat(&t1);
+
+
+                        color_program.use_uniform_vec4("color", &Vec4::new(0.8, 0.5, 0.2, 0.5)).unwrap();
+                        color_mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
+                    }
+
+                    let points = &image1_control_points;
+
+                    for &v in points {
+                        let t1 = Mat4::from_nonuniform_scale(10.0, 10.0, 1.0);
+                        let t1 = Mat4::from_angle_z(cgmath::Deg(45.0)).concat(&t1);
+                        let t1 = Mat4::from_translation(Vec3::new(0.0, 0.0, 1.0)).concat(&t1);
+
+                        let t1 = convert_photo_px_to_world(v, &photos[1]).concat(&t1);
+
+                        color_program.use_uniform_vec4("color", &Vec4::new(0.2, 0.8, 0.2, 0.5)).unwrap();
+                        color_mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
+                    }
+
+                    Ok(())
+                }).unwrap();
+
+
+                //set entire display buffer alpha to 1.0: prevents web browser pass-through transparency problem
+                let clear_alpha = ClearState {
+                    red: None,
+                    green: None,
+                    blue: None,
+                    alpha: Some(1.0),
+                    depth: None,
                 };
+                Screen::write(&context, &clear_alpha, || { Ok(()) }).unwrap();
+            }
 
-
-                for m in &photos {
-
-                    texture_program.use_texture(&m.loaded_image_mesh.texture_2d, "tex").unwrap();
-
-                    m.loaded_image_mesh.mesh.render(&texture_program, render_states,
-                                                   frame_input.viewport, &m.to_world(), &camera)?;
-                }
-
-
-                let points = &image0_control_points;
-
-                for &v in points {
-                    let t1 = Mat4::from_nonuniform_scale(10.0,10.0,1.0);
-                    let t1 = Mat4::from_translation(Vec3::new(0.0,0.0,1.0)).concat(&t1);
-
-                    let t1 = convert_photo_px_to_world(v, &photos[0]).concat(&t1);
-
-
-                    color_program.use_uniform_vec4("color", &Vec4::new(0.8,0.5, 0.2, 0.5)).unwrap();
-                    color_mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
-                }
-
-                let points = &image1_control_points;
-
-                for &v in points {
-                    let t1 = Mat4::from_nonuniform_scale(10.0,10.0,1.0);
-                    let t1 = Mat4::from_angle_z(cgmath::Deg(45.0)).concat(&t1);
-                    let t1 = Mat4::from_translation(Vec3::new(0.0,0.0,1.0)).concat(&t1);
-
-                    let t1 = convert_photo_px_to_world(v, &photos[1]).concat(&t1);
-
-                    color_program.use_uniform_vec4("color", &Vec4::new(0.2,0.8, 0.2, 0.5)).unwrap();
-                    color_mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
-                }
-
-                Ok(())
-            }).unwrap();
-
-
-            //set entire display buffer alpha to 1.0: prevents web browser pass-through transparency problem
-            let clear_alpha = ClearState {
-                red: None,
-                green: None,
-                blue: None,
-                alpha: Some(1.0),
-                depth: None,
-            };
-            Screen::write(&context, &clear_alpha, || {Ok(())}).unwrap();
-
-            FrameOutput {..Default::default()}
+            FrameOutput {swap_buffers: redraw, ..Default::default()}
 
         }).unwrap();
     });
