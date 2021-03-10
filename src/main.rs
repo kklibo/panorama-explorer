@@ -26,7 +26,7 @@ fn load_mesh_from_filepath(context: &Context, loaded: &mut Loaded, image_filepat
     };
     cpu_mesh.compute_normals();
 
-    let mut cpu_texture = Loader::get_texture(loaded, image_filepath).unwrap();
+    let mut cpu_texture = loaded.image(image_filepath).unwrap();
     cpu_texture.min_filter = Interpolation::Nearest;
     cpu_texture.mag_filter = Interpolation::Nearest;
     cpu_texture.mip_map_filter = None;
@@ -77,13 +77,15 @@ fn main() {
 
     // Renderer
     let mut camera =
+    CameraControl::new(
         Camera::new_orthographic(&context,
                                  vec3(0.0, 0.0, 5.0),
                                  vec3(0.0, 0.0, 0.0),
                                  vec3(0.0, 1.0, 0.0),
                                  viewport_geometry.width_in_world_units() as f32,
                                  viewport_geometry.height_in_world_units() as f32,
-                                 10.0);
+                                 10.0).unwrap()
+    );
 
 
 
@@ -100,7 +102,7 @@ fn main() {
     Loader::load(&filepaths, move |loaded|
     {
 
-        let file_u8 = Loader::get(loaded, pto_file).unwrap();
+        let file_u8 = loaded.bytes(pto_file).unwrap();
         let s = std::str::from_utf8(file_u8).unwrap();
 
         let pairs = read_pto::read_control_point_pairs(s).unwrap();
@@ -166,10 +168,10 @@ fn main() {
         {
             viewport_geometry.set_pixel_dimensions(frame_input.viewport.width, frame_input.viewport.height).unwrap();
 
-            camera.set_aspect(frame_input.viewport.aspect());
+            camera.set_aspect(frame_input.viewport.aspect()).unwrap();
             camera.set_orthographic_projection(viewport_geometry.width_in_world_units() as f32,
                                                viewport_geometry.height_in_world_units() as f32,
-                                               10.0);
+                                               10.0).unwrap();
 
             for event in frame_input.events.iter() {
                 match event {
@@ -259,7 +261,7 @@ fn main() {
 
                         camera.set_orthographic_projection(viewport_geometry.width_in_world_units() as f32,
                                                            viewport_geometry.height_in_world_units() as f32,
-                                                           10.0);
+                                                           10.0).unwrap();
                     },
                     Event::Key { state: _, kind: _ , ..} => {
 
@@ -272,7 +274,7 @@ fn main() {
                 vec3(viewport_geometry.camera_position.x as f32, viewport_geometry.camera_position.y as f32, 5.0),
                 vec3(viewport_geometry.camera_position.x as f32, viewport_geometry.camera_position.y as f32, 0.0),
                 vec3(0.0, 1.0, 0.0)
-            );
+            ).unwrap();
 
 
             // draw
@@ -313,7 +315,7 @@ fn main() {
                     let t1 = convert_photo_px_to_world(v, &photos[0]).concat(&t1);
 
 
-                    color_program.add_uniform_vec4("color", &Vec4::new(0.8,0.5, 0.2, 0.5)).unwrap();
+                    color_program.use_uniform_vec4("color", &Vec4::new(0.8,0.5, 0.2, 0.5)).unwrap();
                     color_mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
                 }
 
@@ -326,7 +328,7 @@ fn main() {
 
                     let t1 = convert_photo_px_to_world(v, &photos[1]).concat(&t1);
 
-                    color_program.add_uniform_vec4("color", &Vec4::new(0.2,0.8, 0.2, 0.5)).unwrap();
+                    color_program.use_uniform_vec4("color", &Vec4::new(0.2,0.8, 0.2, 0.5)).unwrap();
                     color_mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
                 }
 
@@ -343,6 +345,8 @@ fn main() {
                 depth: None,
             };
             Screen::write(&context, &clear_alpha, || {Ok(())}).unwrap();
+
+            FrameOutput {..Default::default()}
 
         }).unwrap();
     });
