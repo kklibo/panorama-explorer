@@ -87,6 +87,7 @@ fn main() {
                                  10.0).unwrap()
     );
 
+    let mut gui = three_d::GUI::new(&context).unwrap();
 
 
     let pto_file = "test_photos/test.pto";
@@ -170,7 +171,7 @@ fn main() {
 
         let mut dewarp_strength: f32 = 0.0;
 
-        window.render_loop(move |frame_input|
+        window.render_loop(move |mut frame_input|
         {
             viewport_geometry.set_pixel_dimensions(frame_input.viewport.width, frame_input.viewport.height).unwrap();
 
@@ -180,9 +181,27 @@ fn main() {
                                                viewport_geometry.height_in_world_units() as f32,
                                                10.0).unwrap();
 
+
+            let mut panel_width = frame_input.viewport.width;
+            redraw |= gui.update(&mut frame_input, |gui_context| {
+
+                use three_d::egui::*;
+                SidePanel::left("side_panel", panel_width as f32).show(gui_context, |ui| {
+                    ui.heading("panorama_tool");
+
+                    ui.label("Lens Correction");
+                    ui.add(Slider::f32(&mut dewarp_strength, 0.0..=10.0).text("dewarp strength"));
+
+                    ui.checkbox(&mut use_dewarp_shader, "use dewarp shader");
+
+                });
+                panel_width = (gui_context.used_size().x * gui_context.pixels_per_point()) as usize;
+            }).unwrap();
+
+
             for event in frame_input.events.iter() {
                 match event {
-                    Event::MouseClick {state, button, position, ..} => {
+                    Event::MouseClick {state, button, position, handled, ..} => {
                         info!("MouseClick: mouse position: {:?} {:?}", position.0, position.1);
 
                         let world_coords =
@@ -219,7 +238,7 @@ fn main() {
                         }
 
                     },
-                    Event::MouseMotion {position, ..} => {
+                    Event::MouseMotion {position, handled, ..} => {
 
                         if let Some(ref mut pan) = active_pan {
                         //    info!("mouse delta: {:?} {:?}", delta.0, delta.1);
@@ -245,7 +264,7 @@ fn main() {
 
 
                     },
-                    Event::MouseWheel {delta, position, ..} => {
+                    Event::MouseWheel {delta, position, handled, ..} => {
                         info!("{:?}", delta);
 
                         redraw = true;
@@ -275,7 +294,7 @@ fn main() {
                                                            viewport_geometry.height_in_world_units() as f32,
                                                            10.0).unwrap();
                     },
-                    Event::Key { state, kind, ..} => {
+                    Event::Key { state, kind, handled, ..} => {
                         if *kind == Key::S && *state == State::Pressed
                         {
                             redraw = true;
@@ -372,6 +391,8 @@ fn main() {
                         color_program.use_uniform_vec4("color", &Vec4::new(0.2, 0.8, 0.2, 0.5)).unwrap();
                         color_mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
                     }
+
+                    gui.render().unwrap();
 
                     Ok(())
                 }).unwrap();
