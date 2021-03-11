@@ -202,41 +202,53 @@ fn main() {
             for event in frame_input.events.iter() {
                 match event {
                     Event::MouseClick {state, button, position, handled, ..} => {
-                        info!("MouseClick: mouse position: {:?} {:?}", position.0, position.1);
+                        info!("MouseClick: {:?}", event);
 
                         let world_coords =
                         viewport_geometry.pixels_to_world(&PixelCoords{x: position.0, y: position.1});
-                        info!("  WorldCoords: {{{:?}, {:?}}}", world_coords.x, world_coords.y);
+                        info!("  WorldCoords: {:?}", world_coords);
 
-                        active_pan =
-                        match *button == MouseButton::Left && *state == State::Pressed {
-                            true => Some(Pan {
-                                mouse_start: *position,
-                                camera_start: camera.position().clone(),
-                            }),
-                            false => None,
-                        };
 
-                        if *button == MouseButton::Right && *state == State::Pressed {
+                        match *button {
 
-                            for (i, ph) in photos.iter().enumerate() {
-                                if ph.contains(world_coords) {
-                                    info!("clicked on photos[{}]", i);
+                            MouseButton::Left => active_pan =
+                                match *state {
+                                    State::Pressed => {
+                                        Some(Pan {
+                                            mouse_start: *position,
+                                            camera_start: camera.position().clone(),
+                                        })
+                                    },
+                                    State::Released => None,
+                                },
 
-                                    active_drag = Some(Drag {
-                                        mouse_start: *position,
-                                        photo_start: ph.translation(),
-                                        photo_index: i,
-                                    });
+                            MouseButton::Right =>
+                                match *state {
+                                    State::Pressed => {
 
-                                    info!("  translation: {:?}", ph.translation());
-                                }
-                            }
+                                        active_drag = None;
+
+                                        for (i, ph) in photos.iter().enumerate() {
+                                            if ph.contains(world_coords) {
+                                                info!("clicked on photos[{}]", i);
+
+                                                info!("  translation: {:?}", ph.translation());
+
+                                                active_drag =
+                                                Some(Drag {
+                                                    mouse_start: *position,
+                                                    photo_start: ph.translation(),
+                                                    photo_index: i,
+                                                });
+                                                break;
+                                            }
+                                        }
+                                    },
+                                    State::Released => active_drag =None,
+                                },
+
+                            _ => {},
                         }
-                        else {
-                            active_drag = None;
-                        }
-
                     },
                     Event::MouseMotion {position, handled, ..} => {
 
