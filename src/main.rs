@@ -204,6 +204,8 @@ fn main() {
                     Event::MouseClick {state, button, position, handled, ..} => {
                         info!("MouseClick: {:?}", event);
 
+                        if *handled {break};
+
                         let world_coords =
                         viewport_geometry.pixels_to_world(&PixelCoords{x: position.0, y: position.1});
                         info!("  WorldCoords: {:?}", world_coords);
@@ -251,6 +253,7 @@ fn main() {
                         }
                     },
                     Event::MouseMotion {position, handled, ..} => {
+                        if *handled {break};
 
                         if let Some(ref mut pan) = active_pan {
                         //    info!("mouse delta: {:?} {:?}", delta.0, delta.1);
@@ -278,6 +281,8 @@ fn main() {
                     },
                     Event::MouseWheel {delta, position, handled, ..} => {
                         info!("{:?}", delta);
+
+                        if *handled {break};
 
                         redraw = true;
 
@@ -307,6 +312,8 @@ fn main() {
                                                            10.0).unwrap();
                     },
                     Event::Key { state, kind, handled, ..} => {
+                        if *handled {break};
+
                         if *kind == Key::S && *state == State::Pressed
                         {
                             redraw = true;
