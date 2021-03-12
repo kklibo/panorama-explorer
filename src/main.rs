@@ -190,7 +190,14 @@ fn main() {
                     ui.heading("panorama_tool");
 
                     ui.label("Lens Correction");
-                    ui.add(Slider::f32(&mut dewarp_strength, 0.0..=10.0).text("dewarp strength"));
+
+                    let slider = Slider::f32(&mut dewarp_strength, 0.0..=10.0)
+                        .text("dewarp strength")
+                        .clamp_to_range(true);
+
+                    if ui.add(slider).changed() {
+                        texture_dewarp_program.use_uniform_float("strength", &dewarp_strength).unwrap();
+                    }
 
                     ui.checkbox(&mut use_dewarp_shader, "use dewarp shader");
 
