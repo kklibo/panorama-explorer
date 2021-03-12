@@ -148,13 +148,21 @@ fn main() {
 
         let color_mesh = color_mesh(&context);
 
-        let        texture_program = MeshProgram::new(&context, include_str!(       "texture.frag")).unwrap();
-        let texture_dewarp_program = MeshProgram::new(&context, include_str!("texture_dewarp.frag")).unwrap();
-        let          color_program = MeshProgram::new(&context, include_str!(         "color.frag")).unwrap();
+        let         texture_program = MeshProgram::new(&context, include_str!(        "texture.frag")).unwrap();
+        let  texture_dewarp_program = MeshProgram::new(&context, include_str!( "texture_dewarp.frag")).unwrap();
+        let texture_dewarp2_program = MeshProgram::new(&context, include_str!("texture_dewarp2.frag")).unwrap();
+        let           color_program = MeshProgram::new(&context, include_str!(          "color.frag")).unwrap();
 
 
         // main loop
-        let mut use_dewarp_shader = false;
+
+        #[derive(PartialEq, Debug)]
+        enum DewarpShader {
+            NoMorph,
+            Dewarp1,
+            Dewarp2,
+        }
+        let mut dewarp_shader = DewarpShader::NoMorph;
 
         struct Pan {
             mouse_start: (f64,f64),
@@ -173,6 +181,11 @@ fn main() {
 
         window.render_loop(move |mut frame_input|
         {
+            let update_shader_uniforms = |dewarp_strength: &f32| {
+                texture_dewarp_program.use_uniform_float("strength", dewarp_strength).unwrap();
+                texture_dewarp2_program.use_uniform_float("strength", dewarp_strength).unwrap();
+            };
+
             viewport_geometry.set_pixel_dimensions(frame_input.viewport.width, frame_input.viewport.height).unwrap();
 
             let mut redraw = frame_input.first_frame;
@@ -196,10 +209,13 @@ fn main() {
                         .clamp_to_range(true);
 
                     if ui.add(slider).changed() {
-                        texture_dewarp_program.use_uniform_float("strength", &dewarp_strength).unwrap();
+                        update_shader_uniforms(&dewarp_strength);
                     }
 
-                    ui.checkbox(&mut use_dewarp_shader, "use dewarp shader");
+                    ui.label("Dewarp Shader");
+                    ui.radio_value(&mut dewarp_shader, DewarpShader::NoMorph, format!("{:?}", DewarpShader::NoMorph));
+                    ui.radio_value(&mut dewarp_shader, DewarpShader::Dewarp1, format!("{:?}", DewarpShader::Dewarp1));
+                    ui.radio_value(&mut dewarp_shader, DewarpShader::Dewarp2, format!("{:?}", DewarpShader::Dewarp2));
 
                 });
                 panel_width = (gui_context.used_size().x * gui_context.pixels_per_point()) as usize;
@@ -324,21 +340,25 @@ fn main() {
                         if *kind == Key::S && *state == State::Pressed
                         {
                             redraw = true;
-                            use_dewarp_shader = !use_dewarp_shader;
+                            dewarp_shader = match dewarp_shader {
+                                DewarpShader::NoMorph => DewarpShader::Dewarp1,
+                                DewarpShader::Dewarp1 => DewarpShader::Dewarp2,
+                                DewarpShader::Dewarp2 => DewarpShader::NoMorph,
+                            };
                         }
 
                         if *kind == Key::PageUp && *state == State::Pressed
                         {
                             redraw = true;
                             dewarp_strength += 0.1;
-                            texture_dewarp_program.use_uniform_float("strength", &dewarp_strength).unwrap();
+                            update_shader_uniforms(&dewarp_strength);
                         }
 
                         if *kind == Key::PageDown && *state == State::Pressed
                         {
                             redraw = true;
                             dewarp_strength -= 0.1;
-                            texture_dewarp_program.use_uniform_float("strength", &dewarp_strength).unwrap();
+                            update_shader_uniforms(&dewarp_strength);
                         }
                     },
                     _ => {},
@@ -379,10 +399,11 @@ fn main() {
 
                 for m in &photos {
 
-                    let program = match use_dewarp_shader
+                    let program = match dewarp_shader
                     {
-                        true => &texture_dewarp_program,
-                        false => &texture_program,
+                        DewarpShader::NoMorph => &texture_program,
+                        DewarpShader::Dewarp1 => &texture_dewarp_program,
+                        DewarpShader::Dewarp2 => &texture_dewarp2_program,
                     };
 
                     program.use_texture(&m.loaded_image_mesh.texture_2d, "tex").unwrap();
