@@ -9,9 +9,6 @@ layout (location = 0) out vec4 outColor;
 
 void main()
 {
-    //float strength = 0.5;
-    float zoom = 1.0;
-
     float aspect_x_to_y = 3.0/2.0;
 
     float image_center_x = 0.5;
@@ -24,20 +21,43 @@ void main()
     float Y_asp = newY / aspect_x_to_y;
     float distance = sqrt(X_asp*X_asp + Y_asp*Y_asp);
 
-    float r = distance * strength;
+    float rU = distance;
+    float a = 0.0019098468424889991;
+    float b = -0.0028266879132016103;
+    float c = 0.009532148272374459;
 
-    float theta;
-    if (r == 0.0) {theta = 1.0;}
-    else        {theta = atan(r) / r ;}
 
-    float sourceX = image_center_x + theta * newX * zoom;
-    float sourceY = image_center_y + theta * newY * zoom;
+    //todo: rename, handle div by 0
 
-    outColor = texture(tex, vec2(sourceX, 1.0 - sourceY));
+    //temp radius compensation
+
+    rU *= 2;
+    rU *= aspect_x_to_y;
+
+
+    float rD = a * pow(rU,4) + b * pow(rU,3) + c * pow(rU,2) + (1 - a - b - c) * rU;
+
+    float ratio = rD / rU;
+
+
+    float xD = image_center_x + newX * ratio;
+    float yD = image_center_y + newY * ratio;
+
+    outColor = texture(tex, vec2(xD, 1.0 - yD));
 
     //debug rings
-    if (distance > 0.2 && distance < 0.21) { outColor.xyz = vec3(1,0,0); }
-    if (distance > 0.49 && distance < 0.5) { outColor.xyz = vec3(0,1,1); }
+    if (rU > 0.4 && rU < 0.41) { outColor.xyz = vec3(1,0,0); }
+    if (rU > 0.99 && rU < 1) { outColor.xyz = vec3(0,1,1); }
 
     outColor.a = 0.5;
 }
+
+/*
+
+focal="200" a="0.0019098468424889991" b="-0.0028266879132016103" c="0.009532148272374459"
+
+Rd = a * Ru^4 + b * Ru^3 + c * Ru^2 + (1 - a - b - c) * Ru
+"Ru is the radius of the undistorted pixel, Rd is the radius of the distorted pixel"
+
+"the largest circle that completely fits into an image is said to have radius=1.0"
+*/
