@@ -10,19 +10,17 @@ void main()
 {
     float aspect_x_to_y = 920.0/614.0;
 
-    float image_center_x = 0.5;
-    float image_center_y = 0.5;
+    vec2 image_center = vec2(0.5, 0.5);
 
     //image coordinates, relative to image center
-    float image_x = uvs.x - image_center_x;
-    float image_y = uvs.y - image_center_y;
+    vec2 image_coords = uvs - image_center;
 
     //aspect ratio correction for radius calculation
-    float x_asp = image_x * aspect_x_to_y;
-    float y_asp = image_y;
+    vec2 asp_coords = image_coords;
+         asp_coords.x *= aspect_x_to_y;
 
     //radius (from image center), Undistorted
-    float rU = sqrt(x_asp*x_asp + y_asp*y_asp);
+    float rU = distance(vec2(0), asp_coords);
 
     //ptlens/panotools-style polynomial distortion parameters
     float a = 0.0019098468424889991;
@@ -45,11 +43,11 @@ void main()
     if (rU != 0) { ratio = rD / rU; }
     else         { ratio = 0;       }
 
+    //distorted coordinates: apply new radius from center
+    vec2 distorted = image_center + image_coords * ratio;
 
-    float xD = image_center_x + image_x * ratio;
-    float yD = image_center_y + image_y * ratio;
-
-    outColor = texture(tex, vec2(xD, 1.0 - yD));
+    //sample texture (flip y-coord)
+    outColor = texture(tex, vec2(distorted.x, 1.0 - distorted.y));
 
     //debug rings
     if (rU > 0.49 && rU < 0.5) { outColor.xyz = vec3(1,0,0); }
@@ -58,8 +56,8 @@ void main()
     outColor.a = 0.5;
 
     //don't render texture samples from outside the image borders
-    if (xD < 0 || xD > 1) { outColor.xyzw = vec4(0,0,0,0); }
-    if (yD < 0 || yD > 1) { outColor.xyzw = vec4(0,0,0,0); }
+    if (distorted.x < 0 || distorted.x > 1) { outColor.xyzw = vec4(0,0,0,0); }
+    if (distorted.y < 0 || distorted.y > 1) { outColor.xyzw = vec4(0,0,0,0); }
 
 }
 
