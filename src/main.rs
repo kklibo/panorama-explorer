@@ -87,6 +87,7 @@ fn main() {
                                  10.0).unwrap()
     );
 
+    let mut gui = three_d::GUI::new(&context).unwrap();
 
 
     let pto_file = "test_photos/test.pto";
@@ -147,13 +148,21 @@ fn main() {
 
         let color_mesh = color_mesh(&context);
 
-        let        texture_program = MeshProgram::new(&context, include_str!(       "texture.frag")).unwrap();
-        let texture_dewarp_program = MeshProgram::new(&context, include_str!("texture_dewarp.frag")).unwrap();
-        let          color_program = MeshProgram::new(&context, include_str!(         "color.frag")).unwrap();
+        let         texture_program = MeshProgram::new(&context, include_str!(        "texture.frag")).unwrap();
+        let  texture_dewarp_program = MeshProgram::new(&context, include_str!( "texture_dewarp.frag")).unwrap();
+        let texture_dewarp2_program = MeshProgram::new(&context, include_str!("texture_dewarp2.frag")).unwrap();
+        let           color_program = MeshProgram::new(&context, include_str!(          "color.frag")).unwrap();
 
 
         // main loop
-        let mut use_dewarp_shader = false;
+
+        #[derive(PartialEq, Debug)]
+        enum DewarpShader {
+            NoMorph,
+            Dewarp1,
+            Dewarp2,
+        }
+        let mut dewarp_shader = DewarpShader::NoMorph;
 
         struct Pan {
             mouse_start: (f64,f64),
@@ -170,8 +179,12 @@ fn main() {
 
         let mut dewarp_strength: f32 = 0.0;
 
-        window.render_loop(move |frame_input|
+        window.render_loop(move |mut frame_input|
         {
+            let update_shader_uniforms = |dewarp_strength: &f32| {
+                texture_dewarp_program.use_uniform_float("strength", dewarp_strength).unwrap();
+            };
+
             viewport_geometry.set_pixel_dimensions(frame_input.viewport.width, frame_input.viewport.height).unwrap();
 
             let mut redraw = frame_input.first_frame;
@@ -180,46 +193,89 @@ fn main() {
                                                viewport_geometry.height_in_world_units() as f32,
                                                10.0).unwrap();
 
+
+            let mut panel_width = frame_input.viewport.width;
+            redraw |= gui.update(&mut frame_input, |gui_context| {
+
+                use three_d::egui::*;
+                SidePanel::left("side_panel", panel_width as f32).show(gui_context, |ui| {
+                    ui.heading("panorama_tool");
+
+                    ui.label("Lens Correction");
+
+                    let slider = Slider::f32(&mut dewarp_strength, 0.0..=10.0)
+                        .text("dewarp strength")
+                        .clamp_to_range(true);
+
+                    if ui.add(slider).changed() {
+                        update_shader_uniforms(&dewarp_strength);
+                    }
+
+                    ui.label("Dewarp Shader");
+                    ui.radio_value(&mut dewarp_shader, DewarpShader::NoMorph, format!("{:?}", DewarpShader::NoMorph));
+                    ui.radio_value(&mut dewarp_shader, DewarpShader::Dewarp1, format!("{:?}", DewarpShader::Dewarp1));
+                    ui.radio_value(&mut dewarp_shader, DewarpShader::Dewarp2, format!("{:?}", DewarpShader::Dewarp2));
+
+                });
+                panel_width = (gui_context.used_size().x * gui_context.pixels_per_point()) as usize;
+            }).unwrap();
+
+
             for event in frame_input.events.iter() {
                 match event {
-                    Event::MouseClick {state, button, position, ..} => {
-                        info!("MouseClick: mouse position: {:?} {:?}", position.0, position.1);
+                    Event::MouseClick {state, button, position, handled, ..} => {
+                        info!("MouseClick: {:?}", event);
+
+                        if *handled {break};
 
                         let world_coords =
                         viewport_geometry.pixels_to_world(&PixelCoords{x: position.0, y: position.1});
-                        info!("  WorldCoords: {{{:?}, {:?}}}", world_coords.x, world_coords.y);
+                        info!("  WorldCoords: {:?}", world_coords);
 
-                        active_pan =
-                        match *button == MouseButton::Left && *state == State::Pressed {
-                            true => Some(Pan {
-                                mouse_start: *position,
-                                camera_start: camera.position().clone(),
-                            }),
-                            false => None,
-                        };
 
-                        if *button == MouseButton::Right && *state == State::Pressed {
+                        match *button {
 
-                            for (i, ph) in photos.iter().enumerate() {
-                                if ph.contains(world_coords) {
-                                    info!("clicked on photos[{}]", i);
+                            MouseButton::Left => active_pan =
+                                match *state {
+                                    State::Pressed => {
+                                        Some(Pan {
+                                            mouse_start: *position,
+                                            camera_start: camera.position().clone(),
+                                        })
+                                    },
+                                    State::Released => None,
+                                },
 
-                                    active_drag = Some(Drag {
-                                        mouse_start: *position,
-                                        photo_start: ph.translation(),
-                                        photo_index: i,
-                                    });
+                            MouseButton::Right =>
+                                match *state {
+                                    State::Pressed => {
 
-                                    info!("  translation: {:?}", ph.translation());
-                                }
-                            }
+                                        active_drag = None;
+
+                                        for (i, ph) in photos.iter().enumerate() {
+                                            if ph.contains(world_coords) {
+                                                info!("clicked on photos[{}]", i);
+
+                                                info!("  translation: {:?}", ph.translation());
+
+                                                active_drag =
+                                                Some(Drag {
+                                                    mouse_start: *position,
+                                                    photo_start: ph.translation(),
+                                                    photo_index: i,
+                                                });
+                                                break;
+                                            }
+                                        }
+                                    },
+                                    State::Released => active_drag =None,
+                                },
+
+                            _ => {},
                         }
-                        else {
-                            active_drag = None;
-                        }
-
                     },
-                    Event::MouseMotion {position, ..} => {
+                    Event::MouseMotion {position, handled, ..} => {
+                        if *handled {break};
 
                         if let Some(ref mut pan) = active_pan {
                         //    info!("mouse delta: {:?} {:?}", delta.0, delta.1);
@@ -245,8 +301,10 @@ fn main() {
 
 
                     },
-                    Event::MouseWheel {delta, position, ..} => {
+                    Event::MouseWheel {delta, position, handled, ..} => {
                         info!("{:?}", delta);
+
+                        if *handled {break};
 
                         redraw = true;
 
@@ -275,25 +333,31 @@ fn main() {
                                                            viewport_geometry.height_in_world_units() as f32,
                                                            10.0).unwrap();
                     },
-                    Event::Key { state, kind, ..} => {
+                    Event::Key { state, kind, handled, ..} => {
+                        if *handled {break};
+
                         if *kind == Key::S && *state == State::Pressed
                         {
                             redraw = true;
-                            use_dewarp_shader = !use_dewarp_shader;
+                            dewarp_shader = match dewarp_shader {
+                                DewarpShader::NoMorph => DewarpShader::Dewarp1,
+                                DewarpShader::Dewarp1 => DewarpShader::Dewarp2,
+                                DewarpShader::Dewarp2 => DewarpShader::NoMorph,
+                            };
                         }
 
                         if *kind == Key::PageUp && *state == State::Pressed
                         {
                             redraw = true;
                             dewarp_strength += 0.1;
-                            texture_dewarp_program.use_uniform_float("strength", &dewarp_strength).unwrap();
+                            update_shader_uniforms(&dewarp_strength);
                         }
 
                         if *kind == Key::PageDown && *state == State::Pressed
                         {
                             redraw = true;
                             dewarp_strength -= 0.1;
-                            texture_dewarp_program.use_uniform_float("strength", &dewarp_strength).unwrap();
+                            update_shader_uniforms(&dewarp_strength);
                         }
                     },
                     _ => {},
@@ -334,10 +398,11 @@ fn main() {
 
                 for m in &photos {
 
-                    let program = match use_dewarp_shader
+                    let program = match dewarp_shader
                     {
-                        true => &texture_dewarp_program,
-                        false => &texture_program,
+                        DewarpShader::NoMorph => &texture_program,
+                        DewarpShader::Dewarp1 => &texture_dewarp_program,
+                        DewarpShader::Dewarp2 => &texture_dewarp2_program,
                     };
 
                     program.use_texture(&m.loaded_image_mesh.texture_2d, "tex").unwrap();
@@ -372,6 +437,8 @@ fn main() {
                         color_program.use_uniform_vec4("color", &Vec4::new(0.2, 0.8, 0.2, 0.5)).unwrap();
                         color_mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
                     }
+
+                    gui.render().unwrap();
 
                     Ok(())
                 }).unwrap();

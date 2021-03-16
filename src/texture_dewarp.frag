@@ -27,7 +27,7 @@ void main()
     float r = distance * strength;
 
     float theta;
-    if (r == 0) {theta = 1;}
+    if (r == 0.0) {theta = 1.0;}
     else        {theta = atan(r) / r ;}
 
     float sourceX = image_center_x + theta * newX * zoom;
