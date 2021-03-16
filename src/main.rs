@@ -183,7 +183,6 @@ fn main() {
         {
             let update_shader_uniforms = |dewarp_strength: &f32| {
                 texture_dewarp_program.use_uniform_float("strength", dewarp_strength).unwrap();
-                texture_dewarp2_program.use_uniform_float("strength", dewarp_strength).unwrap();
             };
 
             viewport_geometry.set_pixel_dimensions(frame_input.viewport.width, frame_input.viewport.height).unwrap();

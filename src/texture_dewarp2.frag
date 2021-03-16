@@ -1,5 +1,4 @@
 
-uniform float strength;
 uniform sampler2D tex;
 
 in vec3 pos;
@@ -9,47 +8,59 @@ layout (location = 0) out vec4 outColor;
 
 void main()
 {
-    float aspect_x_to_y = 3.0/2.0;
+    float aspect_x_to_y = 920.0/614.0;
 
     float image_center_x = 0.5;
     float image_center_y = 0.5;
 
-    float newX = uvs.x - image_center_x;
-    float newY = uvs.y - image_center_y;
+    //image coordinates, relative to image center
+    float image_x = uvs.x - image_center_x;
+    float image_y = uvs.y - image_center_y;
 
-    float X_asp = newX;
-    float Y_asp = newY / aspect_x_to_y;
-    float distance = sqrt(X_asp*X_asp + Y_asp*Y_asp);
+    //aspect ratio correction for radius calculation
+    float x_asp = image_x * aspect_x_to_y;
+    float y_asp = image_y;
 
-    float rU = distance;
+    //radius (from image center), Undistorted
+    float rU = sqrt(x_asp*x_asp + y_asp*y_asp);
+
+    //ptlens/panotools-style polynomial distortion parameters
     float a = 0.0019098468424889991;
     float b = -0.0028266879132016103;
     float c = 0.009532148272374459;
 
-
-    //todo: rename, handle div by 0
-
-    //temp radius compensation
-
+    //double the radius:
+    // ptlens/panotools-style algorithm expects texture range: |[-1,1]| = 2
+    // glsl uses |[0,1]| = 1
     rU *= 2;
-    rU *= aspect_x_to_y;
 
 
-    float rD = a * pow(rU,4) + b * pow(rU,3) + c * pow(rU,2) + (1 - a - b - c) * rU;
+    //radius (from image center), Distorted
+    float rD =
+    //ptlens/panotools-style polynomial distortion algorithm:
+    a * pow(rU,4) + b * pow(rU,3) + c * pow(rU,2) + (1 - a - b - c) * rU;
 
-    float ratio = rD / rU;
+
+    float ratio;
+    if (rU != 0) { ratio = rD / rU; }
+    else         { ratio = 0;       }
 
 
-    float xD = image_center_x + newX * ratio;
-    float yD = image_center_y + newY * ratio;
+    float xD = image_center_x + image_x * ratio;
+    float yD = image_center_y + image_y * ratio;
 
     outColor = texture(tex, vec2(xD, 1.0 - yD));
 
     //debug rings
-    if (rU > 0.4 && rU < 0.41) { outColor.xyz = vec3(1,0,0); }
-    if (rU > 0.99 && rU < 1) { outColor.xyz = vec3(0,1,1); }
+    if (rU > 0.49 && rU < 0.5) { outColor.xyz = vec3(1,0,0); }
+    if (rU > 0.99 && rU < 1)   { outColor.xyz = vec3(0,1,1); }
 
     outColor.a = 0.5;
+
+    //don't render texture samples from outside the image borders
+    if (xD < 0 || xD > 1) { outColor.xyzw = vec4(0,0,0,0); }
+    if (yD < 0 || yD > 1) { outColor.xyzw = vec4(0,0,0,0); }
+
 }
 
 /*
