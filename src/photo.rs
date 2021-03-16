@@ -3,6 +3,7 @@ use std::rc::Rc;
 use three_d::*;
 pub use crate::LoadedImageMesh;
 use crate::viewport_geometry::WorldCoords;
+use std::fmt::{Display,Formatter};
 
 pub struct Photo {
 
@@ -10,6 +11,14 @@ pub struct Photo {
     scale: Mat4,
     translate: Mat4, //in world coord units
 
+}
+
+impl Display for Photo {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "scale: {:?}", self.scale)?;
+        writeln!(f, "translate: {:?}", self.translate)?;
+        Ok(())
+    }
 }
 
 impl Photo {

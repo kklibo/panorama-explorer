@@ -179,6 +179,9 @@ fn main() {
 
         let mut dewarp_strength: f32 = 0.0;
 
+        let mut mouse_click_ui_text= "".to_string();
+        let mut photo_ui_text= "".to_string();
+
         window.render_loop(move |mut frame_input|
         {
             let update_shader_uniforms = |dewarp_strength: &f32| {
@@ -194,14 +197,15 @@ fn main() {
                                                10.0).unwrap();
 
 
-            let mut panel_width = frame_input.viewport.width;
+            let mut panel_width = frame_input.viewport.width / 10;
             redraw |= gui.update(&mut frame_input, |gui_context| {
 
                 use three_d::egui::*;
                 SidePanel::left("side_panel", panel_width as f32).show(gui_context, |ui| {
                     ui.heading("panorama_tool");
+                    ui.separator();
 
-                    ui.label("Lens Correction");
+                    ui.heading("Lens Correction");
 
                     let slider = Slider::f32(&mut dewarp_strength, 0.0..=10.0)
                         .text("dewarp strength")
@@ -210,11 +214,22 @@ fn main() {
                     if ui.add(slider).changed() {
                         update_shader_uniforms(&dewarp_strength);
                     }
+                    ui.separator();
 
-                    ui.label("Dewarp Shader");
+                    ui.heading("Dewarp Shader");
                     ui.radio_value(&mut dewarp_shader, DewarpShader::NoMorph, format!("{:?}", DewarpShader::NoMorph));
                     ui.radio_value(&mut dewarp_shader, DewarpShader::Dewarp1, format!("{:?}", DewarpShader::Dewarp1));
                     ui.radio_value(&mut dewarp_shader, DewarpShader::Dewarp2, format!("{:?}", DewarpShader::Dewarp2));
+                    ui.separator();
+
+                    ui.heading("Mouse Info");
+                    ui.label(&mouse_click_ui_text);
+                    ui.separator();
+
+                    ui.heading("Photo Info");
+                    ui.label(&photo_ui_text);
+                    ui.separator();
+
 
                 });
                 panel_width = (gui_context.used_size().x * gui_context.pixels_per_point()) as usize;
@@ -225,6 +240,7 @@ fn main() {
                 match event {
                     Event::MouseClick {state, button, position, handled, ..} => {
                         info!("MouseClick: {:?}", event);
+                        mouse_click_ui_text = format!("MouseClick: {:#?}", event);
 
                         if *handled {break};
 
@@ -257,6 +273,8 @@ fn main() {
                                                 info!("clicked on photos[{}]", i);
 
                                                 info!("  translation: {:?}", ph.translation());
+
+                                                photo_ui_text = ph.to_string();
 
                                                 active_drag =
                                                 Some(Drag {
