@@ -7,7 +7,7 @@ mod viewport_geometry;
 mod read_pto;
 mod photo;
 
-use viewport_geometry::{ViewportGeometry, PixelCoords, WorldCoords, ScreenCoords};
+use viewport_geometry::{ViewportGeometry, PixelCoords, WorldCoords};
 use photo::{Photo, convert_photo_px_to_world};
 
 pub struct LoadedImageMesh {
@@ -223,7 +223,11 @@ fn main() {
                         .text("angle")
                         .clamp_to_range(true);
                     if ui.add(slider).changed() {
-                        photos[1].set_rotation(debug_rotation);
+
+                        //temp test: reset to defaults before rotate_around_point
+                        photos[1].set_rotation(0.0);
+                        photos[1].set_translation(WorldCoords{x: 500.0, y: 0.0});
+                        photos[1].rotate_around_point(debug_rotation, WorldCoords{x:0.0,y:100.0});
                     }
                     ui.separator();
 
