@@ -20,7 +20,7 @@ void main()
          asp_coords.x *= aspect_x_to_y;
 
     //radius (from image center), Undistorted
-    float rU = distance(vec2(0), asp_coords);
+    float rU = distance(vec2(0.0), asp_coords);
 
     //ptlens/panotools-style polynomial distortion parameters
     float a = 0.0019098468424889991;
@@ -30,18 +30,18 @@ void main()
     //double the radius:
     // ptlens/panotools-style algorithm expects texture range: |[-1,1]| = 2
     // glsl uses |[0,1]| = 1
-    rU *= 2;
+    rU *= 2.0;
 
 
     //radius (from image center), Distorted
     float rD =
     //ptlens/panotools-style polynomial distortion algorithm:
-    a * pow(rU,4) + b * pow(rU,3) + c * pow(rU,2) + (1 - a - b - c) * rU;
+    a * pow(rU,4.0) + b * pow(rU,3.0) + c * pow(rU,2.0) + (1.0 - a - b - c) * rU;
 
 
     float ratio;
-    if (rU != 0) { ratio = rD / rU; }
-    else         { ratio = 0;       }
+    if (rU != 0.0) { ratio = rD / rU; }
+    else           { ratio = 0.0;     }
 
     //distorted coordinates: apply new radius from center
     vec2 distorted = image_center + image_coords * ratio;
@@ -51,13 +51,13 @@ void main()
 
     //debug rings
     if (rU > 0.49 && rU < 0.5) { outColor.xyz = vec3(1,0,0); }
-    if (rU > 0.99 && rU < 1)   { outColor.xyz = vec3(0,1,1); }
+    if (rU > 0.99 && rU < 1.0) { outColor.xyz = vec3(0,1,1); }
 
     outColor.a = 0.5;
 
     //don't render texture samples from outside the image borders
-    if (distorted.x < 0 || distorted.x > 1) { outColor.xyzw = vec4(0,0,0,0); }
-    if (distorted.y < 0 || distorted.y > 1) { outColor.xyzw = vec4(0,0,0,0); }
+    if (distorted.x < 0.0 || distorted.x > 1.0) { outColor.xyzw = vec4(0,0,0,0); }
+    if (distorted.y < 0.0 || distorted.y > 1.0) { outColor.xyzw = vec4(0,0,0,0); }
 
 }
 
