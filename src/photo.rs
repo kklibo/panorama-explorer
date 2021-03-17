@@ -1,15 +1,19 @@
 use std::rc::Rc;
+use std::fmt::{Display,Formatter};
 
 use three_d::*;
+use cgmath::{Deg, BaseFloat};
+
 pub use crate::LoadedImageMesh;
 use crate::viewport_geometry::WorldCoords;
-use std::fmt::{Display,Formatter};
+
 
 pub struct Photo {
 
     pub loaded_image_mesh: Rc<LoadedImageMesh>,
     scale: Mat4,
     translate: Mat4, //in world coord units
+    rotate: Mat4,
 
 }
 
@@ -27,17 +31,19 @@ impl Photo {
 
         let scale = Mat4::from_nonuniform_scale(m.texture_2d.width() as f32,m.texture_2d.height() as f32,1 as f32);
         let translate = Mat4::from_translation(Vec3::new(0f32, 0f32, 0f32));
+        let rotate = Mat4::from_angle_z(Deg(0.0));
 
         Photo {
             loaded_image_mesh: m,
             scale,
             translate,
+            rotate,
         }
     }
 
     pub fn to_world(&self) -> Mat4 {
 
-        self.translate.concat(&self.scale)
+        self.translate.concat(&self.rotate).concat(&self.scale)
 
     }
 
@@ -50,6 +56,11 @@ impl Photo {
 
         let translate_vec = self.translate * Vec4::new(0.0, 0.0, 0.0, 1.0);
         WorldCoords { x: translate_vec.x as f64, y: translate_vec.y as f64 }
+    }
+
+    pub fn set_rotation(&mut self, angle: f32) {
+
+        self.rotate= Mat4::from_angle_z(Deg(angle));
     }
 
     pub fn contains(&self, point: WorldCoords) -> bool {

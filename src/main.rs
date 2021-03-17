@@ -90,7 +90,8 @@ fn main() {
     let mut gui = three_d::GUI::new(&context).unwrap();
 
 
-    let pto_file = "test_photos/test.pto";
+    //let pto_file = "test_photos/test.pto";
+    let pto_file = "test_photos/DSC_9108_12_5 - DSC_9109_12_5.pto";
 
     let filepaths = [
         pto_file,
@@ -178,6 +179,7 @@ fn main() {
         let mut active_drag: Option<Drag> = None;
 
         let mut dewarp_strength: f32 = 0.0;
+        let mut debug_rotation: f32 = 0.0;
 
         let mut mouse_click_ui_text= "".to_string();
         let mut photo_ui_text= "".to_string();
@@ -213,6 +215,15 @@ fn main() {
 
                     if ui.add(slider).changed() {
                         update_shader_uniforms(&dewarp_strength);
+                    }
+                    ui.separator();
+
+                    ui.heading("rotation test");
+                    let slider = Slider::f32(&mut debug_rotation, -1.0..=1.0)
+                        .text("angle")
+                        .clamp_to_range(true);
+                    if ui.add(slider).changed() {
+                        photos[1].set_rotation(debug_rotation);
                     }
                     ui.separator();
 
