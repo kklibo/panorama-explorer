@@ -183,7 +183,14 @@ fn main() {
             translate_start: WorldCoords,
             rotate_start: f32,
         }
-        let mut rotation_point: Option<RotationPoint> = None;
+        let mut active_rotation_point: Option<RotationPoint> = None;
+
+        struct RotateDrag {
+            mouse_start: WorldCoords,
+            rotate_start: f32, //degrees
+            //photo_index: usize, //replace this
+        }
+        let mut active_rotate_drag: Option<RotateDrag> = None;
 
         #[derive(Debug, PartialEq)]
         enum MouseTool {
@@ -243,7 +250,7 @@ fn main() {
                         .clamp_to_range(true);
                     if ui.add(slider).changed() {
 
-                        if let Some(ref rp) = rotation_point {
+                        if let Some(ref rp) = active_rotation_point {
                             //reset to values from start of rotation before rotate_around_point
                             photos[1].set_rotation(rp.rotate_start);
                             photos[1].set_translation(rp.translate_start);
@@ -322,24 +329,36 @@ fn main() {
                                             }
                                         }
                                     },
-                                    State::Released => active_drag =None,
+                                    State::Released => active_drag = None,
                                 },
 
                             MouseButton::Left =>
                                 match active_mouse_tool {
                                     MouseTool::RotationPoint =>
-                                        match * state {
+                                        match *state {
                                             State::Pressed => {
-                                            rotation_point = Some(RotationPoint{
-                                            point: world_coords,
-                                            translate_start: photos[1].translation(),
-                                            rotate_start: photos[1].rotation(),
-                                            });
-                                            debug_rotation = 0.0;
+                                                active_rotation_point =
+                                                Some(RotationPoint {
+                                                    point: world_coords,
+                                                    translate_start: photos[1].translation(),
+                                                    rotate_start: photos[1].rotation(),
+                                                });
+                                                debug_rotation = 0.0;
                                             },
                                             _ => {},
                                         },
-                                    MouseTool::DragToRotate => {},
+                                    MouseTool::DragToRotate =>
+                                        match *state {
+                                            State::Pressed => {
+                                                active_rotate_drag =
+                                                Some(RotateDrag {
+                                                    mouse_start: world_coords,
+                                                    rotate_start: photos[1].rotation(),
+                                                });
+                                            },
+                                            State::Released => active_rotate_drag = None,
+                                        }
+
                                 }
 
 
@@ -367,6 +386,36 @@ fn main() {
                             };
 
                             photos[drag.photo_index].set_translation(new_translation);
+                        }
+
+                        if let Some(ref rotate_drag) = active_rotate_drag {
+
+                            if let Some(ref rp) = active_rotation_point {
+
+                                redraw = true;
+
+                                let world_coords =
+                                    viewport_geometry.pixels_to_world(&PixelCoords{x: position.0, y: position.1});
+
+                                let start = Vec2::new(rotate_drag.mouse_start.x as f32, rotate_drag.mouse_start.y as f32);
+                                let axis = Vec2::new(rp.point.x as f32, rp.point.y as f32);
+                                let drag = Vec2::new(world_coords.x as f32, world_coords.y as f32);
+
+                                let axis_to_start = start - axis;
+                                let axis_to_drag = drag - axis;
+
+                                let drag_angle: cgmath::Deg<f32> = axis_to_start.angle(axis_to_drag).into();
+                                let drag_angle = drag_angle.0;
+
+
+                                //reset to values from start of rotation before rotate_around_point
+                                photos[1].set_rotation(rp.rotate_start);
+                                photos[1].set_translation(rp.translate_start);
+                                photos[1].rotate_around_point(drag_angle, rp.point);
+
+                            }
+
+
 
                         }
 
@@ -509,7 +558,7 @@ fn main() {
                         color_mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
                     }
 
-                    if let Some(ref rp) = rotation_point {
+                    if let Some(ref rp) = active_rotation_point {
                         let t1 = Mat4::from_nonuniform_scale(10.0, 10.0, 1.0);
                         let t1 = Mat4::from_angle_z(cgmath::Deg(-45.0)).concat(&t1);
                         let t1 = Mat4::from_translation(Vec3::new(0.0, 0.0, 1.0)).concat(&t1);
