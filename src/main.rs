@@ -185,6 +185,13 @@ fn main() {
         }
         let mut rotation_point: Option<RotationPoint> = None;
 
+        #[derive(Debug, PartialEq)]
+        enum MouseTool {
+            RotationPoint,
+            DragToRotate,
+        }
+        let mut active_mouse_tool: MouseTool = MouseTool::RotationPoint;
+
         let mut dewarp_strength: f32 = 0.0;
         let mut debug_rotation: f32 = 0.0;
 
@@ -212,6 +219,11 @@ fn main() {
                 use three_d::egui::*;
                 SidePanel::left("side_panel", panel_width as f32).show(gui_context, |ui| {
                     ui.heading("panorama_tool");
+                    ui.separator();
+
+                    ui.heading("Left-click Tool:");
+                    ui.radio_value(&mut active_mouse_tool, MouseTool::RotationPoint, format!("{:?}", MouseTool::RotationPoint));
+                    ui.radio_value(&mut active_mouse_tool, MouseTool::DragToRotate,  format!("{:?}", MouseTool::DragToRotate ));
                     ui.separator();
 
                     ui.heading("Lens Correction");
@@ -275,7 +287,7 @@ fn main() {
 
                         match *button {
 
-                            MouseButton::Left => active_pan =
+                            MouseButton::Middle => active_pan =
                                 match *state {
                                     State::Pressed => {
                                         Some(Pan {
@@ -313,18 +325,22 @@ fn main() {
                                     State::Released => active_drag =None,
                                 },
 
-                            MouseButton::Middle =>
-                                match *state {
-                                    State::Pressed => {
-                                        rotation_point = Some(RotationPoint{
+                            MouseButton::Left =>
+                                match active_mouse_tool {
+                                    MouseTool::RotationPoint =>
+                                        match * state {
+                                            State::Pressed => {
+                                            rotation_point = Some(RotationPoint{
                                             point: world_coords,
                                             translate_start: photos[1].translation(),
                                             rotate_start: photos[1].rotation(),
-                                        });
-                                        debug_rotation = 0.0;
-                                    },
-                                    _ => {},
-                                },
+                                            });
+                                            debug_rotation = 0.0;
+                                            },
+                                            _ => {},
+                                        },
+                                    MouseTool::DragToRotate => {},
+                                }
 
 
                         }
