@@ -44,7 +44,7 @@ fn load_mesh_from_filepath(context: &Context, loaded: &mut Loaded, image_filepat
 fn color_mesh(context: &Context) -> Mesh {
 
     let mut cpu_mesh = CPUMesh {
-        positions: square_positions(),
+        positions: hourglass_positions(),
 
         ..Default::default()
     };
@@ -178,6 +178,8 @@ fn main() {
         }
         let mut active_drag: Option<Drag> = None;
 
+        let mut click_point: Option<WorldCoords> = None;
+
         let mut dewarp_strength: f32 = 0.0;
         let mut debug_rotation: f32 = 0.0;
 
@@ -224,10 +226,12 @@ fn main() {
                         .clamp_to_range(true);
                     if ui.add(slider).changed() {
 
-                        //temp test: reset to defaults before rotate_around_point
-                        photos[1].set_rotation(0.0);
-                        photos[1].set_translation(WorldCoords{x: 500.0, y: 0.0});
-                        photos[1].rotate_around_point(debug_rotation, WorldCoords{x:0.0,y:100.0});
+                        if let Some(click_point) = click_point {
+                            //temp test: reset to defaults before rotate_around_point
+                            photos[1].set_rotation(0.0);
+                            photos[1].set_translation(WorldCoords { x: 500.0, y: 0.0 });
+                            photos[1].rotate_around_point(debug_rotation, click_point);
+                        }
                     }
                     ui.separator();
 
@@ -304,7 +308,15 @@ fn main() {
                                     State::Released => active_drag =None,
                                 },
 
-                            _ => {},
+                            MouseButton::Middle =>
+                                match *state {
+                                    State::Pressed => {
+                                        click_point = Some(world_coords);
+                                    },
+                                    _ => {},
+                                },
+
+
                         }
                     },
                     Event::MouseMotion {position, handled, ..} => {
@@ -429,20 +441,20 @@ fn main() {
                     };
 
 
-                for m in &photos {
+                    for m in &photos {
 
-                    let program = match dewarp_shader
-                    {
-                        DewarpShader::NoMorph => &texture_program,
-                        DewarpShader::Dewarp1 => &texture_dewarp_program,
-                        DewarpShader::Dewarp2 => &texture_dewarp2_program,
-                    };
+                        let program = match dewarp_shader
+                        {
+                            DewarpShader::NoMorph => &texture_program,
+                            DewarpShader::Dewarp1 => &texture_dewarp_program,
+                            DewarpShader::Dewarp2 => &texture_dewarp2_program,
+                        };
 
-                    program.use_texture(&m.loaded_image_mesh.texture_2d, "tex").unwrap();
+                        program.use_texture(&m.loaded_image_mesh.texture_2d, "tex").unwrap();
 
-                    m.loaded_image_mesh.mesh.render(program, render_states,
-                                                   frame_input.viewport, &m.to_world(), &camera)?;
-                }
+                        m.loaded_image_mesh.mesh.render(program, render_states,
+                                                       frame_input.viewport, &m.to_world(), &camera)?;
+                    }
 
 
                     let points = &image0_control_points;
@@ -470,6 +482,18 @@ fn main() {
                         color_program.use_uniform_vec4("color", &Vec4::new(0.2, 0.8, 0.2, 0.5)).unwrap();
                         color_mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
                     }
+
+                    if let Some(ref v) = click_point {
+                        let t1 = Mat4::from_nonuniform_scale(10.0, 10.0, 1.0);
+                        let t1 = Mat4::from_angle_z(cgmath::Deg(-45.0)).concat(&t1);
+                        let t1 = Mat4::from_translation(Vec3::new(0.0, 0.0, 1.0)).concat(&t1);
+
+                        let t1 = Mat4::from_translation(Vec3::new(v.x as f32, v.y as f32, 0.0)).concat(&t1);
+
+                        color_program.use_uniform_vec4("color", &Vec4::new(0.8, 0.8, 0.2, 0.5)).unwrap();
+                        color_mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
+                    }
+
 
                     gui.render().unwrap();
 
@@ -513,5 +537,16 @@ fn square_uvs() -> Vec<f32> {
         1.0, 1.0,
         0.0, 1.0,
         0.0, 0.0,
+    ]
+}
+
+fn hourglass_positions() -> Vec<f32> {
+    vec![
+        -0.5, -0.5, 0.0,
+        0.5, -0.5, 0.0,
+        0.0, 0.0, 0.0,
+        0.5, 0.5, 0.0,
+        -0.5, 0.5, 0.0,
+        0.0, 0.0, 0.0,
     ]
 }
