@@ -63,6 +63,11 @@ impl Photo {
         self.rotate = Mat4::from_angle_z(Deg(angle));
     }
 
+    pub fn rotation(&self) -> f32 {
+        let angle: Deg<f32> = (self.rotate * Vec4::unit_x()).angle(Vec4::unit_x()).into();
+        angle.0
+    }
+
     //todo: refine this interface?
     ///adjusts translation and rotation relative to their current values
     pub fn rotate_around_point(&mut self, angle: f32, point: WorldCoords) {

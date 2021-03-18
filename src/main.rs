@@ -178,7 +178,12 @@ fn main() {
         }
         let mut active_drag: Option<Drag> = None;
 
-        let mut click_point: Option<WorldCoords> = None;
+        struct RotationPoint {
+            point: WorldCoords,
+            translate_start: WorldCoords,
+            rotate_start: f32,
+        }
+        let mut rotation_point: Option<RotationPoint> = None;
 
         let mut dewarp_strength: f32 = 0.0;
         let mut debug_rotation: f32 = 0.0;
@@ -226,11 +231,11 @@ fn main() {
                         .clamp_to_range(true);
                     if ui.add(slider).changed() {
 
-                        if let Some(click_point) = click_point {
-                            //temp test: reset to defaults before rotate_around_point
-                            photos[1].set_rotation(0.0);
-                            photos[1].set_translation(WorldCoords { x: 500.0, y: 0.0 });
-                            photos[1].rotate_around_point(debug_rotation, click_point);
+                        if let Some(ref rp) = rotation_point {
+                            //reset to values from start of rotation before rotate_around_point
+                            photos[1].set_rotation(rp.rotate_start);
+                            photos[1].set_translation(rp.translate_start);
+                            photos[1].rotate_around_point(debug_rotation, rp.point);
                         }
                     }
                     ui.separator();
@@ -311,7 +316,12 @@ fn main() {
                             MouseButton::Middle =>
                                 match *state {
                                     State::Pressed => {
-                                        click_point = Some(world_coords);
+                                        rotation_point = Some(RotationPoint{
+                                            point: world_coords,
+                                            translate_start: photos[1].translation(),
+                                            rotate_start: photos[1].rotation(),
+                                        });
+                                        debug_rotation = 0.0;
                                     },
                                     _ => {},
                                 },
@@ -483,12 +493,12 @@ fn main() {
                         color_mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
                     }
 
-                    if let Some(ref v) = click_point {
+                    if let Some(ref rp) = rotation_point {
                         let t1 = Mat4::from_nonuniform_scale(10.0, 10.0, 1.0);
                         let t1 = Mat4::from_angle_z(cgmath::Deg(-45.0)).concat(&t1);
                         let t1 = Mat4::from_translation(Vec3::new(0.0, 0.0, 1.0)).concat(&t1);
 
-                        let t1 = Mat4::from_translation(Vec3::new(v.x as f32, v.y as f32, 0.0)).concat(&t1);
+                        let t1 = Mat4::from_translation(Vec3::new(rp.point.x as f32, rp.point.y as f32, 0.0)).concat(&t1);
 
                         color_program.use_uniform_vec4("color", &Vec4::new(0.8, 0.8, 0.2, 0.5)).unwrap();
                         color_mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
