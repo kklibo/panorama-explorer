@@ -14,6 +14,7 @@ use three_d::io::{Loader, Loaded};
 use three_d::camera::{Camera, CameraControl};
 use three_d::math::{Vec2, Vec3, vec3, Vec4, Mat4};
 use three_d::{Transform, InnerSpace};
+use cgmath::prelude::SquareMatrix;
 
 use log::info;
 
@@ -201,6 +202,7 @@ fn main() {
 
         struct RotateDrag {
             mouse_start: WorldCoords,
+            mouse_coords: WorldCoords,
             rotate_start: f32, //degrees
             //photo_index: usize, //replace this
         }
@@ -237,7 +239,7 @@ fn main() {
             let mut panel_width = frame_input.viewport.width / 10;
             redraw |= gui.update(&mut frame_input, |gui_context| {
 
-                use three_d::egui::*;
+                use three_d::egui_gui::egui::{SidePanel, Slider};
                 SidePanel::left("side_panel", panel_width as f32).show(gui_context, |ui| {
                     ui.heading("panorama_tool");
                     ui.separator();
@@ -367,6 +369,7 @@ fn main() {
                                                 active_rotate_drag =
                                                 Some(RotateDrag {
                                                     mouse_start: world_coords,
+                                                    mouse_coords: world_coords,
                                                     rotate_start: photos[1].rotation(),
                                                 });
                                             },
@@ -402,7 +405,7 @@ fn main() {
                             photos[drag.photo_index].set_translation(new_translation);
                         }
 
-                        if let Some(ref rotate_drag) = active_rotate_drag {
+                        if let Some(ref mut rotate_drag) = active_rotate_drag {
 
                             if let Some(ref rp) = active_rotation_point {
 
@@ -410,6 +413,8 @@ fn main() {
 
                                 let world_coords =
                                     viewport_geometry.pixels_to_world(&PixelCoords{x: position.0, y: position.1});
+
+                                rotate_drag.mouse_coords = world_coords; //update current mouse coords
 
                                 let start = Vec2::new(rotate_drag.mouse_start.x as f32, rotate_drag.mouse_start.y as f32);
                                 let axis = Vec2::new(rp.point.x as f32, rp.point.y as f32);
@@ -421,19 +426,12 @@ fn main() {
                                 let drag_angle: cgmath::Deg<f32> = axis_to_start.angle(axis_to_drag).into();
                                 let drag_angle = drag_angle.0;
 
-
                                 //reset to values from start of rotation before rotate_around_point
                                 photos[1].set_rotation(rp.rotate_start);
                                 photos[1].set_translation(rp.translate_start);
                                 photos[1].rotate_around_point(drag_angle, rp.point);
-
                             }
-
-
-
                         }
-
-
                     },
                     Event::MouseWheel {delta, position, handled, ..} => {
                         info!("{:?}", delta);
@@ -583,6 +581,29 @@ fn main() {
                         color_mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
                     }
 
+                    if let Some(ref rp) = active_rotation_point {
+                        if let Some(ref rd) = active_rotate_drag {
+
+                            //draw triangle to indicate dragged rotation angle
+
+                            let mut cpu_mesh = CPUMesh {
+                                positions: vec![
+                                    rp.point.x as f32, rp.point.y as f32, 0.0,
+                                    rd.mouse_start.x as f32, rd.mouse_start.y as f32, 0.0,
+                                    rd.mouse_coords.x as f32, rd.mouse_coords.y as f32, 0.0,
+                                ],
+
+                                ..Default::default()
+                            };
+
+                            let mesh = Mesh::new(&context, &cpu_mesh).unwrap();
+
+                            let t1 = Mat4::identity();
+
+                            color_program.use_uniform_vec4("color", &Vec4::new(0.2, 0.2, 0.8, 0.5)).unwrap();
+                            mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
+                        }
+                    }
 
                     gui.render().unwrap();
 
