@@ -1,13 +1,27 @@
 use std::rc::Rc;
 
-use three_d::*;
+use three_d::window::Window;
+use three_d::context::Context;
+use three_d::definition::cpu_texture::{Interpolation, Wrapping};
+use three_d::definition::cpu_mesh::CPUMesh;
+use three_d::frame::input::{Event, MouseButton, State, Key};
+use three_d::frame::output::FrameOutput;
+use three_d::core::render_states::{CullType, BlendMultiplierType, BlendParameters, WriteMask, DepthTestType, RenderStates};
+use three_d::core::render_target::{Screen, ClearState};
+use three_d::core::texture::Texture2D;
+use three_d::object::{Mesh, MeshProgram};
+use three_d::io::{Loader, Loaded};
+use three_d::camera::{Camera, CameraControl};
+use three_d::math::{Vec2, Vec3, vec3, Vec4, Mat4};
+use three_d::{Transform, InnerSpace};
+
 use log::info;
 
 mod viewport_geometry;
 mod read_pto;
 mod photo;
 
-use viewport_geometry::{ViewportGeometry, PixelCoords, WorldCoords, ScreenCoords};
+use viewport_geometry::{ViewportGeometry, PixelCoords, WorldCoords};
 use photo::{Photo, convert_photo_px_to_world};
 
 pub struct LoadedImageMesh {
@@ -44,7 +58,7 @@ fn load_mesh_from_filepath(context: &Context, loaded: &mut Loaded, image_filepat
 fn color_mesh(context: &Context) -> Mesh {
 
     let mut cpu_mesh = CPUMesh {
-        positions: square_positions(),
+        positions: hourglass_positions(),
 
         ..Default::default()
     };
@@ -90,7 +104,8 @@ fn main() {
     let mut gui = three_d::GUI::new(&context).unwrap();
 
 
-    let pto_file = "test_photos/test.pto";
+    //let pto_file = "test_photos/test.pto";
+    let pto_file = "test_photos/DSC_9108_12_5 - DSC_9109_12_5.pto";
 
     let filepaths = [
         pto_file,
@@ -177,7 +192,32 @@ fn main() {
         }
         let mut active_drag: Option<Drag> = None;
 
+        struct RotationPoint {
+            point: WorldCoords,
+            translate_start: WorldCoords,
+            rotate_start: f32,
+        }
+        let mut active_rotation_point: Option<RotationPoint> = None;
+
+        struct RotateDrag {
+            mouse_start: WorldCoords,
+            rotate_start: f32, //degrees
+            //photo_index: usize, //replace this
+        }
+        let mut active_rotate_drag: Option<RotateDrag> = None;
+
+        #[derive(Debug, PartialEq)]
+        enum MouseTool {
+            RotationPoint,
+            DragToRotate,
+        }
+        let mut active_mouse_tool: MouseTool = MouseTool::RotationPoint;
+
         let mut dewarp_strength: f32 = 0.0;
+        let mut debug_rotation: f32 = 0.0;
+
+        let mut mouse_click_ui_text= "".to_string();
+        let mut photo_ui_text= "".to_string();
 
         window.render_loop(move |mut frame_input|
         {
@@ -194,14 +234,20 @@ fn main() {
                                                10.0).unwrap();
 
 
-            let mut panel_width = frame_input.viewport.width;
+            let mut panel_width = frame_input.viewport.width / 10;
             redraw |= gui.update(&mut frame_input, |gui_context| {
 
                 use three_d::egui::*;
                 SidePanel::left("side_panel", panel_width as f32).show(gui_context, |ui| {
                     ui.heading("panorama_tool");
+                    ui.separator();
 
-                    ui.label("Lens Correction");
+                    ui.heading("Left-click Tool:");
+                    ui.radio_value(&mut active_mouse_tool, MouseTool::RotationPoint, format!("{:?}", MouseTool::RotationPoint));
+                    ui.radio_value(&mut active_mouse_tool, MouseTool::DragToRotate,  format!("{:?}", MouseTool::DragToRotate ));
+                    ui.separator();
+
+                    ui.heading("Lens Correction");
 
                     let slider = Slider::f32(&mut dewarp_strength, 0.0..=10.0)
                         .text("dewarp strength")
@@ -210,11 +256,37 @@ fn main() {
                     if ui.add(slider).changed() {
                         update_shader_uniforms(&dewarp_strength);
                     }
+                    ui.separator();
 
-                    ui.label("Dewarp Shader");
+                    ui.heading("rotation test");
+                    let slider = Slider::f32(&mut debug_rotation, -1.0..=1.0)
+                        .text("angle")
+                        .clamp_to_range(true);
+                    if ui.add(slider).changed() {
+
+                        if let Some(ref rp) = active_rotation_point {
+                            //reset to values from start of rotation before rotate_around_point
+                            photos[1].set_rotation(rp.rotate_start);
+                            photos[1].set_translation(rp.translate_start);
+                            photos[1].rotate_around_point(debug_rotation, rp.point);
+                        }
+                    }
+                    ui.separator();
+
+                    ui.heading("Dewarp Shader");
                     ui.radio_value(&mut dewarp_shader, DewarpShader::NoMorph, format!("{:?}", DewarpShader::NoMorph));
                     ui.radio_value(&mut dewarp_shader, DewarpShader::Dewarp1, format!("{:?}", DewarpShader::Dewarp1));
                     ui.radio_value(&mut dewarp_shader, DewarpShader::Dewarp2, format!("{:?}", DewarpShader::Dewarp2));
+                    ui.separator();
+
+                    ui.heading("Mouse Info");
+                    ui.label(&mouse_click_ui_text);
+                    ui.separator();
+
+                    ui.heading("Photo Info");
+                    ui.label(&photo_ui_text);
+                    ui.separator();
+
 
                 });
                 panel_width = (gui_context.used_size().x * gui_context.pixels_per_point()) as usize;
@@ -225,6 +297,7 @@ fn main() {
                 match event {
                     Event::MouseClick {state, button, position, handled, ..} => {
                         info!("MouseClick: {:?}", event);
+                        mouse_click_ui_text = format!("MouseClick: {:#?}", event);
 
                         if *handled {break};
 
@@ -235,7 +308,7 @@ fn main() {
 
                         match *button {
 
-                            MouseButton::Left => active_pan =
+                            MouseButton::Middle => active_pan =
                                 match *state {
                                     State::Pressed => {
                                         Some(Pan {
@@ -258,6 +331,8 @@ fn main() {
 
                                                 info!("  translation: {:?}", ph.translation());
 
+                                                photo_ui_text = ph.to_string();
+
                                                 active_drag =
                                                 Some(Drag {
                                                     mouse_start: *position,
@@ -268,10 +343,39 @@ fn main() {
                                             }
                                         }
                                     },
-                                    State::Released => active_drag =None,
+                                    State::Released => active_drag = None,
                                 },
 
-                            _ => {},
+                            MouseButton::Left =>
+                                match active_mouse_tool {
+                                    MouseTool::RotationPoint =>
+                                        match *state {
+                                            State::Pressed => {
+                                                active_rotation_point =
+                                                Some(RotationPoint {
+                                                    point: world_coords,
+                                                    translate_start: photos[1].translation(),
+                                                    rotate_start: photos[1].rotation(),
+                                                });
+                                                debug_rotation = 0.0;
+                                            },
+                                            _ => {},
+                                        },
+                                    MouseTool::DragToRotate =>
+                                        match *state {
+                                            State::Pressed => {
+                                                active_rotate_drag =
+                                                Some(RotateDrag {
+                                                    mouse_start: world_coords,
+                                                    rotate_start: photos[1].rotation(),
+                                                });
+                                            },
+                                            State::Released => active_rotate_drag = None,
+                                        }
+
+                                }
+
+
                         }
                     },
                     Event::MouseMotion {position, handled, ..} => {
@@ -296,6 +400,36 @@ fn main() {
                             };
 
                             photos[drag.photo_index].set_translation(new_translation);
+                        }
+
+                        if let Some(ref rotate_drag) = active_rotate_drag {
+
+                            if let Some(ref rp) = active_rotation_point {
+
+                                redraw = true;
+
+                                let world_coords =
+                                    viewport_geometry.pixels_to_world(&PixelCoords{x: position.0, y: position.1});
+
+                                let start = Vec2::new(rotate_drag.mouse_start.x as f32, rotate_drag.mouse_start.y as f32);
+                                let axis = Vec2::new(rp.point.x as f32, rp.point.y as f32);
+                                let drag = Vec2::new(world_coords.x as f32, world_coords.y as f32);
+
+                                let axis_to_start = start - axis;
+                                let axis_to_drag = drag - axis;
+
+                                let drag_angle: cgmath::Deg<f32> = axis_to_start.angle(axis_to_drag).into();
+                                let drag_angle = drag_angle.0;
+
+
+                                //reset to values from start of rotation before rotate_around_point
+                                photos[1].set_rotation(rp.rotate_start);
+                                photos[1].set_translation(rp.translate_start);
+                                photos[1].rotate_around_point(drag_angle, rp.point);
+
+                            }
+
+
 
                         }
 
@@ -396,20 +530,20 @@ fn main() {
                     };
 
 
-                for m in &photos {
+                    for m in &photos {
 
-                    let program = match dewarp_shader
-                    {
-                        DewarpShader::NoMorph => &texture_program,
-                        DewarpShader::Dewarp1 => &texture_dewarp_program,
-                        DewarpShader::Dewarp2 => &texture_dewarp2_program,
-                    };
+                        let program = match dewarp_shader
+                        {
+                            DewarpShader::NoMorph => &texture_program,
+                            DewarpShader::Dewarp1 => &texture_dewarp_program,
+                            DewarpShader::Dewarp2 => &texture_dewarp2_program,
+                        };
 
-                    program.use_texture(&m.loaded_image_mesh.texture_2d, "tex").unwrap();
+                        program.use_texture(&m.loaded_image_mesh.texture_2d, "tex").unwrap();
 
-                    m.loaded_image_mesh.mesh.render(program, render_states,
-                                                   frame_input.viewport, &m.to_world(), &camera)?;
-                }
+                        m.loaded_image_mesh.mesh.render(program, render_states,
+                                                       frame_input.viewport, &m.to_world(), &camera)?;
+                    }
 
 
                     let points = &image0_control_points;
@@ -437,6 +571,18 @@ fn main() {
                         color_program.use_uniform_vec4("color", &Vec4::new(0.2, 0.8, 0.2, 0.5)).unwrap();
                         color_mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
                     }
+
+                    if let Some(ref rp) = active_rotation_point {
+                        let t1 = Mat4::from_nonuniform_scale(10.0, 10.0, 1.0);
+                        let t1 = Mat4::from_angle_z(cgmath::Deg(-45.0)).concat(&t1);
+                        let t1 = Mat4::from_translation(Vec3::new(0.0, 0.0, 1.0)).concat(&t1);
+
+                        let t1 = Mat4::from_translation(Vec3::new(rp.point.x as f32, rp.point.y as f32, 0.0)).concat(&t1);
+
+                        color_program.use_uniform_vec4("color", &Vec4::new(0.8, 0.8, 0.2, 0.5)).unwrap();
+                        color_mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
+                    }
+
 
                     gui.render().unwrap();
 
@@ -480,5 +626,16 @@ fn square_uvs() -> Vec<f32> {
         1.0, 1.0,
         0.0, 1.0,
         0.0, 0.0,
+    ]
+}
+
+fn hourglass_positions() -> Vec<f32> {
+    vec![
+        -0.5, -0.5, 0.0,
+        0.5, -0.5, 0.0,
+        0.0, 0.0, 0.0,
+        0.5, 0.5, 0.0,
+        -0.5, 0.5, 0.0,
+        0.0, 0.0, 0.0,
     ]
 }
