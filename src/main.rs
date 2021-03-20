@@ -172,7 +172,7 @@ fn main() {
 
 
         // main loop
-//
+/*//
         #[derive(PartialEq, Debug)]
         enum DewarpShader {
             NoMorph,
@@ -221,9 +221,13 @@ fn main() {
 
         let mut mouse_click_ui_text= "".to_string();
         let mut photo_ui_text= "".to_string();
-//
+*///
+        let mut control_state = control_state::ControlState::default();
+
         window.render_loop(move |mut frame_input|
         {
+            use control_state::*;
+
             let update_shader_uniforms = |dewarp_strength: &f32| {
                 texture_dewarp_program.use_uniform_float("strength", dewarp_strength).unwrap();
             };
@@ -246,48 +250,48 @@ fn main() {
                     ui.separator();
 
                     ui.heading("Left-click Tool:");
-                    ui.radio_value(&mut active_mouse_tool, MouseTool::RotationPoint, format!("{:?}", MouseTool::RotationPoint));
-                    ui.radio_value(&mut active_mouse_tool, MouseTool::DragToRotate,  format!("{:?}", MouseTool::DragToRotate ));
+                    ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::RotationPoint, format!("{:?}", MouseTool::RotationPoint));
+                    ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::DragToRotate,  format!("{:?}", MouseTool::DragToRotate ));
                     ui.separator();
 
                     ui.heading("Lens Correction");
 
-                    let slider = Slider::f32(&mut dewarp_strength, 0.0..=10.0)
+                    let slider = Slider::f32(&mut control_state.dewarp_strength, 0.0..=10.0)
                         .text("dewarp strength")
                         .clamp_to_range(true);
 
                     if ui.add(slider).changed() {
-                        update_shader_uniforms(&dewarp_strength);
+                        update_shader_uniforms(&control_state.dewarp_strength);
                     }
                     ui.separator();
 
                     ui.heading("rotation test");
-                    let slider = Slider::f32(&mut debug_rotation, -1.0..=1.0)
+                    let slider = Slider::f32(&mut control_state.debug_rotation, -1.0..=1.0)
                         .text("angle")
                         .clamp_to_range(true);
                     if ui.add(slider).changed() {
 
-                        if let Some(ref rp) = active_rotation_point {
+                        if let Some(ref rp) = control_state.active_rotation_point {
                             //reset to values from start of rotation before rotate_around_point
                             photos[1].set_rotation(rp.rotate_start);
                             photos[1].set_translation(rp.translate_start);
-                            photos[1].rotate_around_point(debug_rotation, rp.point);
+                            photos[1].rotate_around_point(control_state.debug_rotation, rp.point);
                         }
                     }
                     ui.separator();
 
                     ui.heading("Dewarp Shader");
-                    ui.radio_value(&mut dewarp_shader, DewarpShader::NoMorph, format!("{:?}", DewarpShader::NoMorph));
-                    ui.radio_value(&mut dewarp_shader, DewarpShader::Dewarp1, format!("{:?}", DewarpShader::Dewarp1));
-                    ui.radio_value(&mut dewarp_shader, DewarpShader::Dewarp2, format!("{:?}", DewarpShader::Dewarp2));
+                    ui.radio_value(&mut control_state.dewarp_shader, DewarpShader::NoMorph, format!("{:?}", DewarpShader::NoMorph));
+                    ui.radio_value(&mut control_state.dewarp_shader, DewarpShader::Dewarp1, format!("{:?}", DewarpShader::Dewarp1));
+                    ui.radio_value(&mut control_state.dewarp_shader, DewarpShader::Dewarp2, format!("{:?}", DewarpShader::Dewarp2));
                     ui.separator();
 
                     ui.heading("Mouse Info");
-                    ui.label(&mouse_click_ui_text);
+                    ui.label(&control_state.mouse_click_ui_text);
                     ui.separator();
 
                     ui.heading("Photo Info");
-                    ui.label(&photo_ui_text);
+                    ui.label(&control_state.photo_ui_text);
                     ui.separator();
 
 
@@ -300,7 +304,7 @@ fn main() {
                 match event {
                     Event::MouseClick {state, button, position, handled, ..} => {
                         info!("MouseClick: {:?}", event);
-                        mouse_click_ui_text = format!("MouseClick: {:#?}", event);
+                        control_state.mouse_click_ui_text = format!("MouseClick: {:#?}", event);
 
                         if *handled {break};
 
@@ -311,7 +315,7 @@ fn main() {
 
                         match *button {
 
-                            MouseButton::Middle => active_pan =
+                            MouseButton::Middle => control_state.active_pan =
                                 match *state {
                                     State::Pressed => {
                                         Some(Pan {
@@ -326,7 +330,7 @@ fn main() {
                                 match *state {
                                     State::Pressed => {
 
-                                        active_drag = None;
+                                        control_state.active_drag = None;
 
                                         for (i, ph) in photos.iter().enumerate() {
                                             if ph.contains(world_coords) {
@@ -334,9 +338,9 @@ fn main() {
 
                                                 info!("  translation: {:?}", ph.translation());
 
-                                                photo_ui_text = ph.to_string();
+                                                control_state.photo_ui_text = ph.to_string();
 
-                                                active_drag =
+                                                control_state.active_drag =
                                                 Some(Drag {
                                                     mouse_start: *position,
                                                     photo_start: ph.translation(),
@@ -346,35 +350,35 @@ fn main() {
                                             }
                                         }
                                     },
-                                    State::Released => active_drag = None,
+                                    State::Released => control_state.active_drag = None,
                                 },
 
                             MouseButton::Left =>
-                                match active_mouse_tool {
+                                match control_state.active_mouse_tool {
                                     MouseTool::RotationPoint =>
                                         match *state {
                                             State::Pressed => {
-                                                active_rotation_point =
+                                                control_state.active_rotation_point =
                                                 Some(RotationPoint {
                                                     point: world_coords,
                                                     translate_start: photos[1].translation(),
                                                     rotate_start: photos[1].rotation(),
                                                 });
-                                                debug_rotation = 0.0;
+                                                control_state.debug_rotation = 0.0;
                                             },
                                             _ => {},
                                         },
                                     MouseTool::DragToRotate =>
                                         match *state {
                                             State::Pressed => {
-                                                active_rotate_drag =
+                                                control_state.active_rotate_drag =
                                                 Some(RotateDrag {
                                                     mouse_start: world_coords,
                                                     mouse_coords: world_coords,
                                                     rotate_start: photos[1].rotation(),
                                                 });
                                             },
-                                            State::Released => active_rotate_drag = None,
+                                            State::Released => control_state.active_rotate_drag = None,
                                         }
 
                                 }
@@ -385,7 +389,7 @@ fn main() {
                     Event::MouseMotion {position, handled, ..} => {
                         if *handled {break};
 
-                        if let Some(ref mut pan) = active_pan {
+                        if let Some(ref mut pan) = control_state.active_pan {
                         //    info!("mouse delta: {:?} {:?}", delta.0, delta.1);
                         //    info!("mouse position: {:?} {:?}", position.0, position.1);
                             redraw = true;
@@ -394,7 +398,7 @@ fn main() {
                             viewport_geometry.camera_position.y = pan.camera_start.y as f64 + ((position.1 - pan.mouse_start.1) * viewport_geometry.world_units_per_pixel());
                         }
 
-                        if let Some(ref mut drag) = active_drag {
+                        if let Some(ref mut drag) = control_state.active_drag {
 
                             redraw = true;
 
@@ -406,9 +410,9 @@ fn main() {
                             photos[drag.photo_index].set_translation(new_translation);
                         }
 
-                        if let Some(ref mut rotate_drag) = active_rotate_drag {
+                        if let Some(ref mut rotate_drag) = control_state.active_rotate_drag {
 
-                            if let Some(ref rp) = active_rotation_point {
+                            if let Some(ref rp) = control_state.active_rotation_point {
 
                                 redraw = true;
 
@@ -472,7 +476,7 @@ fn main() {
                         if *kind == Key::S && *state == State::Pressed
                         {
                             redraw = true;
-                            dewarp_shader = match dewarp_shader {
+                            control_state.dewarp_shader = match control_state.dewarp_shader {
                                 DewarpShader::NoMorph => DewarpShader::Dewarp1,
                                 DewarpShader::Dewarp1 => DewarpShader::Dewarp2,
                                 DewarpShader::Dewarp2 => DewarpShader::NoMorph,
@@ -482,15 +486,15 @@ fn main() {
                         if *kind == Key::PageUp && *state == State::Pressed
                         {
                             redraw = true;
-                            dewarp_strength += 0.1;
-                            update_shader_uniforms(&dewarp_strength);
+                            control_state.dewarp_strength += 0.1;
+                            update_shader_uniforms(&control_state.dewarp_strength);
                         }
 
                         if *kind == Key::PageDown && *state == State::Pressed
                         {
                             redraw = true;
-                            dewarp_strength -= 0.1;
-                            update_shader_uniforms(&dewarp_strength);
+                            control_state.dewarp_strength -= 0.1;
+                            update_shader_uniforms(&control_state.dewarp_strength);
                         }
                     },
                     _ => {},
@@ -531,7 +535,7 @@ fn main() {
 
                     for m in &photos {
 
-                        let program = match dewarp_shader
+                        let program = match control_state.dewarp_shader
                         {
                             DewarpShader::NoMorph => &texture_program,
                             DewarpShader::Dewarp1 => &texture_dewarp_program,
@@ -571,7 +575,7 @@ fn main() {
                         color_mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
                     }
 
-                    if let Some(ref rp) = active_rotation_point {
+                    if let Some(ref rp) = control_state.active_rotation_point {
                         let t1 = Mat4::from_nonuniform_scale(10.0, 10.0, 1.0);
                         let t1 = Mat4::from_angle_z(cgmath::Deg(-45.0)).concat(&t1);
                         let t1 = Mat4::from_translation(Vec3::new(0.0, 0.0, 1.0)).concat(&t1);
@@ -582,8 +586,8 @@ fn main() {
                         color_mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
                     }
 
-                    if let Some(ref rp) = active_rotation_point {
-                        if let Some(ref rd) = active_rotate_drag {
+                    if let Some(ref rp) = control_state.active_rotation_point {
+                        if let Some(ref rd) = control_state.active_rotate_drag {
 
                             //draw triangle to indicate dragged rotation angle
 

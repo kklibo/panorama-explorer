@@ -1,50 +1,75 @@
-/*
+use three_d::Vec3;
+use crate::WorldCoords;
+
+
 #[derive(PartialEq, Debug)]
-enum DewarpShader {
+pub enum DewarpShader {
     NoMorph,
     Dewarp1,
     Dewarp2,
 }
-let mut dewarp_shader = DewarpShader::NoMorph;
 
-struct Pan {
-    mouse_start: (f64,f64),
-    camera_start: Vec3,
+pub struct Pan {
+    pub mouse_start: (f64,f64),
+    pub camera_start: Vec3,
 }
-let mut active_pan: Option<Pan> = None;
 
-struct Drag {
-    mouse_start: (f64,f64),
-    photo_start: WorldCoords,
-    photo_index: usize, //replace this
+pub struct Drag {
+    pub mouse_start: (f64,f64),
+    pub photo_start: WorldCoords,
+    pub photo_index: usize, //replace this
 }
-let mut active_drag: Option<Drag> = None;
 
-struct RotationPoint {
-    point: WorldCoords,
-    translate_start: WorldCoords,
-    rotate_start: f32,
+pub struct RotationPoint {
+    pub point: WorldCoords,
+    pub translate_start: WorldCoords,
+    pub rotate_start: f32,
 }
-let mut active_rotation_point: Option<RotationPoint> = None;
 
-struct RotateDrag {
-    mouse_start: WorldCoords,
-    mouse_coords: WorldCoords,
-    rotate_start: f32, //degrees
+pub struct RotateDrag {
+    pub mouse_start: WorldCoords,
+    pub mouse_coords: WorldCoords,
+    pub rotate_start: f32, //degrees
     //photo_index: usize, //replace this
 }
-let mut active_rotate_drag: Option<RotateDrag> = None;
 
 #[derive(Debug, PartialEq)]
-enum MouseTool {
+pub enum MouseTool {
     RotationPoint,
     DragToRotate,
 }
-let mut active_mouse_tool: MouseTool = MouseTool::RotationPoint;
 
-let mut dewarp_strength: f32 = 0.0;
-let mut debug_rotation: f32 = 0.0;
+pub struct ControlState {
+    pub dewarp_shader: DewarpShader,
+    pub active_pan: Option<Pan>,
+    pub active_drag: Option<Drag>,
+    pub active_rotation_point: Option<RotationPoint>,
+    pub active_rotate_drag: Option<RotateDrag>,
+    pub active_mouse_tool: MouseTool,
 
-let mut mouse_click_ui_text= "".to_string();
-let mut photo_ui_text= "".to_string();
-*/
+    pub dewarp_strength: f32,
+    pub debug_rotation: f32,
+
+    pub mouse_click_ui_text: String,
+    pub photo_ui_text: String,
+}
+
+impl Default for ControlState {
+
+    fn default() -> Self {
+        Self {
+            dewarp_shader: DewarpShader::NoMorph,
+            active_pan: None,
+            active_drag: None,
+            active_rotation_point: None,
+            active_rotate_drag: None,
+            active_mouse_tool: MouseTool::RotationPoint,
+
+            dewarp_strength: 0.0,
+            debug_rotation: 0.0,
+
+            mouse_click_ui_text: "".to_string(),
+            photo_ui_text: "".to_string(),
+        }
+    }
+}
