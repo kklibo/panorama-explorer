@@ -21,6 +21,7 @@ use log::info;
 mod viewport_geometry;
 mod read_pto;
 mod photo;
+mod control_state;
 
 use viewport_geometry::{ViewportGeometry, PixelCoords, WorldCoords};
 use photo::{Photo, convert_photo_px_to_world};
@@ -171,7 +172,7 @@ fn main() {
 
 
         // main loop
-
+//
         #[derive(PartialEq, Debug)]
         enum DewarpShader {
             NoMorph,
@@ -220,7 +221,7 @@ fn main() {
 
         let mut mouse_click_ui_text= "".to_string();
         let mut photo_ui_text= "".to_string();
-
+//
         window.render_loop(move |mut frame_input|
         {
             let update_shader_uniforms = |dewarp_strength: &f32| {
