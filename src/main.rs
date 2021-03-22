@@ -22,6 +22,7 @@ mod viewport_geometry;
 mod read_pto;
 mod photo;
 mod control_state;
+mod gui_controls;
 
 use viewport_geometry::{ViewportGeometry, PixelCoords, WorldCoords};
 use photo::{Photo, convert_photo_px_to_world};
@@ -191,7 +192,7 @@ fn main() {
                                                viewport_geometry.height_in_world_units() as f32,
                                                10.0).unwrap();
 
-
+//
             let mut panel_width = frame_input.viewport.width / 10;
             redraw |= gui.update(&mut frame_input, |gui_context| {
 
@@ -249,7 +250,7 @@ fn main() {
                 });
                 panel_width = (gui_context.used_size().x * gui_context.pixels_per_point()) as usize;
             }).unwrap();
-
+//
 
             for event in frame_input.events.iter() {
                 match event {
