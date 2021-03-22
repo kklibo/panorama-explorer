@@ -4,7 +4,6 @@ use three_d::window::Window;
 use three_d::context::Context;
 use three_d::definition::cpu_texture::{Interpolation, Wrapping};
 use three_d::definition::cpu_mesh::CPUMesh;
-use three_d::frame::input::{Event, MouseButton, State, Key};
 use three_d::frame::output::FrameOutput;
 use three_d::core::render_states::{CullType, BlendMultiplierType, BlendParameters, WriteMask, DepthTestType, RenderStates};
 use three_d::core::render_target::{Screen, ClearState};
@@ -12,8 +11,8 @@ use three_d::core::texture::Texture2D;
 use three_d::object::{Mesh, MeshProgram};
 use three_d::io::{Loader, Loaded};
 use three_d::camera::{Camera, CameraControl};
-use three_d::math::{Vec2, Vec3, vec3, Vec4, Mat4};
-use three_d::{Transform, InnerSpace};
+use three_d::math::{Vec3, vec3, Vec4, Mat4};
+use three_d::Transform;
 use cgmath::prelude::SquareMatrix;
 
 use log::info;
@@ -24,7 +23,7 @@ mod photo;
 mod control_state;
 mod gui_controls;
 
-use viewport_geometry::{ViewportGeometry, PixelCoords, WorldCoords};
+use viewport_geometry::{ViewportGeometry, WorldCoords};
 use photo::{Photo, convert_photo_px_to_world};
 
 pub struct LoadedImageMesh {
@@ -194,7 +193,15 @@ fn main() {
 
             redraw |= gui_controls::run_gui_controls(&mut frame_input, &mut gui, &mut control_state);
 
-//
+            redraw |= gui_controls::handle_input_events(
+                &mut frame_input,
+                &mut control_state,
+                &mut viewport_geometry,
+                &mut camera,
+                &mut photos,
+            );
+
+/*
             for event in frame_input.events.iter() {
                 match event {
                     Event::MouseClick {state, button, position, handled, ..} => {
@@ -395,7 +402,7 @@ fn main() {
                     _ => {},
                 }
             }
-//
+*/
             camera.set_view(
                 vec3(viewport_geometry.camera_position.x as f32, viewport_geometry.camera_position.y as f32, 5.0),
                 vec3(viewport_geometry.camera_position.x as f32, viewport_geometry.camera_position.y as f32, 0.0),
