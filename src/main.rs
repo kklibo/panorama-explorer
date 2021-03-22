@@ -22,6 +22,7 @@ mod read_pto;
 mod photo;
 mod control_state;
 mod gui_controls;
+mod render;
 
 use viewport_geometry::{ViewportGeometry, WorldCoords};
 use photo::{Photo, convert_photo_px_to_world};
@@ -215,6 +216,7 @@ fn main() {
 
             // draw
             if redraw {
+//
                 Screen::write(&context, &ClearState::color_and_depth(0.2, 0.2, 0.2, 1.0, 1.0), || {
                     let render_states = RenderStates {
                         cull: CullType::None,
@@ -315,7 +317,7 @@ fn main() {
 
                     Ok(())
                 }).unwrap();
-
+//
 
                 //set entire display buffer alpha to 1.0: prevents web browser pass-through transparency problem
                 let clear_alpha = ClearState {
