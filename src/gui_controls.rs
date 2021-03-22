@@ -1,5 +1,6 @@
 use three_d::frame::FrameInput;
 use three_d::gui::GUI;
+use three_d::egui_gui::egui::{SidePanel, Slider};
 
 
 use crate::control_state::{ControlState, MouseTool, DewarpShader};
@@ -9,7 +10,6 @@ pub fn run_gui_controls(frame_input: &mut FrameInput, gui: &mut GUI, control_sta
     let mut panel_width = frame_input.viewport.width / 10;
     let redraw = gui.update(frame_input, |gui_context| {
 
-        use three_d::egui_gui::egui::{SidePanel, Slider};
         SidePanel::left("side_panel", panel_width as f32).show(gui_context, |ui| {
             ui.heading("panorama_tool");
             ui.separator();
