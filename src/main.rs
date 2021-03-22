@@ -194,7 +194,7 @@ fn main() {
 
             redraw |= gui_controls::run_gui_controls(&mut frame_input, &mut gui, &mut control_state);
 
-
+//
             for event in frame_input.events.iter() {
                 match event {
                     Event::MouseClick {state, button, position, handled, ..} => {
@@ -395,7 +395,7 @@ fn main() {
                     _ => {},
                 }
             }
-
+//
             camera.set_view(
                 vec3(viewport_geometry.camera_position.x as f32, viewport_geometry.camera_position.y as f32, 5.0),
                 vec3(viewport_geometry.camera_position.x as f32, viewport_geometry.camera_position.y as f32, 0.0),
