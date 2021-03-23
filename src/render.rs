@@ -7,7 +7,8 @@ use three_d::gui::GUI;
 use three_d::{Transform,Context,CameraControl,FrameInput,SquareMatrix};
 
 use crate::control_state::{ControlState, DewarpShader};
-use crate::photo::{Photo, convert_photo_px_to_world};
+use crate::photo::convert_photo_px_to_world;
+use crate::entities::Entities;
 
 
 pub fn render(
@@ -16,14 +17,11 @@ pub fn render(
     gui: &mut GUI,
     control_state: &mut ControlState,
     camera: &mut CameraControl,
-    photos: &[Photo; 2],
     texture_program: &MeshProgram,
     texture_dewarp_program: &MeshProgram,
     texture_dewarp2_program: &MeshProgram,
     color_program: &MeshProgram,
-    color_mesh: &Mesh,
-    image0_control_points: &Vec<Vec3>,
-    image1_control_points: &Vec<Vec3>,
+    entities: &Entities
 ) {
     Screen::write(&context, &ClearState::color_and_depth(0.2, 0.2, 0.2, 1.0, 1.0), || {
         let render_states = RenderStates {
@@ -44,7 +42,7 @@ pub fn render(
         };
 
 
-        for m in &*photos {
+        for m in &entities.photos {
             let program = match control_state.dewarp_shader
             {
                 DewarpShader::NoMorph => &texture_program,
@@ -59,30 +57,30 @@ pub fn render(
         }
 
 
-        let points = image0_control_points;
+        let points = &entities.image0_control_points;
 
         for &v in points {
             let t1 = Mat4::from_nonuniform_scale(10.0, 10.0, 1.0);
             let t1 = Mat4::from_translation(Vec3::new(0.0, 0.0, 1.0)).concat(&t1);
 
-            let t1 = convert_photo_px_to_world(v, &photos[0]).concat(&t1);
+            let t1 = convert_photo_px_to_world(v, &entities.photos[0]).concat(&t1);
 
 
             color_program.use_uniform_vec4("color", &Vec4::new(0.8, 0.5, 0.2, 0.5)).unwrap();
-            color_mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
+            entities.color_mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
         }
 
-        let points = image1_control_points;
+        let points = &entities.image1_control_points;
 
         for &v in points {
             let t1 = Mat4::from_nonuniform_scale(10.0, 10.0, 1.0);
             let t1 = Mat4::from_angle_z(cgmath::Deg(45.0)).concat(&t1);
             let t1 = Mat4::from_translation(Vec3::new(0.0, 0.0, 1.0)).concat(&t1);
 
-            let t1 = convert_photo_px_to_world(v, &photos[1]).concat(&t1);
+            let t1 = convert_photo_px_to_world(v, &entities.photos[1]).concat(&t1);
 
             color_program.use_uniform_vec4("color", &Vec4::new(0.2, 0.8, 0.2, 0.5)).unwrap();
-            color_mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
+            entities.color_mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
         }
 
         if let Some(ref rp) = control_state.active_rotation_point {
@@ -93,7 +91,7 @@ pub fn render(
             let t1 = Mat4::from_translation(Vec3::new(rp.point.x as f32, rp.point.y as f32, 0.0)).concat(&t1);
 
             color_program.use_uniform_vec4("color", &Vec4::new(0.8, 0.8, 0.2, 0.5)).unwrap();
-            color_mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
+            entities.color_mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
         }
 
         if let Some(ref rp) = control_state.active_rotation_point {

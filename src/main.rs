@@ -130,14 +130,11 @@ fn main() {
                     &mut gui,
                     &mut control_state,
                     &mut camera,
-                    &entities.photos,
                     &texture_program,
                     &texture_dewarp_program,
                     &texture_dewarp2_program,
                     &color_program,
-                    &entities.color_mesh,
-                    &entities.image0_control_points,
-                    &entities.image1_control_points
+                    &entities,
                 );
 
 

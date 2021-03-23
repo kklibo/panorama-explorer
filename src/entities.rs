@@ -25,7 +25,7 @@ impl Entities {
 
     pub fn new(
         context: &Context,
-        loaded: &mut Loaded,
+        loaded: &Loaded,
         pto_file: &str,
         filepaths: &[&str; 3],) -> Entities
     {
@@ -89,7 +89,7 @@ pub struct LoadedImageMesh {
     pub texture_2d: Texture2D,
 }
 
-fn load_mesh_from_filepath(context: &Context, loaded: &mut Loaded, image_filepath: &str) -> LoadedImageMesh {
+fn load_mesh_from_filepath(context: &Context, loaded: &Loaded, image_filepath: &str) -> LoadedImageMesh {
 
     let mut cpu_mesh = CPUMesh {
         positions: square_positions(),
