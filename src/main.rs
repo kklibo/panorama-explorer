@@ -20,10 +20,12 @@ mod photo;
 mod control_state;
 mod gui_controls;
 mod render;
+mod entities;
 
 use viewport_geometry::{ViewportGeometry, WorldCoords};
 use photo::Photo;
 
+//
 pub struct LoadedImageMesh {
 
     pub mesh: Mesh,
@@ -68,6 +70,7 @@ fn color_mesh(context: &Context) -> Mesh {
 
     mesh
 }
+//
 
 fn main() {
 
@@ -119,7 +122,7 @@ fn main() {
 
     Loader::load(&filepaths, move |loaded|
     {
-
+//
         let file_u8 = loaded.bytes(pto_file).unwrap();
         let s = std::str::from_utf8(file_u8).unwrap();
 
@@ -162,7 +165,7 @@ fn main() {
         photos[1].set_translation(WorldCoords{x: 500.0, y: 0.0});
 
         let color_mesh = color_mesh(&context);
-
+//
         let         texture_program = MeshProgram::new(&context, include_str!(        "texture.frag")).unwrap();
         let  texture_dewarp_program = MeshProgram::new(&context, include_str!( "texture_dewarp.frag")).unwrap();
         let texture_dewarp2_program = MeshProgram::new(&context, include_str!("texture_dewarp2.frag")).unwrap();
@@ -246,6 +249,7 @@ fn main() {
     });
 }
 
+//
 fn square_positions() -> Vec<f32> {
     vec![
         -0.5, -0.5, 0.0,
@@ -278,3 +282,4 @@ fn hourglass_positions() -> Vec<f32> {
         0.0, 0.0, 0.0,
     ]
 }
+//
