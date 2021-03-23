@@ -4,7 +4,7 @@ use std::fmt::{Display,Formatter};
 use three_d::*;
 use cgmath::Deg;
 
-pub use crate::LoadedImageMesh;
+pub use crate::entities::LoadedImageMesh;
 use crate::viewport_geometry::WorldCoords;
 
 
