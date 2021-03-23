@@ -1,11 +1,34 @@
+use std::rc::Rc;
+
+use three_d::{Loaded, Vec3, Context};
+use three_d::definition::cpu_texture::{Interpolation, Wrapping};
+use three_d::definition::cpu_mesh::CPUMesh;
+use three_d::core::texture::Texture2D;
+use three_d::object::Mesh;
+
+use log::info;
+
+use crate::read_pto;
+use crate::photo::Photo;
+use crate::viewport_geometry::WorldCoords;
+
 
 pub struct Entities {
 
+    pub image0_control_points: Vec<Vec3>,
+    pub image1_control_points: Vec<Vec3>,
+    pub photos: [Photo; 2],
+    pub color_mesh: Mesh,
 }
 
 impl Entities {
 
-/*
+    pub fn new(
+        context: &Context,
+        loaded: &mut Loaded,
+        pto_file: &str,
+        filepaths: &[&str; 3],) -> Entities
+    {
         let file_u8 = loaded.bytes(pto_file).unwrap();
         let s = std::str::from_utf8(file_u8).unwrap();
 
@@ -25,8 +48,8 @@ impl Entities {
                 }
             }).collect::<Vec<Vec3>>();
 
-        for &Vec3{x,y,z} in &image0_control_points {
-            info!("({:?}, {:?}, {:?})", x,y,z);
+        for &Vec3 { x, y, z } in &image0_control_points {
+            info!("({:?}, {:?}, {:?})", x, y, z);
         }
 
         let image1_control_points =
@@ -45,14 +68,21 @@ impl Entities {
             Photo::from_loaded_image_mesh(meshes[0].clone()),
             Photo::from_loaded_image_mesh(meshes[1].clone()),
         ];
-        photos[1].set_translation(WorldCoords{x: 500.0, y: 0.0});
+        photos[1].set_translation(WorldCoords { x: 500.0, y: 0.0 });
 
         let color_mesh = color_mesh(&context);
-*/
+
+        Entities{
+            image0_control_points,
+            image1_control_points,
+            photos,
+            color_mesh,
+        }
+    }
 
 }
 
-/*
+
 pub struct LoadedImageMesh {
 
     pub mesh: Mesh,
@@ -97,9 +127,7 @@ fn color_mesh(context: &Context) -> Mesh {
 
     mesh
 }
-*/
 
-/*
 fn square_positions() -> Vec<f32> {
     vec![
         -0.5, -0.5, 0.0,
@@ -132,4 +160,3 @@ fn hourglass_positions() -> Vec<f32> {
         0.0, 0.0, 0.0,
     ]
 }
-*/
