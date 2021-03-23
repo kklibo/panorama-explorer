@@ -126,10 +126,10 @@ fn main() {
 
                 render::render(
                     &context,
-                    &mut frame_input,
+                    &frame_input,
                     &mut gui,
-                    &mut control_state,
-                    &mut camera,
+                    &control_state,
+                    &camera,
                     &texture_program,
                     &texture_dewarp_program,
                     &texture_dewarp2_program,

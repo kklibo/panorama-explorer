@@ -13,10 +13,10 @@ use crate::entities::Entities;
 
 pub fn render(
     context: &Context,
-    frame_input: &mut FrameInput,
+    frame_input: &FrameInput,
     gui: &mut GUI,
-    control_state: &mut ControlState,
-    camera: &mut CameraControl,
+    control_state: &ControlState,
+    camera: &CameraControl,
     texture_program: &MeshProgram,
     texture_dewarp_program: &MeshProgram,
     texture_dewarp2_program: &MeshProgram,
