@@ -2,11 +2,11 @@ use three_d::definition::cpu_mesh::CPUMesh;
 use three_d::object::{Mesh, MeshProgram};
 use three_d::core::render_states::{CullType, BlendMultiplierType, BlendParameters, WriteMask, DepthTestType, RenderStates};
 use three_d::core::render_target::{Screen, ClearState};
-use three_d::math::{Vec3, vec3, Vec4, Mat4};
+use three_d::math::{Vec3, Vec4, Mat4};
 use three_d::gui::GUI;
 use three_d::{Transform,Context,CameraControl,FrameInput,SquareMatrix};
 
-use crate::control_state::{ControlState, MouseTool, DewarpShader, Pan, Drag, RotateDrag, RotationPoint};
+use crate::control_state::{ControlState, DewarpShader};
 use crate::photo::{Photo, convert_photo_px_to_world};
 
 
@@ -101,7 +101,7 @@ pub fn render(
 
                 //draw triangle to indicate dragged rotation angle
 
-                let mut cpu_mesh = CPUMesh {
+                let cpu_mesh = CPUMesh {
                     positions: vec![
                         rp.point.x as f32, rp.point.y as f32, 0.0,
                         rd.mouse_start.x as f32, rd.mouse_start.y as f32, 0.0,
