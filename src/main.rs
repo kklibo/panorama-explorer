@@ -5,15 +5,12 @@ use three_d::context::Context;
 use three_d::definition::cpu_texture::{Interpolation, Wrapping};
 use three_d::definition::cpu_mesh::CPUMesh;
 use three_d::frame::output::FrameOutput;
-use three_d::core::render_states::{CullType, BlendMultiplierType, BlendParameters, WriteMask, DepthTestType, RenderStates};
 use three_d::core::render_target::{Screen, ClearState};
 use three_d::core::texture::Texture2D;
 use three_d::object::{Mesh, MeshProgram};
 use three_d::io::{Loader, Loaded};
 use three_d::camera::{Camera, CameraControl};
-use three_d::math::{Vec3, vec3, Vec4, Mat4};
-use three_d::Transform;
-use cgmath::prelude::SquareMatrix;
+use three_d::math::{Vec3, vec3};
 
 use log::info;
 
@@ -25,7 +22,7 @@ mod gui_controls;
 mod render;
 
 use viewport_geometry::{ViewportGeometry, WorldCoords};
-use photo::{Photo, convert_photo_px_to_world};
+use photo::Photo;
 
 pub struct LoadedImageMesh {
 
@@ -216,7 +213,25 @@ fn main() {
 
             // draw
             if redraw {
-//
+
+                render::render(
+                    &context,
+                    &mut frame_input,
+                    &mut gui,
+                    &mut control_state,
+                    &mut camera,
+                    &photos,
+                    &texture_program,
+                    &texture_dewarp_program,
+                    &texture_dewarp2_program,
+                    &color_program,
+                    &color_mesh,
+                    &image0_control_points,
+                    &image1_control_points
+                );
+
+
+/*
                 Screen::write(&context, &ClearState::color_and_depth(0.2, 0.2, 0.2, 1.0, 1.0), || {
                     let render_states = RenderStates {
                         cull: CullType::None,
@@ -317,7 +332,7 @@ fn main() {
 
                     Ok(())
                 }).unwrap();
-//
+*/
 
                 //set entire display buffer alpha to 1.0: prevents web browser pass-through transparency problem
                 let clear_alpha = ClearState {
