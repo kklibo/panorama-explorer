@@ -117,6 +117,16 @@ pub fn render(
 
                 color_program.use_uniform_vec4("color", &Vec4::new(0.2, 0.2, 0.8, 0.5)).unwrap();
                 mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
+
+
+                //draw angle lines to indicate dragged rotation angle
+                let start_line_mat4 =   line_transform(&viewport_geometry, rp.point, rd.mouse_start,  1.0);
+                let dragged_line_mat4 = line_transform(&viewport_geometry, rp.point, rd.mouse_coords, 1.0);
+
+                color_program.use_uniform_vec4("color", &Vec4::new(0.8, 0.8, 0.2, 1.0)).unwrap();
+                entities.line_mesh.render(&color_program, render_states, frame_input.viewport, &start_line_mat4,   &camera)?;
+                entities.line_mesh.render(&color_program, render_states, frame_input.viewport, &dragged_line_mat4, &camera)?;
+
             }
         }
 
