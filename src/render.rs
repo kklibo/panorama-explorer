@@ -2,7 +2,7 @@ use three_d::definition::cpu_mesh::CPUMesh;
 use three_d::object::{Mesh, MeshProgram};
 use three_d::core::render_states::{CullType, BlendMultiplierType, BlendParameters, WriteMask, DepthTestType, RenderStates};
 use three_d::core::render_target::{Screen, ClearState};
-use three_d::math::{Vec3, Vec4, Mat4};
+use three_d::math::{Vec2, Vec3, Vec4, Mat4};
 use three_d::gui::GUI;
 use three_d::{Transform,Context,CameraControl,FrameInput,SquareMatrix,InnerSpace};
 
@@ -118,9 +118,25 @@ pub fn render(
                 color_program.use_uniform_vec4("color", &Vec4::new(0.2, 0.2, 0.8, 0.5)).unwrap();
                 mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
 
+                //create resized line segment for dragged rotation start line
+                let mouse_coords_vec_length =
+                    Vec2::new(
+                        rd.mouse_coords.x as f32 - rp.point.x as f32,
+                        rd.mouse_coords.y as f32 - rp.point.y as f32,
+                    ).magnitude();
+
+                let mouse_start_vec2 =
+                    Vec2::new(
+                        rd.mouse_start.x as f32 - rp.point.x as f32,
+                        rd.mouse_start.y as f32 - rp.point.y as f32,
+                    )
+                    .normalize() * mouse_coords_vec_length
+                    + Vec2::new(rp.point.x as f32, rp.point.y as f32);
+
+                let mouse_start_resized = WorldCoords{x: mouse_start_vec2.x as f64, y: mouse_start_vec2.y as f64};
 
                 //draw angle lines to indicate dragged rotation angle
-                let start_line_mat4 =   line_transform(&viewport_geometry, rp.point, rd.mouse_start,  1.0);
+                let start_line_mat4 =   line_transform(&viewport_geometry, rp.point, mouse_start_resized,  1.0);
                 let dragged_line_mat4 = line_transform(&viewport_geometry, rp.point, rd.mouse_coords, 1.0);
 
                 color_program.use_uniform_vec4("color", &Vec4::new(0.8, 0.8, 0.2, 1.0)).unwrap();
