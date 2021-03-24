@@ -130,6 +130,7 @@ fn main() {
                     &mut gui,
                     &control_state,
                     &camera,
+                    &viewport_geometry,
                     &texture_program,
                     &texture_dewarp_program,
                     &texture_dewarp2_program,

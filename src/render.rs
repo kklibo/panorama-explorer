@@ -9,7 +9,7 @@ use three_d::{Transform,Context,CameraControl,FrameInput,SquareMatrix,InnerSpace
 use crate::control_state::{ControlState, DewarpShader};
 use crate::photo::convert_photo_px_to_world;
 use crate::entities::Entities;
-use crate::viewport_geometry::WorldCoords;
+use crate::viewport_geometry::{WorldCoords, ViewportGeometry};
 
 
 pub fn render(
@@ -18,6 +18,7 @@ pub fn render(
     gui: &mut GUI,
     control_state: &ControlState,
     camera: &CameraControl,
+    viewport_geometry: &ViewportGeometry,
     texture_program: &MeshProgram,
     texture_dewarp_program: &MeshProgram,
     texture_dewarp2_program: &MeshProgram,
@@ -124,8 +125,9 @@ pub fn render(
 
             let p1 = WorldCoords{x: -500.0, y: 0.0};
             let p2 = WorldCoords{x: 50.0, y: -100.0};
+            let pixel_thickness = 2f32;
 
-            let p1v = Vec3::new(p1.x as f32, p2.x as f32, 0.0);
+            let p1v = Vec3::new(p1.x as f32, p1.y as f32, 0.0);
 
             let dx = (p2.x - p1.x) as f32;
             let dy = (p2.y - p1.y) as f32;
@@ -137,8 +139,11 @@ pub fn render(
                 angle = -angle;
             }
 
-
-            let t1 = Mat4::from_nonuniform_scale(line_x.magnitude(), 1.0, 1.0);
+            let t1 = Mat4::from_nonuniform_scale(
+                line_x.magnitude(),
+                pixel_thickness * viewport_geometry.world_units_per_pixel() as f32,
+                1.0
+            );
             let t1 = Mat4::from_angle_z(angle).concat(&t1);
             let t1 = Mat4::from_translation(p1v).concat(&t1);
 

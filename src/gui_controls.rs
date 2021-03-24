@@ -63,6 +63,10 @@ pub fn run_gui_controls(frame_input: &mut FrameInput, gui: &mut GUI, control_sta
             ui.label(&control_state.mouse_click_ui_text);
             ui.separator();
 
+            ui.heading("Mouse Location");
+            ui.label(&control_state.mouse_location_ui_text);
+            ui.separator();
+
             ui.heading("Photo Info");
             ui.label(&control_state.photo_ui_text);
             ui.separator();
@@ -170,6 +174,16 @@ pub fn handle_input_events(
                 }
             },
             Event::MouseMotion {position, handled, ..} => {
+
+                //cursor location debug info
+                {
+                    let pixel_coords = PixelCoords {x: position.0, y: position.1};
+                    let world_coords = viewport_geometry.pixels_to_world(&pixel_coords);
+
+                    control_state.mouse_location_ui_text =
+                    format!("pixel_coords: {:?}\nworld_coords: {:?}", pixel_coords, world_coords);
+                }
+
                 if *handled {break};
 
                 if let Some(ref mut pan) = control_state.active_pan {

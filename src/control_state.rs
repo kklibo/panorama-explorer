@@ -51,6 +51,7 @@ pub struct ControlState {
     pub debug_rotation: f32,
 
     pub mouse_click_ui_text: String,
+    pub mouse_location_ui_text: String,
     pub photo_ui_text: String,
 }
 
@@ -69,6 +70,7 @@ impl Default for ControlState {
             debug_rotation: 0.0,
 
             mouse_click_ui_text: "".to_string(),
+            mouse_location_ui_text: "".to_string(),
             photo_ui_text: "".to_string(),
         }
     }
