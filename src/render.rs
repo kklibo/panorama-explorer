@@ -99,25 +99,6 @@ pub fn render(
         if let Some(ref rp) = control_state.active_rotation_point {
             if let Some(ref rd) = control_state.active_rotate_drag {
 
-                //draw triangle to indicate dragged rotation angle
-
-                let cpu_mesh = CPUMesh {
-                    positions: vec![
-                        rp.point.x as f32, rp.point.y as f32, 0.0,
-                        rd.mouse_start.x as f32, rd.mouse_start.y as f32, 0.0,
-                        rd.mouse_coords.x as f32, rd.mouse_coords.y as f32, 0.0,
-                    ],
-
-                    ..Default::default()
-                };
-
-                let mesh = Mesh::new(&context, &cpu_mesh).unwrap();
-
-                let t1 = Mat4::identity();
-
-                color_program.use_uniform_vec4("color", &Vec4::new(0.2, 0.2, 0.8, 0.5)).unwrap();
-                mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
-
                 //create resized line segment for dragged rotation start line
                 let mouse_coords_vec_length =
                     Vec2::new(
@@ -134,6 +115,26 @@ pub fn render(
                     + Vec2::new(rp.point.x as f32, rp.point.y as f32);
 
                 let mouse_start_resized = WorldCoords{x: mouse_start_vec2.x as f64, y: mouse_start_vec2.y as f64};
+
+
+                //draw triangle to indicate dragged rotation angle
+                let cpu_mesh = CPUMesh {
+                    positions: vec![
+                        rp.point.x as f32, rp.point.y as f32, 0.0,
+                        mouse_start_resized.x as f32, mouse_start_resized.y as f32, 0.0,
+                        rd.mouse_coords.x as f32, rd.mouse_coords.y as f32, 0.0,
+                    ],
+
+                    ..Default::default()
+                };
+
+                let mesh = Mesh::new(&context, &cpu_mesh).unwrap();
+
+                let t1 = Mat4::identity();
+
+                color_program.use_uniform_vec4("color", &Vec4::new(0.2, 0.2, 0.8, 0.5)).unwrap();
+                mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
+
 
                 //draw angle lines to indicate dragged rotation angle
                 let start_line_mat4 =   line_transform(&viewport_geometry, rp.point, mouse_start_resized,  1.0);
