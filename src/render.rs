@@ -4,11 +4,12 @@ use three_d::core::render_states::{CullType, BlendMultiplierType, BlendParameter
 use three_d::core::render_target::{Screen, ClearState};
 use three_d::math::{Vec3, Vec4, Mat4};
 use three_d::gui::GUI;
-use three_d::{Transform,Context,CameraControl,FrameInput,SquareMatrix};
+use three_d::{Transform,Context,CameraControl,FrameInput,SquareMatrix,InnerSpace};
 
 use crate::control_state::{ControlState, DewarpShader};
 use crate::photo::convert_photo_px_to_world;
 use crate::entities::Entities;
+use crate::viewport_geometry::WorldCoords;
 
 
 pub fn render(
@@ -117,6 +118,34 @@ pub fn render(
                 mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
             }
         }
+
+        //line render test
+        {
+
+            let p1 = WorldCoords{x: -500.0, y: 0.0};
+            let p2 = WorldCoords{x: 50.0, y: -100.0};
+
+            let p1v = Vec3::new(p1.x as f32, p2.x as f32, 0.0);
+
+            let dx = (p2.x - p1.x) as f32;
+            let dy = (p2.y - p1.y) as f32;
+
+            let line_x = Vec3::new(dx,dy,0.0);
+
+            let mut angle = Vec3::unit_x().angle(line_x);
+            if Vec3::unit_y().dot(line_x) < 0.0 {
+                angle = -angle;
+            }
+
+
+            let t1 = Mat4::from_nonuniform_scale(line_x.magnitude(), 1.0, 1.0);
+            let t1 = Mat4::from_angle_z(angle).concat(&t1);
+            let t1 = Mat4::from_translation(p1v).concat(&t1);
+
+            color_program.use_uniform_vec4("color", &Vec4::new(0.8, 0.8, 0.2, 1.0)).unwrap();
+            entities.line_mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
+        }
+
 
         gui.render().unwrap();
 

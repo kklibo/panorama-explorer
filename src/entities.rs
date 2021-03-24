@@ -19,6 +19,7 @@ pub struct Entities {
     pub image1_control_points: Vec<Vec3>,
     pub photos: [Photo; 2],
     pub color_mesh: Mesh,
+    pub line_mesh: Mesh,
 }
 
 impl Entities {
@@ -71,12 +72,14 @@ impl Entities {
         photos[1].set_translation(WorldCoords { x: 500.0, y: 0.0 });
 
         let color_mesh = color_mesh(&context);
+        let line_mesh = line_mesh(&context);
 
         Entities{
             image0_control_points,
             image1_control_points,
             photos,
             color_mesh,
+            line_mesh,
         }
     }
 
@@ -128,6 +131,17 @@ fn color_mesh(context: &Context) -> Mesh {
     mesh
 }
 
+fn line_mesh(context: &Context) -> Mesh {
+
+    let mut cpu_mesh = CPUMesh {
+        positions: line_positions(),
+
+        ..Default::default()
+    };
+
+    Mesh::new(&context, &cpu_mesh).unwrap()
+}
+
 fn square_positions() -> Vec<f32> {
     vec![
         -0.5, -0.5, 0.0,
@@ -147,6 +161,17 @@ fn square_uvs() -> Vec<f32> {
         1.0, 1.0,
         0.0, 1.0,
         0.0, 0.0,
+    ]
+}
+
+fn line_positions() -> Vec<f32> {
+    vec![
+        0.0, -0.5, 0.0,
+        1.0, -0.5, 0.0,
+        1.0, 0.5, 0.0,
+        1.0, 0.5, 0.0,
+        0.0, 0.5, 0.0,
+        0.0, -0.5, 0.0,
     ]
 }
 
