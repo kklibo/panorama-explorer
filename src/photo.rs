@@ -25,6 +25,14 @@ impl Display for Photo {
     }
 }
 
+#[derive(Copy, Clone)]
+pub enum Corner {
+    TopLeft,
+    TopRight,
+    BottomLeft,
+    BottomRight,
+}
+
 impl Photo {
 
     pub fn from_loaded_image_mesh(m: Rc<LoadedImageMesh>) -> Photo {
@@ -105,7 +113,23 @@ impl Photo {
 
     }
 
+    pub fn corner(&self, corner: Corner) -> WorldCoords {
 
+        let bottom_left_corner_world_coords = self.to_world() * Vec4::new(-0.5,-0.5,0.0, 1.0);
+        let   top_right_corner_world_coords = self.to_world() * Vec4::new( 0.5, 0.5,0.0, 1.0);
+
+        let x = match corner {
+            Corner::TopLeft | Corner::BottomLeft => bottom_left_corner_world_coords.x,
+            Corner::TopRight | Corner::BottomRight => top_right_corner_world_coords.x,
+        } as f64;
+
+        let y = match corner {
+            Corner::BottomLeft | Corner::BottomRight => bottom_left_corner_world_coords.y,
+            Corner::TopLeft | Corner::TopRight => top_right_corner_world_coords.y,
+        } as f64;
+
+        WorldCoords{x, y}
+    }
 
     //todo: update for rotation
     //todo: apply distortion (option?)

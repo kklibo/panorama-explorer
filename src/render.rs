@@ -7,7 +7,7 @@ use three_d::gui::GUI;
 use three_d::{Transform,Context,CameraControl,FrameInput,SquareMatrix,InnerSpace};
 
 use crate::control_state::{ControlState, DewarpShader};
-use crate::photo::convert_photo_px_to_world;
+use crate::photo::{convert_photo_px_to_world, Photo, Corner};
 use crate::entities::Entities;
 use crate::viewport_geometry::{WorldCoords, ViewportGeometry};
 
@@ -185,6 +185,31 @@ pub fn render(
         entities.line_mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
 
 
+        //selected photo border rectangle
+        if let Some(index) = control_state.selected_photo_index {
+
+            let mut lines = Vec::<Mat4>::new();
+
+            let mut add_corner_line = |corner1: Corner, corner2: Corner| {
+                lines.push(line_transform(
+                    &viewport_geometry,
+                    entities.photos[index].corner(corner1),
+                    entities.photos[index].corner(corner2),
+                    1.0
+                ));
+            };
+
+            add_corner_line(Corner::BottomLeft, Corner::BottomRight);
+            add_corner_line(Corner::BottomRight, Corner::TopRight);
+            add_corner_line(Corner::TopRight, Corner::TopLeft);
+            add_corner_line(Corner::TopLeft, Corner::BottomLeft);
+
+            //draw lines
+            for ref line in lines {
+                color_program.use_uniform_vec4("color", &Vec4::new(0.2, 0.8, 0.2, 1.0)).unwrap();
+                entities.line_mesh.render(&color_program, render_states, frame_input.viewport, line, &camera)?;
+            }
+        }
 
         gui.render().unwrap();
 
