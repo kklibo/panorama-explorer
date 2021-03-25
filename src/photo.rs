@@ -33,6 +33,14 @@ pub enum Corner {
     BottomRight,
 }
 
+#[derive(Copy, Clone)]
+pub enum Edge {
+    Left,
+    Right,
+    Top,
+    Bottom,
+}
+
 impl Photo {
 
     pub fn from_loaded_image_mesh(m: Rc<LoadedImageMesh>) -> Photo {
@@ -113,42 +121,55 @@ impl Photo {
 
     }
 
-    pub fn corner(&self, corner: Corner) -> WorldCoords {
+    ///returns a corner's WorldCoords location as a Vec2
+    fn corner_worldcoords_vec2(&self, corner: Corner) -> Vec2 {
 
-        let bottom_left_corner_world_coords = self.to_world() * Vec4::new(-0.5,-0.5,0.0, 1.0);
-        let   top_right_corner_world_coords = self.to_world() * Vec4::new( 0.5, 0.5,0.0, 1.0);
+        let v = match corner {
+            Corner::TopLeft => self.to_world() * Vec4::new(-0.5,0.5,0.0, 1.0),
+            Corner::TopRight => self.to_world() * Vec4::new(0.5,0.5,0.0, 1.0),
+            Corner::BottomLeft => self.to_world() * Vec4::new(-0.5,-0.5,0.0, 1.0),
+            Corner::BottomRight => self.to_world() * Vec4::new(0.5,-0.5,0.0, 1.0),
+        };
 
-        let x = match corner {
-            Corner::TopLeft | Corner::BottomLeft => bottom_left_corner_world_coords.x,
-            Corner::TopRight | Corner::BottomRight => top_right_corner_world_coords.x,
-        } as f64;
-
-        let y = match corner {
-            Corner::BottomLeft | Corner::BottomRight => bottom_left_corner_world_coords.y,
-            Corner::TopLeft | Corner::TopRight => top_right_corner_world_coords.y,
-        } as f64;
-
-        WorldCoords{x, y}
+        Vec2::new(v.x, v.y)
     }
 
-    //todo: update for rotation
-    //todo: apply distortion (option?)
+    ///returns true IFF the point is on the 'inside' side of this edge or collinear with the edge
+    fn is_inside(&self, point: WorldCoords, edge: Edge) -> bool {
+
+        let point = Vec2::new(point.x as f32, point.y as f32);
+
+        let corner_on_edge = match edge {
+            Edge::Bottom | Edge::Left => self.corner_worldcoords_vec2(Corner::BottomLeft),
+            Edge::Top | Edge::Right => self.corner_worldcoords_vec2(Corner::TopRight),
+        };
+
+        let inward_normal_point = match edge {
+            Edge::Bottom | Edge::Right => self.corner_worldcoords_vec2(Corner::TopLeft),
+            Edge::Top | Edge::Left => self.corner_worldcoords_vec2(Corner::BottomRight),
+        };
+
+        let to_point = point - corner_on_edge;
+        let inward_normal = inward_normal_point - corner_on_edge;
+
+        inward_normal.dot(to_point) >= 0.0
+    }
+
+
+    pub fn corner(&self, corner: Corner) -> WorldCoords {
+
+        let v = self.corner_worldcoords_vec2(corner);
+
+        WorldCoords{x: v.x as f64, y: v.y as f64}
+    }
+
+    ///true IFF the point is within the undistorted edges of this photo
     pub fn contains(&self, point: WorldCoords) -> bool {
 
-        let bottom_left_corner_world_coords = self.to_world() * Vec4::new(-0.5,-0.5,0.0, 1.0);
-        let   top_right_corner_world_coords = self.to_world() * Vec4::new( 0.5, 0.5,0.0, 1.0);
-
-        log::info!("contains: bottom left: {}, {}", bottom_left_corner_world_coords.x, bottom_left_corner_world_coords.y);
-        log::info!("            top right: {}, {}", top_right_corner_world_coords.x, top_right_corner_world_coords.y);
-        log::info!("                  scale: {:?}", self.scale);
-        log::info!("              translate: {:?}", self.translate);
-
-
-        bottom_left_corner_world_coords.x <= point.x as f32 &&
-        point.x as f32 <= top_right_corner_world_coords.x &&
-
-        bottom_left_corner_world_coords.y <= point.y as f32 &&
-        point.y as f32 <= top_right_corner_world_coords.y
+        self.is_inside(point, Edge::Left) &&
+        self.is_inside(point, Edge::Right) &&
+        self.is_inside(point, Edge::Top) &&
+        self.is_inside(point, Edge::Bottom)
     }
 }
 
