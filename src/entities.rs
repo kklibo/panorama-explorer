@@ -133,7 +133,7 @@ fn color_mesh(context: &Context) -> Mesh {
 
 fn line_mesh(context: &Context) -> Mesh {
 
-    let mut cpu_mesh = CPUMesh {
+    let cpu_mesh = CPUMesh {
         positions: line_positions(),
 
         ..Default::default()

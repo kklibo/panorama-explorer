@@ -157,18 +157,20 @@ pub fn handle_input_events(
                                 match *state {
                                     State::Pressed => {
                                         control_state.active_rotate_drag =
-                                        Some(RotateDrag {
-                                            mouse_start: world_coords,
-                                            mouse_coords: world_coords,
-                                            translate_start: photos[1].translation(),
-                                            rotate_start: photos[1].rotation(),
-                                        });
+                                            control_state.selected_photo_index.map(|index| {
+                                                RotateDrag {
+                                                    mouse_start: world_coords,
+                                                    mouse_coords: world_coords,
+                                                    translate_start: photos[index].translation(),
+                                                    rotate_start: photos[index].rotation(),
+                                                    photo_index: index,
+                                                }
+                                            });
                                     },
                                     State::Released => control_state.active_rotate_drag = None,
                                 }
 
                         }
-
 
                 }
             },
@@ -228,9 +230,9 @@ pub fn handle_input_events(
                         let drag_angle = drag_angle.0;
 
                         //reset to values from start of rotation before rotate_around_point
-                        photos[1].set_rotation(rotate_drag.rotate_start);
-                        photos[1].set_translation(rotate_drag.translate_start);
-                        photos[1].rotate_around_point(drag_angle, rp.point);
+                        photos[rotate_drag.photo_index].set_rotation(rotate_drag.rotate_start);
+                        photos[rotate_drag.photo_index].set_translation(rotate_drag.translate_start);
+                        photos[rotate_drag.photo_index].rotate_around_point(drag_angle, rp.point);
                     }
                 }
             },
