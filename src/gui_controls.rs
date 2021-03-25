@@ -148,8 +148,6 @@ pub fn handle_input_events(
                                         control_state.active_rotation_point =
                                         Some(RotationPoint {
                                             point: world_coords,
-                                            translate_start: photos[1].translation(),
-                                            rotate_start: photos[1].rotation(),
                                         });
                                         control_state.debug_rotation = 0.0;
                                     },
@@ -162,6 +160,7 @@ pub fn handle_input_events(
                                         Some(RotateDrag {
                                             mouse_start: world_coords,
                                             mouse_coords: world_coords,
+                                            translate_start: photos[1].translation(),
                                             rotate_start: photos[1].rotation(),
                                         });
                                     },
@@ -229,8 +228,8 @@ pub fn handle_input_events(
                         let drag_angle = drag_angle.0;
 
                         //reset to values from start of rotation before rotate_around_point
-                        photos[1].set_rotation(rp.rotate_start);
-                        photos[1].set_translation(rp.translate_start);
+                        photos[1].set_rotation(rotate_drag.rotate_start);
+                        photos[1].set_translation(rotate_drag.translate_start);
                         photos[1].rotate_around_point(drag_angle, rp.point);
                     }
                 }

@@ -64,7 +64,10 @@ impl Photo {
     }
 
     pub fn rotation(&self) -> f32 {
-        let angle: Deg<f32> = (self.rotate * Vec4::unit_x()).angle(Vec4::unit_x()).into();
+        let rotation_vec4 = self.rotate * Vec4::unit_x();
+        let rotation_vec2 = Vec2::new(rotation_vec4.x, rotation_vec4.y);
+
+        let angle: Deg<f32> = Vec2::unit_x().angle(rotation_vec2).into();
         angle.0
     }
 

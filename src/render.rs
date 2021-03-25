@@ -164,12 +164,9 @@ pub fn render(
             let dx = (p2.x - p1.x) as f32;
             let dy = (p2.y - p1.y) as f32;
 
-            let line_x = Vec3::new(dx, dy, 0.0);
+            let line_x = Vec2::new(dx, dy);
 
-            let mut angle = Vec3::unit_x().angle(line_x);
-            if Vec3::unit_y().dot(line_x) < 0.0 {
-                angle = -angle;
-            }
+            let angle = Vec2::unit_x().angle(line_x);
 
             let t1 = Mat4::from_nonuniform_scale(
                 line_x.magnitude(),

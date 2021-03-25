@@ -22,13 +22,12 @@ pub struct Drag {
 
 pub struct RotationPoint {
     pub point: WorldCoords,
-    pub translate_start: WorldCoords,
-    pub rotate_start: f32,
 }
 
 pub struct RotateDrag {
     pub mouse_start: WorldCoords,
     pub mouse_coords: WorldCoords,
+    pub translate_start: WorldCoords,
     pub rotate_start: f32, //degrees
     //photo_index: usize, //replace this
 }
