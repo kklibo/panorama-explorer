@@ -21,6 +21,7 @@ pub fn run_gui_controls(frame_input: &mut FrameInput, gui: &mut GUI, control_sta
             ui.separator();
 
             ui.heading("Left-click Tool:");
+            ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::SelectPhoto, format!("{:?}", MouseTool::SelectPhoto));
             ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::RotationPoint, format!("{:?}", MouseTool::RotationPoint));
             ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::DragToRotate, format!("{:?}", MouseTool::DragToRotate));
             ui.separator();
@@ -142,6 +143,24 @@ pub fn handle_input_events(
 
                     MouseButton::Left =>
                         match control_state.active_mouse_tool {
+                            MouseTool::SelectPhoto => {
+
+                                control_state.selected_photo_index = None;
+
+                                for (i, ph) in photos.iter().enumerate() {
+                                    if ph.contains(world_coords) {
+                                        info!("clicked on photos[{}]", i);
+
+                                        info!("  translation: {:?}", ph.translation());
+
+                                        control_state.photo_ui_text = ph.to_string();
+
+                                        control_state.selected_photo_index = Some(i);
+                                        break;
+                                    }
+                                }
+
+                            }
                             MouseTool::RotationPoint =>
                                 match *state {
                                     State::Pressed => {
