@@ -75,10 +75,10 @@ fn main() {
             &filepaths
         );
 
-        let         texture_program = MeshProgram::new(&context, include_str!(        "texture.frag")).unwrap();
-        let  texture_dewarp_program = MeshProgram::new(&context, include_str!( "texture_dewarp.frag")).unwrap();
-        let texture_dewarp2_program = MeshProgram::new(&context, include_str!("texture_dewarp2.frag")).unwrap();
-        let           color_program = MeshProgram::new(&context, include_str!(          "color.frag")).unwrap();
+        let         texture_program = MeshProgram::new(&context, include_str!("shaders/texture.frag")).unwrap();
+        let  texture_dewarp_program = MeshProgram::new(&context, include_str!("shaders/texture_dewarp.frag")).unwrap();
+        let texture_dewarp2_program = MeshProgram::new(&context, include_str!("shaders/texture_dewarp2.frag")).unwrap();
+        let           color_program = MeshProgram::new(&context, include_str!("shaders/color.frag")).unwrap();
 
 
         // main loop
