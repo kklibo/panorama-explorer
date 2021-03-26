@@ -173,15 +173,15 @@ impl Photo {
     }
 }
 
-//todo: update for rotation
-//todo: apply distortion (option?)
+///returns a matrix to translate a location in this photo (in pixel units) to a world location (in worldcoord units)
 pub fn convert_photo_px_to_world(v: Vec3, m: &Photo) -> Mat4 {
 
     let to_bottom_left = Mat4::from_translation(Vec3::new(-0.5,-0.5,0.0));
     let to_v = Mat4::from_translation(v);
 
-    let translation_and_scale =
+    let transformation =
         m.translate
+        .concat(&m.rotate)
         //flip y-coords
         .concat(&Mat4::from_nonuniform_scale(1.0, -1.0, 1.0))
         .concat(&to_v)
@@ -191,7 +191,7 @@ pub fn convert_photo_px_to_world(v: Vec3, m: &Photo) -> Mat4 {
 
 
     let mut just_translation = Mat4::identity();
-    just_translation.w = translation_and_scale.w;
+    just_translation.w = transformation.w;
 
     just_translation
 }
