@@ -22,19 +22,19 @@ pub struct Drag {
 
 pub struct RotationPoint {
     pub point: WorldCoords,
-    pub translate_start: WorldCoords,
-    pub rotate_start: f32,
 }
 
 pub struct RotateDrag {
     pub mouse_start: WorldCoords,
     pub mouse_coords: WorldCoords,
+    pub translate_start: WorldCoords,
     pub rotate_start: f32, //degrees
-    //photo_index: usize, //replace this
+    pub photo_index: usize,
 }
 
 #[derive(Debug, PartialEq)]
 pub enum MouseTool {
+    SelectPhoto,
     RotationPoint,
     DragToRotate,
 }
@@ -46,6 +46,8 @@ pub struct ControlState {
     pub active_rotation_point: Option<RotationPoint>,
     pub active_rotate_drag: Option<RotateDrag>,
     pub active_mouse_tool: MouseTool,
+
+    pub selected_photo_index: Option<usize>,
 
     pub dewarp_strength: f32,
     pub debug_rotation: f32,
@@ -65,6 +67,8 @@ impl Default for ControlState {
             active_rotation_point: None,
             active_rotate_drag: None,
             active_mouse_tool: MouseTool::RotationPoint,
+
+            selected_photo_index: None,
 
             dewarp_strength: 0.0,
             debug_rotation: 0.0,

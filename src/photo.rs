@@ -25,6 +25,22 @@ impl Display for Photo {
     }
 }
 
+#[derive(Copy, Clone)]
+pub enum Corner {
+    TopLeft,
+    TopRight,
+    BottomLeft,
+    BottomRight,
+}
+
+#[derive(Copy, Clone)]
+pub enum Edge {
+    Left,
+    Right,
+    Top,
+    Bottom,
+}
+
 impl Photo {
 
     pub fn from_loaded_image_mesh(m: Rc<LoadedImageMesh>) -> Photo {
@@ -64,7 +80,10 @@ impl Photo {
     }
 
     pub fn rotation(&self) -> f32 {
-        let angle: Deg<f32> = (self.rotate * Vec4::unit_x()).angle(Vec4::unit_x()).into();
+        let rotation_vec4 = self.rotate * Vec4::unit_x();
+        let rotation_vec2 = Vec2::new(rotation_vec4.x, rotation_vec4.y);
+
+        let angle: Deg<f32> = Vec2::unit_x().angle(rotation_vec2).into();
         angle.0
     }
 
@@ -102,48 +121,77 @@ impl Photo {
 
     }
 
+    ///returns a corner's WorldCoords location as a Vec2
+    fn corner_worldcoords_vec2(&self, corner: Corner) -> Vec2 {
+
+        let v = match corner {
+            Corner::TopLeft => self.to_world() * Vec4::new(-0.5,0.5,0.0, 1.0),
+            Corner::TopRight => self.to_world() * Vec4::new(0.5,0.5,0.0, 1.0),
+            Corner::BottomLeft => self.to_world() * Vec4::new(-0.5,-0.5,0.0, 1.0),
+            Corner::BottomRight => self.to_world() * Vec4::new(0.5,-0.5,0.0, 1.0),
+        };
+
+        Vec2::new(v.x, v.y)
+    }
+
+    ///returns true IFF the point is on the 'inside' side of this edge or collinear with the edge
+    fn is_inside(&self, point: WorldCoords, edge: Edge) -> bool {
+
+        let point = Vec2::new(point.x as f32, point.y as f32);
+
+        let corner_on_edge = match edge {
+            Edge::Bottom | Edge::Left => self.corner_worldcoords_vec2(Corner::BottomLeft),
+            Edge::Top | Edge::Right => self.corner_worldcoords_vec2(Corner::TopRight),
+        };
+
+        let inward_normal_point = match edge {
+            Edge::Bottom | Edge::Right => self.corner_worldcoords_vec2(Corner::TopLeft),
+            Edge::Top | Edge::Left => self.corner_worldcoords_vec2(Corner::BottomRight),
+        };
+
+        let to_point = point - corner_on_edge;
+        let inward_normal = inward_normal_point - corner_on_edge;
+
+        inward_normal.dot(to_point) >= 0.0
+    }
 
 
-    //todo: update for rotation
-    //todo: apply distortion (option?)
+    pub fn corner(&self, corner: Corner) -> WorldCoords {
+
+        let v = self.corner_worldcoords_vec2(corner);
+
+        WorldCoords{x: v.x as f64, y: v.y as f64}
+    }
+
+    ///true IFF the point is within the undistorted edges of this photo
     pub fn contains(&self, point: WorldCoords) -> bool {
 
-        let bottom_left_corner_world_coords = self.to_world() * Vec4::new(-0.5,-0.5,0.0, 1.0);
-        let   top_right_corner_world_coords = self.to_world() * Vec4::new( 0.5, 0.5,0.0, 1.0);
-
-        log::info!("contains: bottom left: {}, {}", bottom_left_corner_world_coords.x, bottom_left_corner_world_coords.y);
-        log::info!("            top right: {}, {}", top_right_corner_world_coords.x, top_right_corner_world_coords.y);
-        log::info!("                  scale: {:?}", self.scale);
-        log::info!("              translate: {:?}", self.translate);
-
-
-        bottom_left_corner_world_coords.x <= point.x as f32 &&
-        point.x as f32 <= top_right_corner_world_coords.x &&
-
-        bottom_left_corner_world_coords.y <= point.y as f32 &&
-        point.y as f32 <= top_right_corner_world_coords.y
+        self.is_inside(point, Edge::Left) &&
+        self.is_inside(point, Edge::Right) &&
+        self.is_inside(point, Edge::Top) &&
+        self.is_inside(point, Edge::Bottom)
     }
-}
 
-//todo: update for rotation
-//todo: apply distortion (option?)
-pub fn convert_photo_px_to_world(v: Vec3, m: &Photo) -> Mat4 {
+    ///returns a matrix to translate a location in this photo (in pixel units) to a world location (in worldcoord units)
+    pub fn convert_photo_px_to_world(&self, v: Vec3) -> Mat4 {
 
-    let to_bottom_left = Mat4::from_translation(Vec3::new(-0.5,-0.5,0.0));
-    let to_v = Mat4::from_translation(v);
+        let to_bottom_left = Mat4::from_translation(Vec3::new(-0.5,-0.5,0.0));
+        let to_v = Mat4::from_translation(v);
 
-    let translation_and_scale =
-        m.translate
-        //flip y-coords
-        .concat(&Mat4::from_nonuniform_scale(1.0, -1.0, 1.0))
-        .concat(&to_v)
-        .concat(&m.scale)
-        //scaled to photo space
-        .concat(&to_bottom_left);
+        let transformation =
+            self.translate
+            .concat(&self.rotate)
+            //flip y-coords
+            .concat(&Mat4::from_nonuniform_scale(1.0, -1.0, 1.0))
+            .concat(&to_v)
+            .concat(&self.scale)
+            //scaled to photo space
+            .concat(&to_bottom_left);
 
 
-    let mut just_translation = Mat4::identity();
-    just_translation.w = translation_and_scale.w;
+        let mut just_translation = Mat4::identity();
+        just_translation.w = transformation.w;
 
-    just_translation
+        just_translation
+    }
 }

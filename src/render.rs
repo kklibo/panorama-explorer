@@ -7,7 +7,7 @@ use three_d::gui::GUI;
 use three_d::{Transform,Context,CameraControl,FrameInput,SquareMatrix,InnerSpace};
 
 use crate::control_state::{ControlState, DewarpShader};
-use crate::photo::convert_photo_px_to_world;
+use crate::photo::{Photo, Corner};
 use crate::entities::Entities;
 use crate::viewport_geometry::{WorldCoords, ViewportGeometry};
 
@@ -65,7 +65,7 @@ pub fn render(
             let t1 = Mat4::from_nonuniform_scale(10.0, 10.0, 1.0);
             let t1 = Mat4::from_translation(Vec3::new(0.0, 0.0, 1.0)).concat(&t1);
 
-            let t1 = convert_photo_px_to_world(v, &entities.photos[0]).concat(&t1);
+            let t1 = entities.photos[0].convert_photo_px_to_world(v).concat(&t1);
 
 
             color_program.use_uniform_vec4("color", &Vec4::new(0.8, 0.5, 0.2, 0.5)).unwrap();
@@ -79,7 +79,7 @@ pub fn render(
             let t1 = Mat4::from_angle_z(cgmath::Deg(45.0)).concat(&t1);
             let t1 = Mat4::from_translation(Vec3::new(0.0, 0.0, 1.0)).concat(&t1);
 
-            let t1 = convert_photo_px_to_world(v, &entities.photos[1]).concat(&t1);
+            let t1 = entities.photos[1].convert_photo_px_to_world(v).concat(&t1);
 
             color_program.use_uniform_vec4("color", &Vec4::new(0.2, 0.8, 0.2, 0.5)).unwrap();
             entities.color_mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
@@ -164,12 +164,9 @@ pub fn render(
             let dx = (p2.x - p1.x) as f32;
             let dy = (p2.y - p1.y) as f32;
 
-            let line_x = Vec3::new(dx, dy, 0.0);
+            let line_x = Vec2::new(dx, dy);
 
-            let mut angle = Vec3::unit_x().angle(line_x);
-            if Vec3::unit_y().dot(line_x) < 0.0 {
-                angle = -angle;
-            }
+            let angle = Vec2::unit_x().angle(line_x);
 
             let t1 = Mat4::from_nonuniform_scale(
                 line_x.magnitude(),
@@ -188,6 +185,31 @@ pub fn render(
         entities.line_mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
 
 
+        //selected photo border rectangle
+        if let Some(index) = control_state.selected_photo_index {
+
+            let mut lines = Vec::<Mat4>::new();
+
+            let mut add_corner_line = |corner1: Corner, corner2: Corner| {
+                lines.push(line_transform(
+                    &viewport_geometry,
+                    entities.photos[index].corner(corner1),
+                    entities.photos[index].corner(corner2),
+                    1.0
+                ));
+            };
+
+            add_corner_line(Corner::BottomLeft, Corner::BottomRight);
+            add_corner_line(Corner::BottomRight, Corner::TopRight);
+            add_corner_line(Corner::TopRight, Corner::TopLeft);
+            add_corner_line(Corner::TopLeft, Corner::BottomLeft);
+
+            //draw lines
+            for ref line in lines {
+                color_program.use_uniform_vec4("color", &Vec4::new(0.2, 0.8, 0.2, 1.0)).unwrap();
+                entities.line_mesh.render(&color_program, render_states, frame_input.viewport, line, &camera)?;
+            }
+        }
 
         gui.render().unwrap();
 

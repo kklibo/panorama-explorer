@@ -21,6 +21,7 @@ pub fn run_gui_controls(frame_input: &mut FrameInput, gui: &mut GUI, control_sta
             ui.separator();
 
             ui.heading("Left-click Tool:");
+            ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::SelectPhoto, format!("{:?}", MouseTool::SelectPhoto));
             ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::RotationPoint, format!("{:?}", MouseTool::RotationPoint));
             ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::DragToRotate, format!("{:?}", MouseTool::DragToRotate));
             ui.separator();
@@ -142,14 +143,30 @@ pub fn handle_input_events(
 
                     MouseButton::Left =>
                         match control_state.active_mouse_tool {
+                            MouseTool::SelectPhoto => {
+
+                                control_state.selected_photo_index = None;
+
+                                for (i, ph) in photos.iter().enumerate() {
+                                    if ph.contains(world_coords) {
+                                        info!("clicked on photos[{}]", i);
+
+                                        info!("  translation: {:?}", ph.translation());
+
+                                        control_state.photo_ui_text = ph.to_string();
+
+                                        control_state.selected_photo_index = Some(i);
+                                        break;
+                                    }
+                                }
+
+                            }
                             MouseTool::RotationPoint =>
                                 match *state {
                                     State::Pressed => {
                                         control_state.active_rotation_point =
                                         Some(RotationPoint {
                                             point: world_coords,
-                                            translate_start: photos[1].translation(),
-                                            rotate_start: photos[1].rotation(),
                                         });
                                         control_state.debug_rotation = 0.0;
                                     },
@@ -159,17 +176,20 @@ pub fn handle_input_events(
                                 match *state {
                                     State::Pressed => {
                                         control_state.active_rotate_drag =
-                                        Some(RotateDrag {
-                                            mouse_start: world_coords,
-                                            mouse_coords: world_coords,
-                                            rotate_start: photos[1].rotation(),
-                                        });
+                                            control_state.selected_photo_index.map(|index| {
+                                                RotateDrag {
+                                                    mouse_start: world_coords,
+                                                    mouse_coords: world_coords,
+                                                    translate_start: photos[index].translation(),
+                                                    rotate_start: photos[index].rotation(),
+                                                    photo_index: index,
+                                                }
+                                            });
                                     },
                                     State::Released => control_state.active_rotate_drag = None,
                                 }
 
                         }
-
 
                 }
             },
@@ -229,9 +249,9 @@ pub fn handle_input_events(
                         let drag_angle = drag_angle.0;
 
                         //reset to values from start of rotation before rotate_around_point
-                        photos[1].set_rotation(rp.rotate_start);
-                        photos[1].set_translation(rp.translate_start);
-                        photos[1].rotate_around_point(drag_angle, rp.point);
+                        photos[rotate_drag.photo_index].set_rotation(rotate_drag.rotate_start);
+                        photos[rotate_drag.photo_index].set_translation(rotate_drag.translate_start);
+                        photos[rotate_drag.photo_index].rotate_around_point(drag_angle, rp.point);
                     }
                 }
             },
