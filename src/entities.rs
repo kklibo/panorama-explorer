@@ -28,7 +28,7 @@ impl Entities {
         context: &Context,
         loaded: &Loaded,
         pto_file: &str,
-        filepaths: &[&str; 3],) -> Entities
+        filepaths: &Vec<&str>,) -> Entities
     {
         let file_u8 = loaded.bytes(pto_file).unwrap();
         let s = std::str::from_utf8(file_u8).unwrap();
@@ -73,6 +73,9 @@ impl Entities {
             |photo| photo.set_translation(WorldCoords { x: 500.0, y: 0.0 })
         );
 
+        photos.get_mut(2).map(
+            |photo| photo.set_translation(WorldCoords { x: 1000.0, y: 0.0 })
+        );
 
         let color_mesh = color_mesh(&context);
         let line_mesh = line_mesh(&context);

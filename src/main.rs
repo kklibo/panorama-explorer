@@ -63,6 +63,7 @@ fn main() {
     //    "test_photos/test2.jpg",
         "test_photos/DSC_9108_12_5.JPG",
         "test_photos/DSC_9109_12_5.JPG",
+        "test_photos/DSC_9110_12_5.JPG",
     ];
 
     Loader::load(&filepaths, move |loaded|
@@ -72,7 +73,7 @@ fn main() {
             &context,
             loaded,
             &pto_file,
-            &filepaths
+            &filepaths.to_vec()
         );
 
         let         texture_program = MeshProgram::new(&context, include_str!("shaders/texture.frag")).unwrap();
