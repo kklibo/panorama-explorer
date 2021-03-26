@@ -7,7 +7,7 @@ use three_d::gui::GUI;
 use three_d::{Transform,Context,CameraControl,FrameInput,SquareMatrix,InnerSpace};
 
 use crate::control_state::{ControlState, DewarpShader};
-use crate::photo::{convert_photo_px_to_world, Photo, Corner};
+use crate::photo::{Photo, Corner};
 use crate::entities::Entities;
 use crate::viewport_geometry::{WorldCoords, ViewportGeometry};
 
@@ -65,7 +65,7 @@ pub fn render(
             let t1 = Mat4::from_nonuniform_scale(10.0, 10.0, 1.0);
             let t1 = Mat4::from_translation(Vec3::new(0.0, 0.0, 1.0)).concat(&t1);
 
-            let t1 = convert_photo_px_to_world(v, &entities.photos[0]).concat(&t1);
+            let t1 = entities.photos[0].convert_photo_px_to_world(v).concat(&t1);
 
 
             color_program.use_uniform_vec4("color", &Vec4::new(0.8, 0.5, 0.2, 0.5)).unwrap();
@@ -79,7 +79,7 @@ pub fn render(
             let t1 = Mat4::from_angle_z(cgmath::Deg(45.0)).concat(&t1);
             let t1 = Mat4::from_translation(Vec3::new(0.0, 0.0, 1.0)).concat(&t1);
 
-            let t1 = convert_photo_px_to_world(v, &entities.photos[1]).concat(&t1);
+            let t1 = entities.photos[1].convert_photo_px_to_world(v).concat(&t1);
 
             color_program.use_uniform_vec4("color", &Vec4::new(0.2, 0.8, 0.2, 0.5)).unwrap();
             entities.color_mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
