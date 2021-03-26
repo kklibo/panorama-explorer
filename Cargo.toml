@@ -13,13 +13,15 @@ crate-type = ["cdylib"]
 #three-d = "0.5.0"
 three-d = {path = "../../temp_repos/three-d/"}
 log = "0.4"
-cgmath = "0.17"
+cgmath = { version = "0.17", features = ["serde"] }
 wasm-bindgen = "0.2"
 console_error_panic_hook = "0.1"
 console_log = "0.1"
 env_logger = "0.8.2"
 tri-mesh = "0.5.0"
 nom = "6.1.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0.64"
 
 [dev-dependencies]
 assert_matches = "1.4.0"

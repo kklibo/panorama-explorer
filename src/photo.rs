@@ -1,8 +1,11 @@
 use std::rc::Rc;
 use std::fmt::{Display,Formatter};
 
-use three_d::*;
+use three_d::{Vec2,Vec3,Vec4,Mat4,Texture,Transform,InnerSpace,SquareMatrix};
 use cgmath::Deg;
+
+use serde::{Serialize, Deserialize, Serializer};
+use serde::ser::SerializeStruct;
 
 pub use crate::entities::LoadedImageMesh;
 use crate::viewport_geometry::WorldCoords;
@@ -15,6 +18,21 @@ pub struct Photo {
     translate: Mat4, //in WorldCoords units
     rotate: Mat4,    //around photo center
 
+}
+
+//todo: make this complete?
+impl Serialize for Photo {
+
+    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error> where
+        S: Serializer {
+
+
+        let mut state = serializer.serialize_struct("Photo", 3)?;
+        state.serialize_field("scale", &self.scale)?;
+        state.serialize_field("translate", &self.translate)?;
+        state.serialize_field("rotate", &self.rotate)?;
+        state.end()
+    }
 }
 
 impl Display for Photo {
