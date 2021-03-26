@@ -83,7 +83,7 @@ pub fn handle_input_events(
     control_state: &mut ControlState,
     viewport_geometry: &mut ViewportGeometry,
     camera: &mut CameraControl,
-    photos: &mut [Photo; 2],
+    photos: &mut Vec<Photo>,
 ) -> bool {
 
     let mut redraw = false;

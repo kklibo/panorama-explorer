@@ -17,7 +17,7 @@ pub struct Entities {
 
     pub image0_control_points: Vec<Vec3>,
     pub image1_control_points: Vec<Vec3>,
-    pub photos: [Photo; 2],
+    pub photos: Vec<Photo>,
     pub color_mesh: Mesh,
     pub line_mesh: Mesh,
 }
@@ -65,11 +65,14 @@ impl Entities {
             Rc::new(load_mesh_from_filepath(&context, loaded, x))
         }).collect();
 
-        let mut photos = [
-            Photo::from_loaded_image_mesh(meshes[0].clone()),
-            Photo::from_loaded_image_mesh(meshes[1].clone()),
-        ];
-        photos[1].set_translation(WorldCoords { x: 500.0, y: 0.0 });
+        let mut photos: Vec<Photo> = meshes.iter().map(|mesh| {
+            Photo::from_loaded_image_mesh(mesh.clone())
+        }).collect();
+
+        photos.get_mut(1).map(
+            |photo| photo.set_translation(WorldCoords { x: 500.0, y: 0.0 })
+        );
+
 
         let color_mesh = color_mesh(&context);
         let line_mesh = line_mesh(&context);
