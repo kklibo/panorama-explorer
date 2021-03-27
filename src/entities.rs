@@ -89,6 +89,17 @@ impl Entities {
         }
     }
 
+    pub fn set_photos_from_json_serde_string(&mut self, s: &str) -> Result<(), Box<dyn std::error::Error>> {
+
+        for (index, line) in s.lines().enumerate() {
+
+            if let Some(photo) = self.photos.get_mut(index) {
+                photo.set_from_json_serde_string(line)?;
+            };
+        }
+        Ok(())
+    }
+
 }
 
 

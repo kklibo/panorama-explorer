@@ -26,9 +26,7 @@ impl Serialize for Photo {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error> where
         S: Serializer {
 
-
-        let mut state = serializer.serialize_struct("Photo", 3)?;
-        state.serialize_field("scale", &self.scale)?;
+        let mut state = serializer.serialize_struct("Photo", 2)?;
         state.serialize_field("translate", &self.translate)?;
         state.serialize_field("rotate", &self.rotate)?;
         state.end()
@@ -73,6 +71,21 @@ impl Photo {
             translate,
             rotate,
         }
+    }
+
+    pub fn set_from_json_serde_string(&mut self, s: &str) -> Result<(), Box<dyn std::error::Error>> {
+
+        #[derive(Deserialize)]
+        struct SavedFields {
+            translate: Mat4,
+            rotate: Mat4,
+        };
+
+        let saved_fields: SavedFields = serde_json::from_str(s)?;
+        self.translate = saved_fields.translate;
+        self.rotate = saved_fields.rotate;
+
+        Ok(())
     }
 
     pub fn to_world(&self) -> Mat4 {

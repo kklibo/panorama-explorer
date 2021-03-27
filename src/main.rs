@@ -104,7 +104,7 @@ fn main() {
                                                viewport_geometry.height_in_world_units() as f32,
                                                10.0).unwrap();
 
-            redraw |= gui_controls::run_gui_controls(&mut frame_input, &mut gui, &mut control_state, &entities);
+            redraw |= gui_controls::run_gui_controls(&mut frame_input, &mut gui, &mut control_state, &mut entities);
 
             redraw |= gui_controls::handle_input_events(
                 &mut frame_input,

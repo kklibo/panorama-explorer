@@ -12,7 +12,7 @@ use crate::control_state::{ControlState, MouseTool, DewarpShader, Pan, Drag, Rot
 use crate::photo::Photo;
 use crate::entities::Entities;
 
-pub fn run_gui_controls(frame_input: &mut FrameInput, gui: &mut GUI, control_state: &mut ControlState, entities: &Entities) -> bool {
+pub fn run_gui_controls(frame_input: &mut FrameInput, gui: &mut GUI, control_state: &mut ControlState, entities: &mut Entities) -> bool {
 
     let mut panel_width = frame_input.viewport.width / 10;
     let redraw = gui.update(frame_input, |gui_context| {
@@ -72,6 +72,16 @@ pub fn run_gui_controls(frame_input: &mut FrameInput, gui: &mut GUI, control_sta
             ui.heading("Photo Info");
             ui.label(&control_state.photo_ui_text);
             ui.separator();
+
+            if ui.add(Button::new("reset photos")).clicked() {
+
+                let s =
+r#"{"translate":{"x":{"x":1.0,"y":0.0,"z":0.0,"w":0.0},"y":{"x":0.0,"y":1.0,"z":0.0,"w":0.0},"z":{"x":0.0,"y":0.0,"z":1.0,"w":0.0},"w":{"x":0.0,"y":0.0,"z":0.0,"w":1.0}},"rotate":{"x":{"x":1.0,"y":0.0,"z":0.0,"w":0.0},"y":{"x":-0.0,"y":1.0,"z":0.0,"w":0.0},"z":{"x":0.0,"y":0.0,"z":1.0,"w":0.0},"w":{"x":0.0,"y":0.0,"z":0.0,"w":1.0}}}
+{"translate":{"x":{"x":1.0,"y":0.0,"z":0.0,"w":0.0},"y":{"x":0.0,"y":1.0,"z":0.0,"w":0.0},"z":{"x":0.0,"y":0.0,"z":1.0,"w":0.0},"w":{"x":500.0,"y":0.0,"z":0.0,"w":1.0}},"rotate":{"x":{"x":1.0,"y":0.0,"z":0.0,"w":0.0},"y":{"x":-0.0,"y":1.0,"z":0.0,"w":0.0},"z":{"x":0.0,"y":0.0,"z":1.0,"w":0.0},"w":{"x":0.0,"y":0.0,"z":0.0,"w":1.0}}}
+{"translate":{"x":{"x":1.0,"y":0.0,"z":0.0,"w":0.0},"y":{"x":0.0,"y":1.0,"z":0.0,"w":0.0},"z":{"x":0.0,"y":0.0,"z":1.0,"w":0.0},"w":{"x":1000.0,"y":0.0,"z":0.0,"w":1.0}},"rotate":{"x":{"x":1.0,"y":0.0,"z":0.0,"w":0.0},"y":{"x":-0.0,"y":1.0,"z":0.0,"w":0.0},"z":{"x":0.0,"y":0.0,"z":1.0,"w":0.0},"w":{"x":0.0,"y":0.0,"z":0.0,"w":1.0}}}"#;
+
+                entities.set_photos_from_json_serde_string(s).unwrap();
+            }
 
             if ui.add(Button::new("dump debug info")).clicked() {
                 for ph in &entities.photos {
