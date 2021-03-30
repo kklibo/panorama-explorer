@@ -32,6 +32,26 @@ pub fn run_gui_controls(frame_input: &mut FrameInput, gui: &mut GUI, control_sta
             ui.radio_value(&mut control_state.dewarp_shader, DewarpShader::Dewarp2, format!("On"));
             ui.separator();
 
+            let mut photo_ui_text = "".to_string();
+
+            if let Some(i) = control_state.selected_photo_index {
+                if let Some(ph) = entities.photos.get(i) {
+                    photo_ui_text = format!(
+                        "Center:\
+                         x: {:.2}\n\
+                         y: {:.2}\n\
+                        Rotation: {:.2}°",
+                        ph.translation().x,
+                        ph.translation().y,
+                        ph.rotation()
+                    );
+                }
+            }
+            ui.heading("Photo Info");
+            ui.label(&photo_ui_text);
+            ui.separator();
+
+
             if ui.add(Button::new("reset photos")).clicked() {
 
                 entities.set_photos_from_json_serde_string(&entities.photo_persistent_settings_string.clone()).unwrap();
@@ -43,10 +63,6 @@ pub fn run_gui_controls(frame_input: &mut FrameInput, gui: &mut GUI, control_sta
 
                 ui.heading("Mouse Location");
                 ui.label(&control_state.mouse_location_ui_text);
-                ui.separator();
-
-                ui.heading("Photo Info");
-                ui.label(&control_state.photo_ui_text);
                 ui.separator();
 
                 if ui.add(Button::new("dump debug info")).clicked() {
@@ -108,8 +124,6 @@ pub fn handle_input_events(
 
                                         info!("  translation: {:?}", ph.translation());
 
-                                        control_state.photo_ui_text = ph.to_string();
-
                                         control_state.active_drag =
                                         Some(Drag {
                                             mouse_start: *position,
@@ -134,8 +148,6 @@ pub fn handle_input_events(
                                         info!("clicked on photos[{}]", i);
 
                                         info!("  translation: {:?}", ph.translation());
-
-                                        control_state.photo_ui_text = ph.to_string();
 
                                         control_state.selected_photo_index = Some(i);
                                         break;
