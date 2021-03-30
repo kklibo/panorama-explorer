@@ -75,12 +75,7 @@ pub fn run_gui_controls(frame_input: &mut FrameInput, gui: &mut GUI, control_sta
 
             if ui.add(Button::new("reset photos")).clicked() {
 
-                let s =
-r#"{"translate":{"x":{"x":1.0,"y":0.0,"z":0.0,"w":0.0},"y":{"x":0.0,"y":1.0,"z":0.0,"w":0.0},"z":{"x":0.0,"y":0.0,"z":1.0,"w":0.0},"w":{"x":0.0,"y":0.0,"z":0.0,"w":1.0}},"rotate":{"x":{"x":1.0,"y":0.0,"z":0.0,"w":0.0},"y":{"x":-0.0,"y":1.0,"z":0.0,"w":0.0},"z":{"x":0.0,"y":0.0,"z":1.0,"w":0.0},"w":{"x":0.0,"y":0.0,"z":0.0,"w":1.0}}}
-{"translate":{"x":{"x":1.0,"y":0.0,"z":0.0,"w":0.0},"y":{"x":0.0,"y":1.0,"z":0.0,"w":0.0},"z":{"x":0.0,"y":0.0,"z":1.0,"w":0.0},"w":{"x":500.0,"y":0.0,"z":0.0,"w":1.0}},"rotate":{"x":{"x":1.0,"y":0.0,"z":0.0,"w":0.0},"y":{"x":-0.0,"y":1.0,"z":0.0,"w":0.0},"z":{"x":0.0,"y":0.0,"z":1.0,"w":0.0},"w":{"x":0.0,"y":0.0,"z":0.0,"w":1.0}}}
-{"translate":{"x":{"x":1.0,"y":0.0,"z":0.0,"w":0.0},"y":{"x":0.0,"y":1.0,"z":0.0,"w":0.0},"z":{"x":0.0,"y":0.0,"z":1.0,"w":0.0},"w":{"x":1000.0,"y":0.0,"z":0.0,"w":1.0}},"rotate":{"x":{"x":1.0,"y":0.0,"z":0.0,"w":0.0},"y":{"x":-0.0,"y":1.0,"z":0.0,"w":0.0},"z":{"x":0.0,"y":0.0,"z":1.0,"w":0.0},"w":{"x":0.0,"y":0.0,"z":0.0,"w":1.0}}}"#;
-
-                entities.set_photos_from_json_serde_string(s).unwrap();
+                entities.set_photos_from_json_serde_string(&entities.photo_persistent_settings_string.clone()).unwrap();
             }
 
             if ui.add(Button::new("dump debug info")).clicked() {

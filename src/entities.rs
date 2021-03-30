@@ -18,6 +18,7 @@ pub struct Entities {
     pub image0_control_points: Vec<Vec3>,
     pub image1_control_points: Vec<Vec3>,
     pub photos: Vec<Photo>,
+    pub photo_persistent_settings_string: String,
     pub color_mesh: Mesh,
     pub line_mesh: Mesh,
 }
@@ -28,8 +29,12 @@ impl Entities {
         context: &Context,
         loaded: &Loaded,
         pto_file: &str,
+        photo_persistent_settings_file: &str,
         filepaths: &Vec<&str>,) -> Entities
     {
+        let file_u8 = loaded.bytes(photo_persistent_settings_file).unwrap();
+        let photo_persistent_settings_string = std::str::from_utf8(file_u8).unwrap().to_string();
+
         let file_u8 = loaded.bytes(pto_file).unwrap();
         let s = std::str::from_utf8(file_u8).unwrap();
 
@@ -61,7 +66,7 @@ impl Entities {
                 }
             }).collect::<Vec<Vec3>>();
 
-        let meshes: Vec<Rc<LoadedImageMesh>> = filepaths.iter().skip(1).map(|x| {
+        let meshes: Vec<Rc<LoadedImageMesh>> = filepaths.iter().skip(2).map(|x| {
             Rc::new(load_mesh_from_filepath(&context, loaded, x))
         }).collect();
 
@@ -84,6 +89,7 @@ impl Entities {
             image0_control_points,
             image1_control_points,
             photos,
+            photo_persistent_settings_string,
             color_mesh,
             line_mesh,
         }
