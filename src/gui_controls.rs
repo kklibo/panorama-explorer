@@ -32,10 +32,6 @@ pub fn run_gui_controls(frame_input: &mut FrameInput, gui: &mut GUI, control_sta
             ui.radio_value(&mut control_state.dewarp_shader, DewarpShader::Dewarp2, format!("On"));
             ui.separator();
 
-            ui.heading("Mouse Info");
-            ui.label(&control_state.mouse_click_ui_text);
-            ui.separator();
-
             ui.heading("Mouse Location");
             ui.label(&control_state.mouse_location_ui_text);
             ui.separator();
@@ -74,8 +70,6 @@ pub fn handle_input_events(
     for event in frame_input.events.iter() {
         match event {
             Event::MouseClick {state, button, position, handled, ..} => {
-                info!("MouseClick: {:?}", event);
-                control_state.mouse_click_ui_text = format!("MouseClick: {:#?}", event);
 
                 if *handled {break};
 
