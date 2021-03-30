@@ -54,15 +54,18 @@ fn main() {
 
     //let pto_file = "test_photos/test.pto";
     let pto_file = "test_photos/DSC_9108_12_5 - DSC_9109_12_5.pto";
+    let photo_persistent_settings_file = "test_photos/photo_persistent_settings";
 
     let filepaths = [
         pto_file,
+        photo_persistent_settings_file,
     //    "test_photos/test1_border.jpg",
     //    "test_photos/test2_border.jpg",
     //    "test_photos/test1.jpg",
     //    "test_photos/test2.jpg",
         "test_photos/DSC_9108_12_5.JPG",
         "test_photos/DSC_9109_12_5.JPG",
+        "test_photos/DSC_9110_12_5.JPG",
     ];
 
     Loader::load(&filepaths, move |loaded|
@@ -72,7 +75,8 @@ fn main() {
             &context,
             loaded,
             &pto_file,
-            &filepaths
+            &photo_persistent_settings_file,
+            &filepaths.to_vec()
         );
 
         let         texture_program = MeshProgram::new(&context, include_str!("shaders/texture.frag")).unwrap();
@@ -103,7 +107,7 @@ fn main() {
                                                viewport_geometry.height_in_world_units() as f32,
                                                10.0).unwrap();
 
-            redraw |= gui_controls::run_gui_controls(&mut frame_input, &mut gui, &mut control_state);
+            redraw |= gui_controls::run_gui_controls(&mut frame_input, &mut gui, &mut control_state, &mut entities);
 
             redraw |= gui_controls::handle_input_events(
                 &mut frame_input,

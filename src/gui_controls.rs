@@ -2,7 +2,7 @@ use three_d::camera::CameraControl;
 use three_d::frame::FrameInput;
 use three_d::frame::input::{Event, MouseButton, State, Key};
 use three_d::gui::GUI;
-use three_d::egui_gui::egui::{SidePanel, Slider};
+use three_d::egui_gui::egui::{SidePanel, Slider, Button};
 use three_d::math::{Vec2, InnerSpace};
 
 use log::info;
@@ -10,8 +10,9 @@ use log::info;
 use crate::viewport_geometry::{ViewportGeometry, PixelCoords, WorldCoords};
 use crate::control_state::{ControlState, MouseTool, DewarpShader, Pan, Drag, RotateDrag, RotationPoint};
 use crate::photo::Photo;
+use crate::entities::Entities;
 
-pub fn run_gui_controls(frame_input: &mut FrameInput, gui: &mut GUI, control_state: &mut ControlState) -> bool {
+pub fn run_gui_controls(frame_input: &mut FrameInput, gui: &mut GUI, control_state: &mut ControlState, entities: &mut Entities) -> bool {
 
     let mut panel_width = frame_input.viewport.width / 10;
     let redraw = gui.update(frame_input, |gui_context| {
@@ -71,6 +72,17 @@ pub fn run_gui_controls(frame_input: &mut FrameInput, gui: &mut GUI, control_sta
             ui.heading("Photo Info");
             ui.label(&control_state.photo_ui_text);
             ui.separator();
+
+            if ui.add(Button::new("reset photos")).clicked() {
+
+                entities.set_photos_from_json_serde_string(&entities.photo_persistent_settings_string.clone()).unwrap();
+            }
+
+            if ui.add(Button::new("dump debug info")).clicked() {
+                for ph in &entities.photos {
+                    info!("{}", serde_json::to_string(ph).unwrap());
+                }
+            }
         });
         panel_width = (gui_context.used_size().x * gui_context.pixels_per_point()) as usize;
     }).unwrap();
@@ -83,7 +95,7 @@ pub fn handle_input_events(
     control_state: &mut ControlState,
     viewport_geometry: &mut ViewportGeometry,
     camera: &mut CameraControl,
-    photos: &mut [Photo; 2],
+    photos: &mut Vec<Photo>,
 ) -> bool {
 
     let mut redraw = false;

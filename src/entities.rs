@@ -17,7 +17,8 @@ pub struct Entities {
 
     pub image0_control_points: Vec<Vec3>,
     pub image1_control_points: Vec<Vec3>,
-    pub photos: [Photo; 2],
+    pub photos: Vec<Photo>,
+    pub photo_persistent_settings_string: String,
     pub color_mesh: Mesh,
     pub line_mesh: Mesh,
 }
@@ -28,8 +29,12 @@ impl Entities {
         context: &Context,
         loaded: &Loaded,
         pto_file: &str,
-        filepaths: &[&str; 3],) -> Entities
+        photo_persistent_settings_file: &str,
+        filepaths: &Vec<&str>,) -> Entities
     {
+        let file_u8 = loaded.bytes(photo_persistent_settings_file).unwrap();
+        let photo_persistent_settings_string = std::str::from_utf8(file_u8).unwrap().to_string();
+
         let file_u8 = loaded.bytes(pto_file).unwrap();
         let s = std::str::from_utf8(file_u8).unwrap();
 
@@ -61,15 +66,21 @@ impl Entities {
                 }
             }).collect::<Vec<Vec3>>();
 
-        let meshes: Vec<Rc<LoadedImageMesh>> = filepaths.iter().skip(1).map(|x| {
+        let meshes: Vec<Rc<LoadedImageMesh>> = filepaths.iter().skip(2).map(|x| {
             Rc::new(load_mesh_from_filepath(&context, loaded, x))
         }).collect();
 
-        let mut photos = [
-            Photo::from_loaded_image_mesh(meshes[0].clone()),
-            Photo::from_loaded_image_mesh(meshes[1].clone()),
-        ];
-        photos[1].set_translation(WorldCoords { x: 500.0, y: 0.0 });
+        let mut photos: Vec<Photo> = meshes.iter().map(|mesh| {
+            Photo::from_loaded_image_mesh(mesh.clone())
+        }).collect();
+
+        photos.get_mut(1).map(
+            |photo| photo.set_translation(WorldCoords { x: 500.0, y: 0.0 })
+        );
+
+        photos.get_mut(2).map(
+            |photo| photo.set_translation(WorldCoords { x: 1000.0, y: 0.0 })
+        );
 
         let color_mesh = color_mesh(&context);
         let line_mesh = line_mesh(&context);
@@ -78,9 +89,21 @@ impl Entities {
             image0_control_points,
             image1_control_points,
             photos,
+            photo_persistent_settings_string,
             color_mesh,
             line_mesh,
         }
+    }
+
+    pub fn set_photos_from_json_serde_string(&mut self, s: &str) -> Result<(), Box<dyn std::error::Error>> {
+
+        for (index, line) in s.lines().enumerate() {
+
+            if let Some(photo) = self.photos.get_mut(index) {
+                photo.set_from_json_serde_string(line)?;
+            };
+        }
+        Ok(())
     }
 
 }
