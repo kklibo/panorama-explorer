@@ -33,22 +33,24 @@ pub fn run_gui_controls(frame_input: &mut FrameInput, gui: &mut GUI, control_sta
             ui.radio_value(&mut control_state.dewarp_shader, DewarpShader::Dewarp2, format!("On"));
             ui.separator();
 
-            let mut photo_ui_text = "".to_string();
+            let mut photo_ui_text = "None".to_string();
 
             if let Some(i) = control_state.selected_photo_index {
                 if let Some(ph) = entities.photos.get(i) {
                     photo_ui_text = format!(
-                        "Center:\n\
+                        "Photo {}\n\
+                        Center:\n\
                          x: {:.2}\n\
                          y: {:.2}\n\
                         Rotation: {:.2}°",
+                        i,
                         ph.translation().x,
                         ph.translation().y,
                         ph.rotation()
                     );
                 }
             }
-            ui.heading("Photo Info");
+            ui.heading("Selected Photo Info");
             ui.label(&photo_ui_text);
             ui.separator();
 
