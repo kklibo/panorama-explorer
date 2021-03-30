@@ -27,34 +27,6 @@ pub fn run_gui_controls(frame_input: &mut FrameInput, gui: &mut GUI, control_sta
             ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::DragToRotate, format!("{:?}", MouseTool::DragToRotate));
             ui.separator();
 
-            ui.heading("Lens Correction");
-
-            let slider = Slider::f32(&mut control_state.dewarp_strength, 0.0..=10.0)
-                .text("dewarp strength")
-                .clamp_to_range(true);
-
-            if ui.add(slider).changed() {
-                //todo
-                //update_shader_uniforms(&control_state.dewarp_strength);
-
-            }
-            ui.separator();
-
-            ui.heading("rotation test");
-            let slider = Slider::f32(&mut control_state.debug_rotation, -1.0..=1.0)
-                .text("angle")
-                .clamp_to_range(true);
-            if ui.add(slider).changed() {
-                if let Some(ref rp) = control_state.active_rotation_point {
-                    //reset to values from start of rotation before rotate_around_point
-                    //todo
-                    //photos[1].set_rotation(rp.rotate_start);
-                    //photos[1].set_translation(rp.translate_start);
-                    //photos[1].rotate_around_point(control_state.debug_rotation, rp.point);
-                }
-            }
-            ui.separator();
-
             ui.heading("Dewarp Shader");
             ui.radio_value(&mut control_state.dewarp_shader, DewarpShader::NoMorph, format!("{:?}", DewarpShader::NoMorph));
             ui.radio_value(&mut control_state.dewarp_shader, DewarpShader::Dewarp1, format!("{:?}", DewarpShader::Dewarp1));
@@ -180,7 +152,6 @@ pub fn handle_input_events(
                                         Some(RotationPoint {
                                             point: world_coords,
                                         });
-                                        control_state.debug_rotation = 0.0;
                                     },
                                     _ => {},
                                 },
@@ -310,22 +281,6 @@ pub fn handle_input_events(
                         DewarpShader::Dewarp1 => DewarpShader::Dewarp2,
                         DewarpShader::Dewarp2 => DewarpShader::NoMorph,
                     };
-                }
-
-                if *kind == Key::PageUp && *state == State::Pressed
-                {
-                    redraw = true;
-                    control_state.dewarp_strength += 0.1;
-                    //todo
-                    //update_shader_uniforms(&control_state.dewarp_strength);
-                }
-
-                if *kind == Key::PageDown && *state == State::Pressed
-                {
-                    redraw = true;
-                    control_state.dewarp_strength -= 0.1;
-                    //todo
-                    //update_shader_uniforms(&control_state.dewarp_strength);
                 }
             },
             _ => {},
