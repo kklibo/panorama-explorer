@@ -2,7 +2,7 @@ use three_d::camera::CameraControl;
 use three_d::frame::FrameInput;
 use three_d::frame::input::{Event, MouseButton, State, Key};
 use three_d::gui::GUI;
-use three_d::egui_gui::egui::{SidePanel, Slider, Button};
+use three_d::egui_gui::egui::{SidePanel, Slider, Button, CollapsingHeader};
 use three_d::math::{Vec2, InnerSpace};
 
 use log::info;
@@ -32,24 +32,29 @@ pub fn run_gui_controls(frame_input: &mut FrameInput, gui: &mut GUI, control_sta
             ui.radio_value(&mut control_state.dewarp_shader, DewarpShader::Dewarp2, format!("On"));
             ui.separator();
 
-            ui.heading("Mouse Location");
-            ui.label(&control_state.mouse_location_ui_text);
-            ui.separator();
-
-            ui.heading("Photo Info");
-            ui.label(&control_state.photo_ui_text);
-            ui.separator();
-
             if ui.add(Button::new("reset photos")).clicked() {
 
                 entities.set_photos_from_json_serde_string(&entities.photo_persistent_settings_string.clone()).unwrap();
             }
 
-            if ui.add(Button::new("dump debug info")).clicked() {
-                for ph in &entities.photos {
-                    info!("{}", serde_json::to_string(ph).unwrap());
+            CollapsingHeader::new("Debug")
+                .default_open(true)
+                .show(ui, |ui| {
+
+                ui.heading("Mouse Location");
+                ui.label(&control_state.mouse_location_ui_text);
+                ui.separator();
+
+                ui.heading("Photo Info");
+                ui.label(&control_state.photo_ui_text);
+                ui.separator();
+
+                if ui.add(Button::new("dump debug info")).clicked() {
+                    for ph in &entities.photos {
+                        info!("{}", serde_json::to_string(ph).unwrap());
+                    }
                 }
-            }
+            });
         });
         panel_width = (gui_context.used_size().x * gui_context.pixels_per_point()) as usize;
     }).unwrap();
