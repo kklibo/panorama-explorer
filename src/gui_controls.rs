@@ -28,9 +28,8 @@ pub fn run_gui_controls(frame_input: &mut FrameInput, gui: &mut GUI, control_sta
             ui.separator();
 
             ui.heading("Dewarp Shader");
-            ui.radio_value(&mut control_state.dewarp_shader, DewarpShader::NoMorph, format!("{:?}", DewarpShader::NoMorph));
-            ui.radio_value(&mut control_state.dewarp_shader, DewarpShader::Dewarp1, format!("{:?}", DewarpShader::Dewarp1));
-            ui.radio_value(&mut control_state.dewarp_shader, DewarpShader::Dewarp2, format!("{:?}", DewarpShader::Dewarp2));
+            ui.radio_value(&mut control_state.dewarp_shader, DewarpShader::NoMorph, format!("Off"));
+            ui.radio_value(&mut control_state.dewarp_shader, DewarpShader::Dewarp2, format!("On"));
             ui.separator();
 
             ui.heading("Mouse Info");

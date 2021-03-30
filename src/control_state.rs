@@ -58,7 +58,7 @@ impl Default for ControlState {
 
     fn default() -> Self {
         Self {
-            dewarp_shader: DewarpShader::NoMorph,
+            dewarp_shader: DewarpShader::Dewarp2,
             active_pan: None,
             active_drag: None,
             active_rotation_point: None,
