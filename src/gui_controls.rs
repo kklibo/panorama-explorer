@@ -14,7 +14,8 @@ use crate::entities::Entities;
 
 pub fn run_gui_controls(frame_input: &mut FrameInput, gui: &mut GUI, control_state: &mut ControlState, entities: &mut Entities) -> bool {
 
-    let mut panel_width = frame_input.viewport.width / 10;
+    let mut panel_width = 200; //hardcode to prevent sizing problems
+
     let redraw = gui.update(frame_input, |gui_context| {
 
         SidePanel::left("side_panel", panel_width as f32).show(gui_context, |ui| {
@@ -37,7 +38,7 @@ pub fn run_gui_controls(frame_input: &mut FrameInput, gui: &mut GUI, control_sta
             if let Some(i) = control_state.selected_photo_index {
                 if let Some(ph) = entities.photos.get(i) {
                     photo_ui_text = format!(
-                        "Center:\
+                        "Center:\n\
                          x: {:.2}\n\
                          y: {:.2}\n\
                         Rotation: {:.2}°",
@@ -72,7 +73,6 @@ pub fn run_gui_controls(frame_input: &mut FrameInput, gui: &mut GUI, control_sta
                 }
             });
         });
-        panel_width = (gui_context.used_size().x * gui_context.pixels_per_point()) as usize;
     }).unwrap();
 
     redraw
