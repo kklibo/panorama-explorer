@@ -2,7 +2,7 @@ use three_d::camera::CameraControl;
 use three_d::frame::FrameInput;
 use three_d::frame::input::{Event, MouseButton, State, Key};
 use three_d::gui::GUI;
-use three_d::egui_gui::egui::{SidePanel, Slider, Button, CollapsingHeader};
+use three_d::egui_gui::egui::{SidePanel, Button, CollapsingHeader};
 use three_d::math::{Vec2, InnerSpace};
 
 use log::info;
@@ -14,7 +14,7 @@ use crate::entities::Entities;
 
 pub fn run_gui_controls(frame_input: &mut FrameInput, gui: &mut GUI, control_state: &mut ControlState, entities: &mut Entities) -> bool {
 
-    let mut panel_width = 200; //hardcode to prevent sizing problems
+    let panel_width = 200; //hardcode to prevent sizing problems
 
     let redraw = gui.update(frame_input, |gui_context| {
 
@@ -143,43 +143,23 @@ pub fn handle_input_events(
                         match control_state.active_mouse_tool {
                             MouseTool::SelectPhoto => {
 
-                                /*
-                                control_state.selected_photo_index = None;
-
-                                for (i, ph) in photos.iter().enumerate() {
-                                    if ph.contains(world_coords) {
-                                        info!("clicked on photos[{}]", i);
-
-                                        info!("  translation: {:?}", ph.translation());
-
-                                        control_state.selected_photo_index = Some(i);
-                                        break;
-                                    }
-                                }*/
-
-
                                 if *state == State::Pressed {
 
                                     //collect all photos which are under the cursor
                                     let clicked_photos: Vec<(usize, &Photo)> =
-                                        photos.iter().enumerate().filter(|(i, ph)| {
+                                        photos.iter().enumerate().filter(|(_, ph)| {
                                             ph.contains(world_coords)
                                         }).collect();
-
-                                    info!("clicked_photos.len(): {}", clicked_photos.len());
-
 
                                     let next_photo =
                                         //if a photo is selected
                                         if let Some(selected) = control_state.selected_photo_index {
-                                            info!("selected: {}", selected);
 
                                             //if one of these is the currently selected one
                                             // advance to the next one (by index):
 
                                             //skip until the selected photo is reached, or the end
-                                            clicked_photos.iter().skip_while(|(i, ph)| {
-                                                info!("selected: {}, *i: {}", selected, *i);
+                                            clicked_photos.iter().skip_while(|(i, _)| {
                                                 selected != *i
                                             })
 
@@ -188,15 +168,13 @@ pub fn handle_input_events(
 
                                         } else { None };
 
-                                    info!("next_one: {:?}", next_photo.map(|(i, ph)| *i));
-
                                     //if next_photo is None:
                                     // a selected photo was not clicked on, or
                                     // the selected photo was the highest index that was clicked on
                                     //in either case, select the first photo that was clicked on (if any)
                                     control_state.selected_photo_index =
                                         next_photo.or(clicked_photos.first())
-                                            .map(|(i, ph)| *i);
+                                            .map(|(i, _)| *i);
 
                                 }
 
