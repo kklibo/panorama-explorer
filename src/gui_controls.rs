@@ -143,6 +143,7 @@ pub fn handle_input_events(
                         match control_state.active_mouse_tool {
                             MouseTool::SelectPhoto => {
 
+                                /*
                                 control_state.selected_photo_index = None;
 
                                 for (i, ph) in photos.iter().enumerate() {
@@ -154,6 +155,49 @@ pub fn handle_input_events(
                                         control_state.selected_photo_index = Some(i);
                                         break;
                                     }
+                                }*/
+
+
+                                if *state == State::Pressed {
+
+                                    //collect all photos which are under the cursor
+                                    let clicked_photos: Vec<(usize, &Photo)> =
+                                        photos.iter().enumerate().filter(|(i, ph)| {
+                                            ph.contains(world_coords)
+                                        }).collect();
+
+                                    info!("clicked_photos.len(): {}", clicked_photos.len());
+
+
+                                    let next_photo =
+                                        //if a photo is selected
+                                        if let Some(selected) = control_state.selected_photo_index {
+                                            info!("selected: {}", selected);
+
+                                            //if one of these is the currently selected one
+                                            // advance to the next one (by index):
+
+                                            //skip until the selected photo is reached, or the end
+                                            clicked_photos.iter().skip_while(|(i, ph)| {
+                                                info!("selected: {}, *i: {}", selected, *i);
+                                                selected != *i
+                                            })
+
+                                            //skip the selected photo, get the next one
+                                            .skip(1).next()
+
+                                        } else { None };
+
+                                    info!("next_one: {:?}", next_photo.map(|(i, ph)| *i));
+
+                                    //if next_photo is None:
+                                    // a selected photo was not clicked on, or
+                                    // the selected photo was the highest index that was clicked on
+                                    //in either case, select the first photo that was clicked on (if any)
+                                    control_state.selected_photo_index =
+                                        next_photo.or(clicked_photos.first())
+                                            .map(|(i, ph)| *i);
+
                                 }
 
                             }
