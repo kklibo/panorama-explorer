@@ -59,30 +59,33 @@ pub fn render(
         }
 
 
-        let points = &entities.image0_control_points;
+        if control_state.control_points_visible {
 
-        for &v in points {
-            let t1 = Mat4::from_nonuniform_scale(10.0, 10.0, 1.0);
-            let t1 = Mat4::from_translation(Vec3::new(0.0, 0.0, 1.0)).concat(&t1);
+            let points = &entities.image0_control_points;
 
-            let t1 = entities.photos[0].convert_photo_px_to_world(v).concat(&t1);
+            for &v in points {
+                let t1 = Mat4::from_nonuniform_scale(10.0, 10.0, 1.0);
+                let t1 = Mat4::from_translation(Vec3::new(0.0, 0.0, 1.0)).concat(&t1);
+
+                let t1 = entities.photos[0].convert_photo_px_to_world(v).concat(&t1);
 
 
-            color_program.use_uniform_vec4("color", &Vec4::new(0.8, 0.5, 0.2, 0.5)).unwrap();
-            entities.color_mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
-        }
+                color_program.use_uniform_vec4("color", &Vec4::new(0.8, 0.5, 0.2, 0.5)).unwrap();
+                entities.color_mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
+            }
 
-        let points = &entities.image1_control_points;
+            let points = &entities.image1_control_points;
 
-        for &v in points {
-            let t1 = Mat4::from_nonuniform_scale(10.0, 10.0, 1.0);
-            let t1 = Mat4::from_angle_z(cgmath::Deg(45.0)).concat(&t1);
-            let t1 = Mat4::from_translation(Vec3::new(0.0, 0.0, 1.0)).concat(&t1);
+            for &v in points {
+                let t1 = Mat4::from_nonuniform_scale(10.0, 10.0, 1.0);
+                let t1 = Mat4::from_angle_z(cgmath::Deg(45.0)).concat(&t1);
+                let t1 = Mat4::from_translation(Vec3::new(0.0, 0.0, 1.0)).concat(&t1);
 
-            let t1 = entities.photos[1].convert_photo_px_to_world(v).concat(&t1);
+                let t1 = entities.photos[1].convert_photo_px_to_world(v).concat(&t1);
 
-            color_program.use_uniform_vec4("color", &Vec4::new(0.2, 0.8, 0.2, 0.5)).unwrap();
-            entities.color_mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
+                color_program.use_uniform_vec4("color", &Vec4::new(0.2, 0.8, 0.2, 0.5)).unwrap();
+                entities.color_mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
+            }
         }
 
         if let Some(ref rp) = control_state.active_rotation_point {
