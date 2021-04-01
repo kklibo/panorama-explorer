@@ -112,14 +112,16 @@ pub fn handle_input_events(
         match event {
             Event::MouseClick {state, button, position, handled, ..} => {
 
-                if *handled {break};
+                //allow button releases in the UI to end drag actions
+                // otherwise don't re-handle UI mouse clicks
+                if *state != State::Released && *handled {break};
 
                 let world_coords =
                 viewport_geometry.pixels_to_world(&PixelCoords{x: position.0, y: position.1});
                 info!("  WorldCoords: {:?}", world_coords);
 
                 //pan view click handler
-                let mut pan_view = |control_state: &mut ControlState| {
+                let pan_view = |control_state: &mut ControlState| {
                     control_state.active_pan =
                         match *state {
                             State::Pressed => {
@@ -133,7 +135,7 @@ pub fn handle_input_events(
                 };
 
                 //drag photo click handler
-                let mut drag_photo = |control_state: &mut ControlState| {
+                let drag_photo = |control_state: &mut ControlState| {
                     match *state {
                         State::Pressed => {
 
