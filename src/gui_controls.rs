@@ -12,7 +12,13 @@ use crate::control_state::{ControlState, MouseTool, DewarpShader, Pan, Drag, Rot
 use crate::photo::Photo;
 use crate::entities::Entities;
 
-pub fn run_gui_controls(frame_input: &mut FrameInput, gui: &mut GUI, control_state: &mut ControlState, entities: &mut Entities) -> bool {
+pub fn run_gui_controls(
+    frame_input: &mut FrameInput,
+    gui: &mut GUI,
+    control_state: &mut ControlState,
+    viewport_geometry: &mut ViewportGeometry,
+    entities: &mut Entities,
+) -> bool {
 
     let panel_width = 200; //hardcode to prevent sizing problems
 
@@ -28,6 +34,16 @@ pub fn run_gui_controls(frame_input: &mut FrameInput, gui: &mut GUI, control_sta
             ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::SelectPhoto, format!("{:?}", MouseTool::SelectPhoto));
             ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::RotationPoint, format!("{:?}", MouseTool::RotationPoint));
             ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::DragToRotate, format!("{:?}", MouseTool::DragToRotate));
+            ui.separator();
+
+            ui.horizontal(|ui| {
+                if ui.add(Button::new("Zoom In")).clicked() {
+                    viewport_geometry.zoom_in();
+                }
+                if ui.add(Button::new("Zoom Out")).clicked() {
+                    viewport_geometry.zoom_out();
+                }
+            });
             ui.separator();
 
             ui.heading("Dewarp Shader");
