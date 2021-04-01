@@ -34,6 +34,8 @@ pub struct RotateDrag {
 
 #[derive(Debug, PartialEq)]
 pub enum MouseTool {
+    PanView,
+    DragPhoto,
     SelectPhoto,
     RotationPoint,
     DragToRotate,

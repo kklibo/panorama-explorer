@@ -23,6 +23,8 @@ pub fn run_gui_controls(frame_input: &mut FrameInput, gui: &mut GUI, control_sta
             ui.separator();
 
             ui.heading("Left-click Tool:");
+            ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::PanView, format!("{:?}", MouseTool::PanView));
+            ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::DragPhoto, format!("{:?}", MouseTool::DragPhoto));
             ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::SelectPhoto, format!("{:?}", MouseTool::SelectPhoto));
             ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::RotationPoint, format!("{:?}", MouseTool::RotationPoint));
             ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::DragToRotate, format!("{:?}", MouseTool::DragToRotate));
@@ -100,10 +102,9 @@ pub fn handle_input_events(
                 viewport_geometry.pixels_to_world(&PixelCoords{x: position.0, y: position.1});
                 info!("  WorldCoords: {:?}", world_coords);
 
-
-                match *button {
-
-                    MouseButton::Middle => control_state.active_pan =
+                //pan view click handler
+                let mut pan_view = |control_state: &mut ControlState| {
+                    control_state.active_pan =
                         match *state {
                             State::Pressed => {
                                 Some(Pan {
@@ -112,35 +113,49 @@ pub fn handle_input_events(
                                 })
                             },
                             State::Released => None,
-                        },
+                        };
+                };
 
-                    MouseButton::Right =>
-                        match *state {
-                            State::Pressed => {
+                //drag photo click handler
+                let mut drag_photo = |control_state: &mut ControlState| {
+                    match *state {
+                        State::Pressed => {
 
-                                control_state.active_drag = None;
+                            control_state.active_drag = None;
 
-                                for (i, ph) in photos.iter().enumerate() {
-                                    if ph.contains(world_coords) {
-                                        info!("clicked on photos[{}]", i);
+                            for (i, ph) in photos.iter().enumerate() {
+                                if ph.contains(world_coords) {
+                                    info!("clicked on photos[{}]", i);
 
-                                        info!("  translation: {:?}", ph.translation());
+                                    info!("  translation: {:?}", ph.translation());
 
-                                        control_state.active_drag =
-                                        Some(Drag {
-                                            mouse_start: *position,
-                                            photo_start: ph.translation(),
-                                            photo_index: i,
-                                        });
-                                        break;
-                                    }
+                                    control_state.active_drag =
+                                    Some(Drag {
+                                        mouse_start: *position,
+                                        photo_start: ph.translation(),
+                                        photo_index: i,
+                                    });
+                                    break;
                                 }
-                            },
-                            State::Released => control_state.active_drag = None,
+                            }
                         },
+                        State::Released => control_state.active_drag = None,
+                    };
+                };
+
+
+                match *button {
+
+                    MouseButton::Middle => pan_view(control_state),
+
+                    MouseButton::Right => drag_photo(control_state),
 
                     MouseButton::Left =>
                         match control_state.active_mouse_tool {
+                            MouseTool::PanView => pan_view(control_state),
+
+                            MouseTool::DragPhoto => drag_photo(control_state),
+
                             MouseTool::SelectPhoto => {
 
                                 if *state == State::Pressed {
