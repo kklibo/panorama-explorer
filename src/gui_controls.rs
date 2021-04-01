@@ -78,6 +78,21 @@ pub fn run_gui_controls(
                 entities.set_photos_from_json_serde_string(&entities.photo_persistent_settings_string.clone()).unwrap();
             }
 
+            CollapsingHeader::new("Help")
+                .default_open(true)
+                .show(ui, |ui| {
+
+                    ui.label(format!(
+                        "Left Mouse: use tool\n\
+                        Middle Mouse: pan view\n\
+                        Scroll Wheel: zoom in/out\n\
+                        Right Mouse: drag photo"
+                        )
+                    );
+
+                });
+
+
             CollapsingHeader::new("Debug")
                 .default_open(true)
                 .show(ui, |ui| {
