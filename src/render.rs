@@ -59,30 +59,33 @@ pub fn render(
         }
 
 
-        let points = &entities.image0_control_points;
+        if control_state.control_points_visible {
 
-        for &v in points {
-            let t1 = Mat4::from_nonuniform_scale(10.0, 10.0, 1.0);
-            let t1 = Mat4::from_translation(Vec3::new(0.0, 0.0, 1.0)).concat(&t1);
+            let points = &entities.image0_control_points;
 
-            let t1 = entities.photos[0].convert_photo_px_to_world(v).concat(&t1);
+            for &v in points {
+                let t1 = Mat4::from_nonuniform_scale(10.0, 10.0, 1.0);
+                let t1 = Mat4::from_translation(Vec3::new(0.0, 0.0, 1.0)).concat(&t1);
+
+                let t1 = entities.photos[0].convert_photo_px_to_world(v).concat(&t1);
 
 
-            color_program.use_uniform_vec4("color", &Vec4::new(0.8, 0.5, 0.2, 0.5)).unwrap();
-            entities.color_mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
-        }
+                color_program.use_uniform_vec4("color", &Vec4::new(0.8, 0.5, 0.2, 0.5)).unwrap();
+                entities.color_mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
+            }
 
-        let points = &entities.image1_control_points;
+            let points = &entities.image1_control_points;
 
-        for &v in points {
-            let t1 = Mat4::from_nonuniform_scale(10.0, 10.0, 1.0);
-            let t1 = Mat4::from_angle_z(cgmath::Deg(45.0)).concat(&t1);
-            let t1 = Mat4::from_translation(Vec3::new(0.0, 0.0, 1.0)).concat(&t1);
+            for &v in points {
+                let t1 = Mat4::from_nonuniform_scale(10.0, 10.0, 1.0);
+                let t1 = Mat4::from_angle_z(cgmath::Deg(45.0)).concat(&t1);
+                let t1 = Mat4::from_translation(Vec3::new(0.0, 0.0, 1.0)).concat(&t1);
 
-            let t1 = entities.photos[1].convert_photo_px_to_world(v).concat(&t1);
+                let t1 = entities.photos[1].convert_photo_px_to_world(v).concat(&t1);
 
-            color_program.use_uniform_vec4("color", &Vec4::new(0.2, 0.8, 0.2, 0.5)).unwrap();
-            entities.color_mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
+                color_program.use_uniform_vec4("color", &Vec4::new(0.2, 0.8, 0.2, 0.5)).unwrap();
+                entities.color_mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
+            }
         }
 
         if let Some(ref rp) = control_state.active_rotation_point {
@@ -147,11 +150,7 @@ pub fn render(
             }
         }
 
-        let p1 = WorldCoords { x: -500.0, y: 0.0 };
-        let p2 = WorldCoords { x: 50.0, y: -100.0 };
-        let pixel_thickness = 1f32;
 
-        //line render test
         fn line_transform(
             viewport_geometry: &ViewportGeometry,
             p1: WorldCoords,
@@ -178,12 +177,6 @@ pub fn render(
 
             t1
         }
-
-        let t1 = line_transform(&viewport_geometry, p1, p2, pixel_thickness);
-
-        color_program.use_uniform_vec4("color", &Vec4::new(0.8, 0.8, 0.2, 1.0)).unwrap();
-        entities.line_mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
-
 
         //selected photo border rectangle
         if let Some(index) = control_state.selected_photo_index {

@@ -34,6 +34,8 @@ pub struct RotateDrag {
 
 #[derive(Debug, PartialEq)]
 pub enum MouseTool {
+    PanView,
+    DragPhoto,
     SelectPhoto,
     RotationPoint,
     DragToRotate,
@@ -49,33 +51,27 @@ pub struct ControlState {
 
     pub selected_photo_index: Option<usize>,
 
-    pub dewarp_strength: f32,
-    pub debug_rotation: f32,
-
-    pub mouse_click_ui_text: String,
     pub mouse_location_ui_text: String,
     pub photo_ui_text: String,
+    pub control_points_visible: bool,
 }
 
 impl Default for ControlState {
 
     fn default() -> Self {
         Self {
-            dewarp_shader: DewarpShader::NoMorph,
+            dewarp_shader: DewarpShader::Dewarp2,
             active_pan: None,
             active_drag: None,
             active_rotation_point: None,
             active_rotate_drag: None,
-            active_mouse_tool: MouseTool::RotationPoint,
+            active_mouse_tool: MouseTool::SelectPhoto,
 
             selected_photo_index: None,
 
-            dewarp_strength: 0.0,
-            debug_rotation: 0.0,
-
-            mouse_click_ui_text: "".to_string(),
             mouse_location_ui_text: "".to_string(),
             photo_ui_text: "".to_string(),
+            control_points_visible: false,
         }
     }
 }

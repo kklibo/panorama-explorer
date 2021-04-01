@@ -2,7 +2,7 @@ use three_d::camera::CameraControl;
 use three_d::frame::FrameInput;
 use three_d::frame::input::{Event, MouseButton, State, Key};
 use three_d::gui::GUI;
-use three_d::egui_gui::egui::{SidePanel, Slider, Button};
+use three_d::egui_gui::egui::{SidePanel, Button, CollapsingHeader};
 use three_d::math::{Vec2, InnerSpace};
 
 use log::info;
@@ -12,9 +12,16 @@ use crate::control_state::{ControlState, MouseTool, DewarpShader, Pan, Drag, Rot
 use crate::photo::Photo;
 use crate::entities::Entities;
 
-pub fn run_gui_controls(frame_input: &mut FrameInput, gui: &mut GUI, control_state: &mut ControlState, entities: &mut Entities) -> bool {
+pub fn run_gui_controls(
+    frame_input: &mut FrameInput,
+    gui: &mut GUI,
+    control_state: &mut ControlState,
+    viewport_geometry: &mut ViewportGeometry,
+    entities: &mut Entities,
+) -> bool {
 
-    let mut panel_width = frame_input.viewport.width / 10;
+    let panel_width = 200; //hardcode to prevent sizing problems
+
     let redraw = gui.update(frame_input, |gui_context| {
 
         SidePanel::left("side_panel", panel_width as f32).show(gui_context, |ui| {
@@ -22,69 +29,88 @@ pub fn run_gui_controls(frame_input: &mut FrameInput, gui: &mut GUI, control_sta
             ui.separator();
 
             ui.heading("Left-click Tool:");
+            ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::PanView, format!("{:?}", MouseTool::PanView));
+            ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::DragPhoto, format!("{:?}", MouseTool::DragPhoto));
             ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::SelectPhoto, format!("{:?}", MouseTool::SelectPhoto));
             ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::RotationPoint, format!("{:?}", MouseTool::RotationPoint));
             ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::DragToRotate, format!("{:?}", MouseTool::DragToRotate));
             ui.separator();
 
-            ui.heading("Lens Correction");
-
-            let slider = Slider::f32(&mut control_state.dewarp_strength, 0.0..=10.0)
-                .text("dewarp strength")
-                .clamp_to_range(true);
-
-            if ui.add(slider).changed() {
-                //todo
-                //update_shader_uniforms(&control_state.dewarp_strength);
-
-            }
-            ui.separator();
-
-            ui.heading("rotation test");
-            let slider = Slider::f32(&mut control_state.debug_rotation, -1.0..=1.0)
-                .text("angle")
-                .clamp_to_range(true);
-            if ui.add(slider).changed() {
-                if let Some(ref rp) = control_state.active_rotation_point {
-                    //reset to values from start of rotation before rotate_around_point
-                    //todo
-                    //photos[1].set_rotation(rp.rotate_start);
-                    //photos[1].set_translation(rp.translate_start);
-                    //photos[1].rotate_around_point(control_state.debug_rotation, rp.point);
+            ui.horizontal(|ui| {
+                if ui.add(Button::new("Zoom In")).clicked() {
+                    viewport_geometry.zoom_in();
                 }
-            }
+                if ui.add(Button::new("Zoom Out")).clicked() {
+                    viewport_geometry.zoom_out();
+                }
+            });
             ui.separator();
 
             ui.heading("Dewarp Shader");
-            ui.radio_value(&mut control_state.dewarp_shader, DewarpShader::NoMorph, format!("{:?}", DewarpShader::NoMorph));
-            ui.radio_value(&mut control_state.dewarp_shader, DewarpShader::Dewarp1, format!("{:?}", DewarpShader::Dewarp1));
-            ui.radio_value(&mut control_state.dewarp_shader, DewarpShader::Dewarp2, format!("{:?}", DewarpShader::Dewarp2));
+            ui.radio_value(&mut control_state.dewarp_shader, DewarpShader::NoMorph, format!("Off"));
+            ui.radio_value(&mut control_state.dewarp_shader, DewarpShader::Dewarp2, format!("On"));
             ui.separator();
 
-            ui.heading("Mouse Info");
-            ui.label(&control_state.mouse_click_ui_text);
+            let mut photo_ui_text = "None".to_string();
+
+            if let Some(i) = control_state.selected_photo_index {
+                if let Some(ph) = entities.photos.get(i) {
+                    photo_ui_text = format!(
+                        "Photo {}\n\
+                        Center:\n\
+                         x: {:.2}\n\
+                         y: {:.2}\n\
+                        Rotation: {:.2}°",
+                        i,
+                        ph.translation().x,
+                        ph.translation().y,
+                        ph.rotation()
+                    );
+                }
+            }
+            ui.heading("Selected Photo Info");
+            ui.label(&photo_ui_text);
             ui.separator();
 
-            ui.heading("Mouse Location");
-            ui.label(&control_state.mouse_location_ui_text);
-            ui.separator();
-
-            ui.heading("Photo Info");
-            ui.label(&control_state.photo_ui_text);
-            ui.separator();
 
             if ui.add(Button::new("reset photos")).clicked() {
 
                 entities.set_photos_from_json_serde_string(&entities.photo_persistent_settings_string.clone()).unwrap();
             }
 
-            if ui.add(Button::new("dump debug info")).clicked() {
-                for ph in &entities.photos {
-                    info!("{}", serde_json::to_string(ph).unwrap());
+            CollapsingHeader::new("Help")
+                .default_open(false)
+                .show(ui, |ui| {
+
+                    ui.label(format!(
+                        "Left Mouse: use tool\n\
+                        Middle Mouse: pan view\n\
+                        Scroll Wheel: zoom in/out\n\
+                        Right Mouse: drag photo"
+                        )
+                    );
+
+                });
+
+
+            CollapsingHeader::new("Debug")
+                .default_open(false)
+                .show(ui, |ui| {
+
+                ui.heading("Mouse Location");
+                ui.label(&control_state.mouse_location_ui_text);
+                ui.separator();
+
+                ui.checkbox(&mut control_state.control_points_visible, "Show Control Points");
+                ui.separator();
+
+                if ui.add(Button::new("dump debug info")).clicked() {
+                    for ph in &entities.photos {
+                        info!("{}", serde_json::to_string(ph).unwrap());
+                    }
                 }
-            }
+            });
         });
-        panel_width = (gui_context.used_size().x * gui_context.pixels_per_point()) as usize;
     }).unwrap();
 
     redraw
@@ -103,19 +129,17 @@ pub fn handle_input_events(
     for event in frame_input.events.iter() {
         match event {
             Event::MouseClick {state, button, position, handled, ..} => {
-                info!("MouseClick: {:?}", event);
-                control_state.mouse_click_ui_text = format!("MouseClick: {:#?}", event);
 
-                if *handled {break};
+                //allow button releases in the UI to end drag actions
+                // otherwise don't re-handle UI mouse clicks
+                if *state != State::Released && *handled {break};
 
                 let world_coords =
                 viewport_geometry.pixels_to_world(&PixelCoords{x: position.0, y: position.1});
-                info!("  WorldCoords: {:?}", world_coords);
 
-
-                match *button {
-
-                    MouseButton::Middle => control_state.active_pan =
+                //pan view click handler
+                let pan_view = |control_state: &mut ControlState| {
+                    control_state.active_pan =
                         match *state {
                             State::Pressed => {
                                 Some(Pan {
@@ -124,52 +148,81 @@ pub fn handle_input_events(
                                 })
                             },
                             State::Released => None,
-                        },
+                        };
+                };
 
-                    MouseButton::Right =>
-                        match *state {
-                            State::Pressed => {
+                //drag photo click handler
+                let drag_photo = |control_state: &mut ControlState| {
+                    match *state {
+                        State::Pressed => {
 
-                                control_state.active_drag = None;
+                            control_state.active_drag = None;
 
-                                for (i, ph) in photos.iter().enumerate() {
-                                    if ph.contains(world_coords) {
-                                        info!("clicked on photos[{}]", i);
+                            for (i, ph) in photos.iter().enumerate() {
+                                if ph.contains(world_coords) {
 
-                                        info!("  translation: {:?}", ph.translation());
-
-                                        control_state.photo_ui_text = ph.to_string();
-
-                                        control_state.active_drag =
-                                        Some(Drag {
-                                            mouse_start: *position,
-                                            photo_start: ph.translation(),
-                                            photo_index: i,
-                                        });
-                                        break;
-                                    }
+                                    control_state.active_drag =
+                                    Some(Drag {
+                                        mouse_start: *position,
+                                        photo_start: ph.translation(),
+                                        photo_index: i,
+                                    });
+                                    break;
                                 }
-                            },
-                            State::Released => control_state.active_drag = None,
+                            }
                         },
+                        State::Released => control_state.active_drag = None,
+                    };
+                };
+
+
+                match *button {
+
+                    MouseButton::Middle => pan_view(control_state),
+
+                    MouseButton::Right => drag_photo(control_state),
 
                     MouseButton::Left =>
                         match control_state.active_mouse_tool {
+                            MouseTool::PanView => pan_view(control_state),
+
+                            MouseTool::DragPhoto => drag_photo(control_state),
+
                             MouseTool::SelectPhoto => {
 
-                                control_state.selected_photo_index = None;
+                                if *state == State::Pressed {
 
-                                for (i, ph) in photos.iter().enumerate() {
-                                    if ph.contains(world_coords) {
-                                        info!("clicked on photos[{}]", i);
+                                    //collect all photos which are under the cursor
+                                    let clicked_photos: Vec<(usize, &Photo)> =
+                                        photos.iter().enumerate().filter(|(_, ph)| {
+                                            ph.contains(world_coords)
+                                        }).collect();
 
-                                        info!("  translation: {:?}", ph.translation());
+                                    let next_photo =
+                                        //if a photo is selected
+                                        if let Some(selected) = control_state.selected_photo_index {
 
-                                        control_state.photo_ui_text = ph.to_string();
+                                            //if one of these is the currently selected one
+                                            // advance to the next one (by index):
 
-                                        control_state.selected_photo_index = Some(i);
-                                        break;
-                                    }
+                                            //skip until the selected photo is reached, or the end
+                                            clicked_photos.iter().skip_while(|(i, _)| {
+                                                selected != *i
+                                            })
+
+                                            //skip the selected photo, get the next one
+                                            .skip(1).next()
+
+                                        } else { None };
+
+                                    //if next_photo is None:
+                                    // a selected photo was not clicked on, or
+                                    // the selected photo was the highest index that was clicked on
+                                    //in either case, select the first photo that was clicked on (if any)
+                                    control_state.selected_photo_index =
+                                        next_photo.or(clicked_photos.first())
+                                            .map(|(i, _)| *i);
+
                                 }
 
                             }
@@ -180,7 +233,6 @@ pub fn handle_input_events(
                                         Some(RotationPoint {
                                             point: world_coords,
                                         });
-                                        control_state.debug_rotation = 0.0;
                                     },
                                     _ => {},
                                 },
@@ -219,8 +271,7 @@ pub fn handle_input_events(
                 if *handled {break};
 
                 if let Some(ref mut pan) = control_state.active_pan {
-                //    info!("mouse delta: {:?} {:?}", delta.0, delta.1);
-                //    info!("mouse position: {:?} {:?}", position.0, position.1);
+
                     redraw = true;
 
                     viewport_geometry.camera_position.x = pan.camera_start.x as f64 - ((position.0 - pan.mouse_start.0) * viewport_geometry.world_units_per_pixel());
@@ -268,7 +319,6 @@ pub fn handle_input_events(
                 }
             },
             Event::MouseWheel {delta, position, handled, ..} => {
-                info!("{:?}", delta);
 
                 if *handled {break};
 
@@ -276,8 +326,6 @@ pub fn handle_input_events(
 
                 let pixel_coords = PixelCoords{x: position.0, y: position.1};
                 let screen_coords = viewport_geometry.convert_pixel_to_screen(&pixel_coords);
-
-                info!("cursor_screen {:?},{:?}", screen_coords.x, screen_coords.y);
 
                 //center the zoom action on the cursor
                 let to_cursor = viewport_geometry.convert_screen_to_world_at_origin(&screen_coords);
@@ -310,22 +358,6 @@ pub fn handle_input_events(
                         DewarpShader::Dewarp1 => DewarpShader::Dewarp2,
                         DewarpShader::Dewarp2 => DewarpShader::NoMorph,
                     };
-                }
-
-                if *kind == Key::PageUp && *state == State::Pressed
-                {
-                    redraw = true;
-                    control_state.dewarp_strength += 0.1;
-                    //todo
-                    //update_shader_uniforms(&control_state.dewarp_strength);
-                }
-
-                if *kind == Key::PageDown && *state == State::Pressed
-                {
-                    redraw = true;
-                    control_state.dewarp_strength -= 0.1;
-                    //todo
-                    //update_shader_uniforms(&control_state.dewarp_strength);
                 }
             },
             _ => {},

@@ -29,7 +29,7 @@ fn main() {
     let mut viewport_geometry = ViewportGeometry::try_new(
         WorldCoords{x:0.0, y:0.0},
         1_f64,
-        10_u32,
+        11_u32,
         1_u32,
         15_u32,
         window.viewport().width,
@@ -107,7 +107,13 @@ fn main() {
                                                viewport_geometry.height_in_world_units() as f32,
                                                10.0).unwrap();
 
-            redraw |= gui_controls::run_gui_controls(&mut frame_input, &mut gui, &mut control_state, &mut entities);
+            redraw |= gui_controls::run_gui_controls(
+                &mut frame_input,
+                &mut gui,
+                &mut control_state,
+                &mut viewport_geometry,
+                &mut entities
+            );
 
             redraw |= gui_controls::handle_input_events(
                 &mut frame_input,
