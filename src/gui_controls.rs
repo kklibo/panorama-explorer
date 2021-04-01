@@ -136,7 +136,6 @@ pub fn handle_input_events(
 
                 let world_coords =
                 viewport_geometry.pixels_to_world(&PixelCoords{x: position.0, y: position.1});
-                info!("  WorldCoords: {:?}", world_coords);
 
                 //pan view click handler
                 let pan_view = |control_state: &mut ControlState| {
@@ -161,9 +160,6 @@ pub fn handle_input_events(
 
                             for (i, ph) in photos.iter().enumerate() {
                                 if ph.contains(world_coords) {
-                                    info!("clicked on photos[{}]", i);
-
-                                    info!("  translation: {:?}", ph.translation());
 
                                     control_state.active_drag =
                                     Some(Drag {
@@ -275,8 +271,7 @@ pub fn handle_input_events(
                 if *handled {break};
 
                 if let Some(ref mut pan) = control_state.active_pan {
-                //    info!("mouse delta: {:?} {:?}", delta.0, delta.1);
-                //    info!("mouse position: {:?} {:?}", position.0, position.1);
+
                     redraw = true;
 
                     viewport_geometry.camera_position.x = pan.camera_start.x as f64 - ((position.0 - pan.mouse_start.0) * viewport_geometry.world_units_per_pixel());
@@ -324,7 +319,6 @@ pub fn handle_input_events(
                 }
             },
             Event::MouseWheel {delta, position, handled, ..} => {
-                info!("{:?}", delta);
 
                 if *handled {break};
 
@@ -332,8 +326,6 @@ pub fn handle_input_events(
 
                 let pixel_coords = PixelCoords{x: position.0, y: position.1};
                 let screen_coords = viewport_geometry.convert_pixel_to_screen(&pixel_coords);
-
-                info!("cursor_screen {:?},{:?}", screen_coords.x, screen_coords.y);
 
                 //center the zoom action on the cursor
                 let to_cursor = viewport_geometry.convert_screen_to_world_at_origin(&screen_coords);
