@@ -65,7 +65,7 @@ impl Default for ControlState {
             active_drag: None,
             active_rotation_point: None,
             active_rotate_drag: None,
-            active_mouse_tool: MouseTool::RotationPoint,
+            active_mouse_tool: MouseTool::SelectPhoto,
 
             selected_photo_index: None,
 

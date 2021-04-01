@@ -79,7 +79,7 @@ pub fn run_gui_controls(
             }
 
             CollapsingHeader::new("Help")
-                .default_open(true)
+                .default_open(false)
                 .show(ui, |ui| {
 
                     ui.label(format!(
@@ -94,7 +94,7 @@ pub fn run_gui_controls(
 
 
             CollapsingHeader::new("Debug")
-                .default_open(true)
+                .default_open(false)
                 .show(ui, |ui| {
 
                 ui.heading("Mouse Location");

@@ -29,7 +29,7 @@ fn main() {
     let mut viewport_geometry = ViewportGeometry::try_new(
         WorldCoords{x:0.0, y:0.0},
         1_f64,
-        10_u32,
+        11_u32,
         1_u32,
         15_u32,
         window.viewport().width,
