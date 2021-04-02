@@ -29,7 +29,7 @@ fn main() {
     let mut viewport_geometry = ViewportGeometry::try_new(
         WorldCoords{x:0.0, y:0.0},
         1_f64,
-        11_u32,
+        12_u32,
         1_u32,
         15_u32,
         window.viewport().width,
@@ -54,11 +54,13 @@ fn main() {
 
     //let pto_file = "test_photos/test.pto";
     let pto_file = "test_photos/DSC_9108_12_5 - DSC_9109_12_5.pto";
-    let photo_persistent_settings_file = "test_photos/photo_persistent_settings";
+    let reset_photos_string_file = "test_photos/reset_photos_string";
+    let align_photos_string_file = "test_photos/align_photos_string";
 
     let filepaths = [
         pto_file,
-        photo_persistent_settings_file,
+        reset_photos_string_file,
+        align_photos_string_file,
     //    "test_photos/test1_border.jpg",
     //    "test_photos/test2_border.jpg",
     //    "test_photos/test1.jpg",
@@ -75,7 +77,8 @@ fn main() {
             &context,
             loaded,
             &pto_file,
-            &photo_persistent_settings_file,
+            &reset_photos_string_file,
+            &align_photos_string_file,
             &filepaths.to_vec()
         );
 
@@ -88,10 +91,6 @@ fn main() {
         // main loop
 
         let mut control_state = control_state::ControlState::default();
-        control_state.selected_photo_index = match entities.photos.is_empty() {
-            true => None,
-            false => Some(0),
-        };
 
         window.render_loop(move |mut frame_input|
         {

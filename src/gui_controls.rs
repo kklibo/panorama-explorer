@@ -72,11 +72,18 @@ pub fn run_gui_controls(
             ui.label(&photo_ui_text);
             ui.separator();
 
+            ui.label("demo");
 
             if ui.add(Button::new("reset photos")).clicked() {
 
-                entities.set_photos_from_json_serde_string(&entities.photo_persistent_settings_string.clone()).unwrap();
+                entities.set_photos_from_json_serde_string(&entities.reset_photos_string.clone()).unwrap();
             }
+            if ui.add(Button::new("align photos")).clicked() {
+
+                entities.set_photos_from_json_serde_string(&entities.align_photos_string.clone()).unwrap();
+            }
+
+            ui.separator();
 
             CollapsingHeader::new("Help")
                 .default_open(false)
@@ -158,16 +165,30 @@ pub fn handle_input_events(
 
                             control_state.active_drag = None;
 
-                            for (i, ph) in photos.iter().enumerate() {
-                                if ph.contains(world_coords) {
+                            //only modify the selected photo (if there is one)
+                            if let Some(i) = control_state.selected_photo_index {
+                                if photos[i].contains(world_coords) {
+                                        control_state.active_drag =
+                                            Some(Drag {
+                                                mouse_start: *position,
+                                                photo_start: photos[i].translation(),
+                                                photo_index: i,
+                                            });
+                                    }
 
-                                    control_state.active_drag =
-                                    Some(Drag {
-                                        mouse_start: *position,
-                                        photo_start: ph.translation(),
-                                        photo_index: i,
-                                    });
-                                    break;
+                            }
+                            //if no photo is selected, allow drags for any photo
+                            else {
+                                for (i, ph) in photos.iter().enumerate() {
+                                    if ph.contains(world_coords) {
+                                        control_state.active_drag =
+                                            Some(Drag {
+                                                mouse_start: *position,
+                                                photo_start: ph.translation(),
+                                                photo_index: i,
+                                            });
+                                        break;
+                                    }
                                 }
                             }
                         },

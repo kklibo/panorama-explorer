@@ -18,7 +18,8 @@ pub struct Entities {
     pub image0_control_points: Vec<Vec3>,
     pub image1_control_points: Vec<Vec3>,
     pub photos: Vec<Photo>,
-    pub photo_persistent_settings_string: String,
+    pub reset_photos_string: String,
+    pub align_photos_string: String,
     pub color_mesh: Mesh,
     pub line_mesh: Mesh,
 }
@@ -29,14 +30,21 @@ impl Entities {
         context: &Context,
         loaded: &Loaded,
         pto_file: &str,
-        photo_persistent_settings_file: &str,
+        reset_photos_string_file: &str,
+        align_photos_string_file: &str,
         filepaths: &Vec<&str>,) -> Entities
     {
-        let file_u8 = loaded.bytes(photo_persistent_settings_file).unwrap();
-        let photo_persistent_settings_string = std::str::from_utf8(file_u8).unwrap().to_string();
+        let file_u8 = loaded.bytes(reset_photos_string_file).unwrap();
+        let reset_photos_string = std::str::from_utf8(file_u8).unwrap().to_string();
+
+        let file_u8 = loaded.bytes(align_photos_string_file).unwrap();
+        let align_photos_string = std::str::from_utf8(file_u8).unwrap().to_string();
 
         let file_u8 = loaded.bytes(pto_file).unwrap();
         let s = std::str::from_utf8(file_u8).unwrap();
+
+        let skip_non_mesh_files = 3;
+
 
         let pairs = read_pto::read_control_point_pairs(s).unwrap();
 
@@ -66,7 +74,7 @@ impl Entities {
                 }
             }).collect::<Vec<Vec3>>();
 
-        let meshes: Vec<Rc<LoadedImageMesh>> = filepaths.iter().skip(2).map(|x| {
+        let meshes: Vec<Rc<LoadedImageMesh>> = filepaths.iter().skip(skip_non_mesh_files).map(|x| {
             Rc::new(load_mesh_from_filepath(&context, loaded, x))
         }).collect();
 
@@ -85,14 +93,18 @@ impl Entities {
         let color_mesh = color_mesh(&context);
         let line_mesh = line_mesh(&context);
 
-        Entities{
+        let mut entities = Entities{
             image0_control_points,
             image1_control_points,
             photos,
-            photo_persistent_settings_string,
+            reset_photos_string,
+            align_photos_string,
             color_mesh,
             line_mesh,
-        }
+        };
+
+        entities.set_photos_from_json_serde_string(&entities.reset_photos_string.clone());
+        entities
     }
 
     pub fn set_photos_from_json_serde_string(&mut self, s: &str) -> Result<(), Box<dyn std::error::Error>> {
