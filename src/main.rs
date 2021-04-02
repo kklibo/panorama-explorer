@@ -91,10 +91,6 @@ fn main() {
         // main loop
 
         let mut control_state = control_state::ControlState::default();
-        control_state.selected_photo_index = match entities.photos.is_empty() {
-            true => None,
-            false => Some(0),
-        };
 
         window.render_loop(move |mut frame_input|
         {
