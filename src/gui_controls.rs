@@ -72,11 +72,18 @@ pub fn run_gui_controls(
             ui.label(&photo_ui_text);
             ui.separator();
 
+            ui.label("demo");
 
             if ui.add(Button::new("reset photos")).clicked() {
 
-                entities.set_photos_from_json_serde_string(&entities.photo_persistent_settings_string.clone()).unwrap();
+                entities.set_photos_from_json_serde_string(&entities.reset_photos_string.clone()).unwrap();
             }
+            if ui.add(Button::new("align photos")).clicked() {
+
+                entities.set_photos_from_json_serde_string(&entities.align_photos_string.clone()).unwrap();
+            }
+
+            ui.separator();
 
             CollapsingHeader::new("Help")
                 .default_open(false)
