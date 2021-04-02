@@ -158,16 +158,30 @@ pub fn handle_input_events(
 
                             control_state.active_drag = None;
 
-                            for (i, ph) in photos.iter().enumerate() {
-                                if ph.contains(world_coords) {
+                            //only modify the selected photo (if there is one)
+                            if let Some(i) = control_state.selected_photo_index {
+                                if photos[i].contains(world_coords) {
+                                        control_state.active_drag =
+                                            Some(Drag {
+                                                mouse_start: *position,
+                                                photo_start: photos[i].translation(),
+                                                photo_index: i,
+                                            });
+                                    }
 
-                                    control_state.active_drag =
-                                    Some(Drag {
-                                        mouse_start: *position,
-                                        photo_start: ph.translation(),
-                                        photo_index: i,
-                                    });
-                                    break;
+                            }
+                            //if no photo is selected, allow drags for any photo
+                            else {
+                                for (i, ph) in photos.iter().enumerate() {
+                                    if ph.contains(world_coords) {
+                                        control_state.active_drag =
+                                            Some(Drag {
+                                                mouse_start: *position,
+                                                photo_start: ph.translation(),
+                                                photo_index: i,
+                                            });
+                                        break;
+                                    }
                                 }
                             }
                         },
