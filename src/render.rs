@@ -7,7 +7,7 @@ use three_d::gui::GUI;
 use three_d::{Transform,Context,CameraControl,FrameInput,SquareMatrix,InnerSpace};
 
 use crate::control_state::{ControlState, DewarpShader};
-use crate::photo::{Photo, Corner};
+use crate::photo::Corner;
 use crate::entities::Entities;
 use crate::viewport_geometry::{WorldCoords, ViewportGeometry};
 

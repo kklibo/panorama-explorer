@@ -173,6 +173,7 @@ mod tests {
 
         assert_matches!(
             ViewportGeometry::try_new(
+                WorldCoords{x: 0.0, y: 0.0},
                 1_f64, 10_u32, 1_u32, 15_u32,
                 0_usize,
                 100_usize,
@@ -182,6 +183,7 @@ mod tests {
 
         assert_matches!(
             ViewportGeometry::try_new(
+                WorldCoords{x: 0.0, y: 0.0},
                 1_f64, 10_u32, 1_u32, 15_u32,
                 100_usize,
                 0_usize,
@@ -191,6 +193,7 @@ mod tests {
 
         assert_matches!(
             ViewportGeometry::try_new(
+                WorldCoords{x: 0.0, y: 0.0},
                 1_f64, 10_u32, 1_u32, 15_u32,
                 0_usize,
                 0_usize,
@@ -199,11 +202,13 @@ mod tests {
         );
 
         let res = ViewportGeometry::try_new(
+                WorldCoords{x: 123.4, y: 567.8},
                 1_f64, 10_u32, 1_u32, 15_u32,
                 100_usize,
                 200_usize,
             ).unwrap();
 
+        assert_eq!(res.camera_position, WorldCoords{x: 123.4, y: 567.8});
         assert_eq!(res.zoom_scale, 1_f64);
         assert_eq!(res.zoom_value, 10_u32);
         assert_eq!(res.zoom_min, 1_u32);
@@ -215,7 +220,10 @@ mod tests {
     #[test]
     fn zoom_in_test() {
 
-        let v = ViewportGeometry::try_new(1.0, 0,0,10,100,200).unwrap();
+        let v = ViewportGeometry::try_new(
+                WorldCoords{x: 0.0, y: 0.0},
+            1.0, 0,0,10,
+            100,200).unwrap();
 
         {
             //failed zoom: at lower limit
@@ -257,7 +265,10 @@ mod tests {
     #[test]
     fn zoom_out_test() {
 
-        let v = ViewportGeometry::try_new(1.0, 0,0,10,100,200).unwrap();
+        let v = ViewportGeometry::try_new(
+                WorldCoords{x: 0.0, y: 0.0},
+            1.0, 0,0,10,
+            100,200).unwrap();
 
         {
             //failed zoom: at upper limit
@@ -300,7 +311,10 @@ mod tests {
     fn width_in_world_units_test() {
         let zoom_value = 10 as u32;
         let zoom_scale = 2 as f64;
-        let v = ViewportGeometry::try_new(zoom_scale, zoom_value, 0, 10, 400, 200).unwrap();
+        let v = ViewportGeometry::try_new(
+                WorldCoords{x: 0.0, y: 0.0},
+            zoom_scale, zoom_value, 0, 10,
+            400, 200).unwrap();
 
         assert_approx_eq!(v.width_in_world_units(), 2048 as f64);
     }
@@ -311,7 +325,10 @@ mod tests {
         let zoom_scale = 2 as f64;
         let width_in_pixels = 400 as usize;
         let height_in_pixels = 200 as usize;
-        let v = ViewportGeometry::try_new(zoom_scale, zoom_value, 0, 10, width_in_pixels, height_in_pixels).unwrap();
+        let v = ViewportGeometry::try_new(
+                WorldCoords{x: 0.0, y: 0.0},
+            zoom_scale, zoom_value, 0, 10,
+            width_in_pixels, height_in_pixels).unwrap();
 
         assert_approx_eq!(v.height_in_world_units(), 1024 as f64);
     }
@@ -322,7 +339,10 @@ mod tests {
         let zoom_scale = 2 as f64;
         let width_in_pixels = 1024 as usize;
         let height_in_pixels = 512 as usize;
-        let v = ViewportGeometry::try_new(zoom_scale, zoom_value, 0, 10, width_in_pixels, height_in_pixels).unwrap();
+        let v = ViewportGeometry::try_new(
+                WorldCoords{x: 0.0, y: 0.0},
+            zoom_scale, zoom_value, 0, 10,
+            width_in_pixels, height_in_pixels).unwrap();
 
         assert_approx_eq!(v.world_units_per_pixel(), 2 as f64);
     }
@@ -333,18 +353,21 @@ mod tests {
         let zoom_scale = 2 as f64;
         let width_in_pixels = 1024 as usize;
         let height_in_pixels = 512 as usize;
-        let v = ViewportGeometry::try_new(zoom_scale, zoom_value, 0, 10, width_in_pixels, height_in_pixels).unwrap();
+        let v = ViewportGeometry::try_new(
+                WorldCoords{x: 0.0, y: 0.0},
+            zoom_scale, zoom_value, 0, 10,
+            width_in_pixels, height_in_pixels).unwrap();
 
         {
             let pixel_coords = PixelCoords { x: 0.0, y: 0.0 };
-            let ScreenCoords { x, y } = v.convert_pixel_to_screen(pixel_coords);
+            let ScreenCoords { x, y } = v.convert_pixel_to_screen(&pixel_coords);
             assert_approx_eq!(x, -0.5);
             assert_approx_eq!(y, 0.5);
         }
 
         {
             let pixel_coords = PixelCoords { x: 1024.0, y: 512.0 };
-            let ScreenCoords { x, y } = v.convert_pixel_to_screen(pixel_coords);
+            let ScreenCoords { x, y } = v.convert_pixel_to_screen(&pixel_coords);
             assert_approx_eq!(x, 0.5);
             assert_approx_eq!(y, -0.5);
         }
@@ -356,7 +379,10 @@ mod tests {
         let zoom_scale = 2 as f64;
         let width_in_pixels = 400 as usize;
         let height_in_pixels = 200 as usize;
-        let v = ViewportGeometry::try_new(zoom_scale, zoom_value, 0, 10, width_in_pixels, height_in_pixels).unwrap();
+        let v = ViewportGeometry::try_new(
+                WorldCoords{x: 0.0, y: 0.0},
+            zoom_scale, zoom_value, 0, 10,
+            width_in_pixels, height_in_pixels).unwrap();
 
         let screen_coords = ScreenCoords{x: 0.0, y: 0.0};
         let WorldCoords{x, y} = v.convert_screen_to_world_at_origin( &screen_coords);
@@ -373,7 +399,10 @@ mod tests {
     fn size_in_world_units_test() {
         let zoom_value = 10 as u32;
         let zoom_scale = 2 as f64;
-        let v = ViewportGeometry::try_new(zoom_scale, zoom_value, 0, 10, 400, 200).unwrap();
+        let v = ViewportGeometry::try_new(
+                WorldCoords{x: 0.0, y: 0.0},
+            zoom_scale, zoom_value, 0, 10,
+            400, 200).unwrap();
 
         assert_approx_eq!(v.size_in_world_units(), 2048 as f64);
     }
@@ -381,7 +410,10 @@ mod tests {
     #[test]
     fn aspect_ratio_x_to_y_test() {
         let (width, height) = (100_usize, 200_usize);
-        let v = ViewportGeometry::try_new(1.0, 0, 0, 10, width, height).unwrap();
+        let v = ViewportGeometry::try_new(
+                WorldCoords{x: 0.0, y: 0.0},
+            1.0, 0, 0, 10,
+            width, height).unwrap();
 
         assert_approx_eq!(v.aspect_ratio_x_to_y(), 0.5);
     }

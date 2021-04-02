@@ -103,7 +103,7 @@ impl Entities {
             line_mesh,
         };
 
-        entities.set_photos_from_json_serde_string(&entities.reset_photos_string.clone());
+        entities.set_photos_from_json_serde_string(&entities.reset_photos_string.clone()).unwrap();
         entities
     }
 
