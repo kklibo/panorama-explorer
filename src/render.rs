@@ -65,7 +65,6 @@ pub fn render(
 
             for &v in points {
                 let t1 = Mat4::from_nonuniform_scale(10.0, 10.0, 1.0);
-                let t1 = Mat4::from_translation(Vec3::new(0.0, 0.0, 1.0)).concat(&t1);
 
                 let t1 = entities.photos[0].convert_photo_px_to_world(v).concat(&t1);
 
@@ -79,7 +78,6 @@ pub fn render(
             for &v in points {
                 let t1 = Mat4::from_nonuniform_scale(10.0, 10.0, 1.0);
                 let t1 = Mat4::from_angle_z(cgmath::Deg(45.0)).concat(&t1);
-                let t1 = Mat4::from_translation(Vec3::new(0.0, 0.0, 1.0)).concat(&t1);
 
                 let t1 = entities.photos[1].convert_photo_px_to_world(v).concat(&t1);
 
@@ -91,7 +89,6 @@ pub fn render(
         if let Some(ref rp) = control_state.active_rotation_point {
             let t1 = Mat4::from_nonuniform_scale(10.0, 10.0, 1.0);
             let t1 = Mat4::from_angle_z(cgmath::Deg(-45.0)).concat(&t1);
-            let t1 = Mat4::from_translation(Vec3::new(0.0, 0.0, 1.0)).concat(&t1);
 
             let t1 = Mat4::from_translation(Vec3::new(rp.point.x as f32, rp.point.y as f32, 0.0)).concat(&t1);
 
