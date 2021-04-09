@@ -133,7 +133,7 @@ fn main() {
             // draw
             if redraw {
 
-//
+/*
                 use three_d::{RenderTarget, ColorTargetTexture2D, Interpolation, Wrapping, Format};
 
                 let texture = ColorTargetTexture2D::new(
@@ -164,7 +164,9 @@ fn main() {
                     &color_program,
                     &entities,
                 );
-//
+
+                render_target.copy_color_to_screen(frame_input.viewport).unwrap();
+*/
 
                 render::render(
                     &context,
