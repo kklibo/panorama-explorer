@@ -43,21 +43,24 @@ pub fn render(
             ..Default::default()
         };
 
-/*
-        for m in &entities.photos {
-            let program = match control_state.dewarp_shader
-            {
-                DewarpShader::NoMorph => &texture_program,
-                DewarpShader::Dewarp1 => &texture_dewarp_program,
-                DewarpShader::Dewarp2 => &texture_dewarp2_program,
-            };
+        //temporary render mode switch (reuse control points checkbox)
+        if (control_state.control_points_visible) {
+
+            for m in &entities.photos {
+                let program = match control_state.dewarp_shader
+                {
+                    DewarpShader::NoMorph => &texture_program,
+                    DewarpShader::Dewarp1 => &texture_dewarp_program,
+                    DewarpShader::Dewarp2 => &texture_dewarp2_program,
+                };
 
             program.use_texture(&m.loaded_image_mesh.texture_2d, "tex").unwrap();
 
             m.loaded_image_mesh.mesh.render(program, render_states,
                                             frame_input.viewport, &m.to_world(), &camera)?;
+            }
         }
-*/
+        else {
         //
             use three_d::{RenderTarget, ColorTargetTexture2D, Interpolation, Wrapping, Format};
 
@@ -92,6 +95,7 @@ pub fn render(
 
             render_target.copy_color_to_screen(frame_input.viewport).unwrap();
         //
+        }
 
         if control_state.control_points_visible {
 
