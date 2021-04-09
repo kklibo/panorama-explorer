@@ -64,7 +64,7 @@ pub fn render(
         //
             use three_d::{RenderTarget, ColorTargetTexture2D, Interpolation, Wrapping, Format};
 
-            let texture = ColorTargetTexture2D::new(
+            let texture1 = ColorTargetTexture2D::new(
                 &context,
                 frame_input.viewport.width,
                 frame_input.viewport.height,
@@ -76,10 +76,24 @@ pub fn render(
                 Format::RGBA32F,
             ).unwrap();
 
-            let render_target = RenderTarget::new_color(&context, &texture).unwrap();
+            let texture2 = ColorTargetTexture2D::new(
+                &context,
+                frame_input.viewport.width,
+                frame_input.viewport.height,
+                Interpolation::Nearest,
+                Interpolation::Nearest,
+                None,
+                Wrapping::ClampToEdge,
+                Wrapping::ClampToEdge,
+                Format::RGBA8,
+            ).unwrap();
+
+            let render_target1 = RenderTarget::new_color(&context, &texture1).unwrap();
+            let render_target2 = RenderTarget::new_color(&context, &texture2).unwrap();
 
             render_photos_to_render_target(
-                &render_target,
+                &render_target1,
+                &render_target2,
                 &context,
                 &frame_input,
                 gui,
@@ -93,7 +107,7 @@ pub fn render(
                 &entities,
             );
 
-            render_target.copy_color_to_screen(frame_input.viewport).unwrap();
+            render_target2.copy_color_to_screen(frame_input.viewport).unwrap();
         //
         }
 
@@ -247,7 +261,8 @@ pub fn render(
 
 
 pub fn render_photos_to_render_target(
-    render_target: &RenderTarget,
+    render_target1: &RenderTarget,
+    render_target2: &RenderTarget,
     context: &Context,
     frame_input: &FrameInput,
     gui: &mut GUI,
@@ -260,14 +275,16 @@ pub fn render_photos_to_render_target(
     color_program: &MeshProgram,
     entities: &Entities
 ) {
-    render_target.write(&ClearState::color(0.2, 0.2, 0.2, 1.0), || {
+    render_target1.write(&ClearState::color(0.0, 0.0, 0.0, 1.0), || {
         let render_states = RenderStates {
             cull: CullType::None,
 
             blend: Some(BlendParameters {
-                source_rgb_multiplier: BlendMultiplierType::SrcAlpha,
+                //source_rgb_multiplier: BlendMultiplierType::SrcAlpha,
+                source_rgb_multiplier: BlendMultiplierType::One,
                 source_alpha_multiplier: BlendMultiplierType::One,
-                destination_rgb_multiplier: BlendMultiplierType::OneMinusSrcAlpha,
+                //destination_rgb_multiplier: BlendMultiplierType::OneMinusSrcAlpha,
+                destination_rgb_multiplier: BlendMultiplierType::One,
                 destination_alpha_multiplier: BlendMultiplierType::Zero,
                 ..Default::default()
             }),
@@ -295,4 +312,6 @@ pub fn render_photos_to_render_target(
 
         Ok(())
     }).unwrap();
+
+    render_target1.copy_color(render_target2, frame_input.viewport).unwrap();
 }
