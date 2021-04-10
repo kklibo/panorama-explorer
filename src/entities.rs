@@ -23,6 +23,7 @@ pub struct Entities {
     pub color_mesh: Mesh,
     pub line_mesh: Mesh,
     pub average_effect: ImageEffect,
+    pub copy_photos_effect: ImageEffect,
 }
 
 impl Entities {
@@ -95,6 +96,7 @@ impl Entities {
         let line_mesh = line_mesh(&context);
 
         let average_effect = ImageEffect::new(context, include_str!("shaders/average_effect.frag")).unwrap();
+        let copy_photos_effect = ImageEffect::new(context, include_str!("shaders/copy_photos.frag")).unwrap();
 
         let mut entities = Entities{
             image0_control_points,
@@ -105,6 +107,7 @@ impl Entities {
             color_mesh,
             line_mesh,
             average_effect,
+            copy_photos_effect,
         };
 
         entities.set_photos_from_json_serde_string(&entities.reset_photos_string.clone()).unwrap();

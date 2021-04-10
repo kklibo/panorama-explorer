@@ -107,7 +107,7 @@ pub fn render(
                 &entities,
             );
 
-            render_target2.copy_color_to_screen(frame_input.viewport).unwrap();
+            render_target2.apply_effect_to_screen_color(&entities.copy_photos_effect, frame_input.viewport).unwrap();
         //
         }
 
