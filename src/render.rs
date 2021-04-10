@@ -314,13 +314,6 @@ pub fn render_photos_to_render_target(
         Ok(())
     }).unwrap();
 
-    //render_target1.copy_color(render_target2, frame_input.viewport).unwrap();
-
-    use three_d::ImageEffect;
-
-    //todo: don't remake this every frame
-    let effect = ImageEffect::new(context, include_str!("shaders/average_effect.frag")).unwrap();
-
-    render_target1.apply_effect_color(render_target2, &effect, frame_input.viewport).unwrap();
+    render_target1.apply_effect_color(render_target2, &entities.average_effect, frame_input.viewport).unwrap();
 
 }
