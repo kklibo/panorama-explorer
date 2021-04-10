@@ -319,25 +319,7 @@ pub fn render_photos_to_render_target(
     use three_d::ImageEffect;
 
     //todo: don't remake this every frame
-    let effect = ImageEffect::new(context,
-        "
-                uniform sampler2D colorMap;
-                uniform sampler2D depthMap;
-                in vec2 uv;
-                layout (location = 0) out vec4 color;
-                void main()
-                {
-                    vec4 source = texture(colorMap, uv);
-                    if (source.a == 0) {
-                        color = vec4(0.,0.,0.,1.);
-                    }
-                    else {
-                        color.rgb = source.rgb / source.a;
-                        color.a = 1.;
-                    }
-                    gl_FragDepth = texture(depthMap, uv).r;
-                }",
-    ).unwrap();
+    let effect = ImageEffect::new(context, include_str!("shaders/average_effect.frag")).unwrap();
 
     render_target1.apply_effect_color(render_target2, &effect, frame_input.viewport).unwrap();
 
