@@ -6,7 +6,7 @@ void main()
 {
     vec4 source = texture(colorMap, uv);
     if (source.a == 0) {
-        color = vec4(0.,0.,0.,1.);
+        color = vec4(0.,0.,0.,0.);
     }
     else {
         color.rgb = source.rgb / source.a;

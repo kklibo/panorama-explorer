@@ -1,6 +1,6 @@
 use three_d::definition::cpu_mesh::CPUMesh;
 use three_d::object::{Mesh, MeshProgram};
-use three_d::core::render_states::{CullType, BlendMultiplierType, BlendParameters, WriteMask, DepthTestType, RenderStates};
+use three_d::core::render_states::{CullType, BlendMultiplierType, BlendEquationType, BlendParameters, WriteMask, DepthTestType, RenderStates};
 use three_d::core::render_target::{Screen, ClearState};
 use three_d::math::{Vec2, Vec3, Vec4, Mat4};
 use three_d::gui::GUI;
@@ -107,7 +107,24 @@ pub fn render(
                 &entities,
             );
 
-            render_target2.apply_effect_to_screen_color(&entities.copy_photos_effect, frame_input.viewport).unwrap();
+            render_target2.apply_effect_to_screen_color(
+                &entities.copy_photos_effect,
+                &RenderStates {
+                    cull: CullType::Back,
+                    depth_test: DepthTestType::Always,
+                    write_mask: WriteMask::COLOR,
+                    blend: Some(BlendParameters {
+                        source_rgb_multiplier: BlendMultiplierType::SrcAlpha,
+                        source_alpha_multiplier: BlendMultiplierType::One,//Zero,
+                        destination_rgb_multiplier: BlendMultiplierType::OneMinusSrcAlpha,
+                        destination_alpha_multiplier: BlendMultiplierType::Zero,//One,
+                        rgb_equation: BlendEquationType::Add,
+                        alpha_equation: BlendEquationType::Add,
+
+                    }),
+                },
+                frame_input.viewport
+            ).unwrap();
         //
         }
 
