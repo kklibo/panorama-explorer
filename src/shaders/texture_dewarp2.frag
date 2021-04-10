@@ -53,7 +53,7 @@ void main()
 //    if (rU > 0.49 && rU < 0.5) { outColor.xyz = vec3(1,0,0); }
 //    if (rU > 0.99 && rU < 1.0) { outColor.xyz = vec3(0,1,1); }
 
-    outColor.a = 0.5;
+    outColor.a = 1.0;
 
     //don't render texture samples from outside the image borders
     if (distorted.x < 0.0 || distorted.x > 1.0) { outColor.xyzw = vec4(0,0,0,0); }

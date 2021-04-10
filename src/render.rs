@@ -275,7 +275,7 @@ pub fn render_photos_to_render_target(
     color_program: &MeshProgram,
     entities: &Entities
 ) {
-    render_target1.write(&ClearState::color(0.0, 0.0, 0.0, 1.0), || {
+    render_target1.write(&ClearState::color(0.0, 0.0, 0.0, 0.0), || {
         let render_states = RenderStates {
             cull: CullType::None,
 
@@ -285,7 +285,8 @@ pub fn render_photos_to_render_target(
                 source_alpha_multiplier: BlendMultiplierType::One,
                 //destination_rgb_multiplier: BlendMultiplierType::OneMinusSrcAlpha,
                 destination_rgb_multiplier: BlendMultiplierType::One,
-                destination_alpha_multiplier: BlendMultiplierType::Zero,
+                //destination_alpha_multiplier: BlendMultiplierType::Zero,
+                destination_alpha_multiplier: BlendMultiplierType::One,
                 ..Default::default()
             }),
 
@@ -326,7 +327,14 @@ pub fn render_photos_to_render_target(
                 layout (location = 0) out vec4 color;
                 void main()
                 {
-                    color = texture(colorMap, uv)*0.5;
+                    vec4 source = texture(colorMap, uv);
+                    if (source.a == 0) {
+                        color = vec4(0.,0.,0.,1.);
+                    }
+                    else {
+                        color.rgb = source.rgb / source.a;
+                        color.a = 1.;
+                    }
                     gl_FragDepth = texture(depthMap, uv).r;
                 }",
     ).unwrap();
