@@ -313,5 +313,24 @@ pub fn render_photos_to_render_target(
         Ok(())
     }).unwrap();
 
-    render_target1.copy_color(render_target2, frame_input.viewport).unwrap();
+    //render_target1.copy_color(render_target2, frame_input.viewport).unwrap();
+
+    use three_d::ImageEffect;
+
+    //todo: don't remake this every frame
+    let effect = ImageEffect::new(context,
+        "
+                uniform sampler2D colorMap;
+                uniform sampler2D depthMap;
+                in vec2 uv;
+                layout (location = 0) out vec4 color;
+                void main()
+                {
+                    color = texture(colorMap, uv)*0.5;
+                    gl_FragDepth = texture(depthMap, uv).r;
+                }",
+    ).unwrap();
+
+    render_target1.apply_effect_color(render_target2, &effect, frame_input.viewport).unwrap();
+
 }
