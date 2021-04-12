@@ -43,7 +43,7 @@ pub fn render(
             ..Default::default()
         };
 
-        if (control_state.alignment_mode) {
+        if control_state.alignment_mode {
             //in alignment mode, use standard transparency
 
             for m in &entities.photos {
@@ -64,7 +64,8 @@ pub fn render(
         else {
         //
             //in browse mode, use multipass rendering
-            use three_d::{RenderTarget, ColorTargetTexture2D, Interpolation, Wrapping, Format};
+            use three_d::{ColorTargetTexture2D};
+            use three_d::definition::cpu_texture::{Interpolation, Wrapping, Format};
 
             let texture1 = ColorTargetTexture2D::new(
                 &context,
@@ -96,16 +97,12 @@ pub fn render(
             render_photos_to_render_target(
                 &render_target1,
                 &render_target2,
-                &context,
                 &frame_input,
-                gui,
                 &control_state,
                 &camera,
-                &viewport_geometry,
                 &texture_program,
                 &texture_dewarp_program,
                 &texture_dewarp2_program,
-                &color_program,
                 &entities,
             );
 
@@ -282,16 +279,12 @@ pub fn render(
 pub fn render_photos_to_render_target(
     render_target1: &RenderTarget,
     render_target2: &RenderTarget,
-    context: &Context,
     frame_input: &FrameInput,
-    gui: &mut GUI,
     control_state: &ControlState,
     camera: &CameraControl,
-    viewport_geometry: &ViewportGeometry,
     texture_program: &MeshProgram,
     texture_dewarp_program: &MeshProgram,
     texture_dewarp2_program: &MeshProgram,
-    color_program: &MeshProgram,
     entities: &Entities
 ) {
     render_target1.write(&ClearState::color(0.0, 0.0, 0.0, 0.0), || {
@@ -299,12 +292,9 @@ pub fn render_photos_to_render_target(
             cull: CullType::None,
 
             blend: Some(BlendParameters {
-                //source_rgb_multiplier: BlendMultiplierType::SrcAlpha,
                 source_rgb_multiplier: BlendMultiplierType::One,
                 source_alpha_multiplier: BlendMultiplierType::One,
-                //destination_rgb_multiplier: BlendMultiplierType::OneMinusSrcAlpha,
                 destination_rgb_multiplier: BlendMultiplierType::One,
-                //destination_alpha_multiplier: BlendMultiplierType::Zero,
                 destination_alpha_multiplier: BlendMultiplierType::One,
                 ..Default::default()
             }),

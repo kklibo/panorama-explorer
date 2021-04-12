@@ -133,41 +133,6 @@ fn main() {
             // draw
             if redraw {
 
-/*
-                use three_d::{RenderTarget, ColorTargetTexture2D, Interpolation, Wrapping, Format};
-
-                let texture = ColorTargetTexture2D::new(
-                    &context,
-                    frame_input.viewport.width,
-                    frame_input.viewport.height,
-                    Interpolation::Nearest,
-                    Interpolation::Nearest,
-                    None,
-                    Wrapping::ClampToEdge,
-                    Wrapping::ClampToEdge,
-                    Format::RGBA32F,
-                ).unwrap();
-
-                let render_target = RenderTarget::new_color(&context, &texture).unwrap();
-
-                render::render_photos_to_render_target(
-                    &render_target,
-                    &context,
-                    &frame_input,
-                    &mut gui,
-                    &control_state,
-                    &camera,
-                    &viewport_geometry,
-                    &texture_program,
-                    &texture_dewarp_program,
-                    &texture_dewarp2_program,
-                    &color_program,
-                    &entities,
-                );
-
-                render_target.copy_color_to_screen(frame_input.viewport).unwrap();
-*/
-
                 render::render(
                     &context,
                     &frame_input,
