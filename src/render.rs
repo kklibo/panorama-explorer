@@ -55,6 +55,7 @@ pub fn render(
                 };
 
             program.use_texture(&m.loaded_image_mesh.texture_2d, "tex").unwrap();
+            program.use_uniform_float("out_alpha", &0.5).unwrap();
 
             m.loaded_image_mesh.mesh.render(program, render_states,
                                             frame_input.viewport, &m.to_world(), &camera)?;
@@ -323,6 +324,7 @@ pub fn render_photos_to_render_target(
             };
 
             program.use_texture(&m.loaded_image_mesh.texture_2d, "tex").unwrap();
+            program.use_uniform_float("out_alpha", &1.0).unwrap();
 
             m.loaded_image_mesh.mesh.render(program, render_states,
                                             frame_input.viewport, &m.to_world(), &camera)?;
