@@ -54,6 +54,8 @@ pub struct ControlState {
     pub mouse_location_ui_text: String,
     pub photo_ui_text: String,
     pub control_points_visible: bool,
+
+    pub alignment_mode: bool,
 }
 
 impl Default for ControlState {
@@ -72,6 +74,7 @@ impl Default for ControlState {
             mouse_location_ui_text: "".to_string(),
             photo_ui_text: "".to_string(),
             control_points_visible: false,
+            alignment_mode: false,
         }
     }
 }

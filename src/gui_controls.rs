@@ -108,6 +108,9 @@ pub fn run_gui_controls(
                 ui.label(&control_state.mouse_location_ui_text);
                 ui.separator();
 
+                ui.checkbox(&mut control_state.alignment_mode, "Alignment Mode (rendering)");
+                ui.separator();
+
                 ui.checkbox(&mut control_state.control_points_visible, "Show Control Points");
                 ui.separator();
 

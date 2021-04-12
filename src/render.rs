@@ -43,8 +43,8 @@ pub fn render(
             ..Default::default()
         };
 
-        //temporary render mode switch (reuse control points checkbox)
-        if (control_state.control_points_visible) {
+        if (control_state.alignment_mode) {
+            //in alignment mode, use standard transparency
 
             for m in &entities.photos {
                 let program = match control_state.dewarp_shader
@@ -63,6 +63,7 @@ pub fn render(
         }
         else {
         //
+            //in browse mode, use multipass rendering
             use three_d::{RenderTarget, ColorTargetTexture2D, Interpolation, Wrapping, Format};
 
             let texture1 = ColorTargetTexture2D::new(
