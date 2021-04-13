@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use three_d::{Loaded, Vec3, Context};
+use three_d::{Loaded, Vec3, Context, ImageEffect};
 use three_d::definition::cpu_texture::{Interpolation, Wrapping};
 use three_d::definition::cpu_mesh::CPUMesh;
 use three_d::core::texture::Texture2D;
@@ -22,6 +22,8 @@ pub struct Entities {
     pub align_photos_string: String,
     pub color_mesh: Mesh,
     pub line_mesh: Mesh,
+    pub average_effect: ImageEffect,
+    pub copy_photos_effect: ImageEffect,
 }
 
 impl Entities {
@@ -93,6 +95,9 @@ impl Entities {
         let color_mesh = color_mesh(&context);
         let line_mesh = line_mesh(&context);
 
+        let average_effect = ImageEffect::new(context, include_str!("shaders/average_effect.frag")).unwrap();
+        let copy_photos_effect = ImageEffect::new(context, include_str!("shaders/copy_photos.frag")).unwrap();
+
         let mut entities = Entities{
             image0_control_points,
             image1_control_points,
@@ -101,9 +106,11 @@ impl Entities {
             align_photos_string,
             color_mesh,
             line_mesh,
+            average_effect,
+            copy_photos_effect,
         };
 
-        entities.set_photos_from_json_serde_string(&entities.reset_photos_string.clone());
+        entities.set_photos_from_json_serde_string(&entities.reset_photos_string.clone()).unwrap();
         entities
     }
 
