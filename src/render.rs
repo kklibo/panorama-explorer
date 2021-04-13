@@ -62,7 +62,6 @@ pub fn render(
             }
         }
         else {
-        //
             //in browse mode, use multipass rendering
             use three_d::{ColorTargetTexture2D};
             use three_d::definition::cpu_texture::{Interpolation, Wrapping, Format};
@@ -114,9 +113,9 @@ pub fn render(
                     write_mask: WriteMask::COLOR,
                     blend: Some(BlendParameters {
                         source_rgb_multiplier: BlendMultiplierType::SrcAlpha,
-                        source_alpha_multiplier: BlendMultiplierType::One,//Zero,
+                        source_alpha_multiplier: BlendMultiplierType::One,
                         destination_rgb_multiplier: BlendMultiplierType::OneMinusSrcAlpha,
-                        destination_alpha_multiplier: BlendMultiplierType::Zero,//One,
+                        destination_alpha_multiplier: BlendMultiplierType::Zero,
                         rgb_equation: BlendEquationType::Add,
                         alpha_equation: BlendEquationType::Add,
 
@@ -124,7 +123,6 @@ pub fn render(
                 },
                 frame_input.viewport
             ).unwrap();
-        //
         }
 
         if control_state.control_points_visible {
