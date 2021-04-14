@@ -1,4 +1,4 @@
-use three_d::window::Window;
+use three_d::window::{Window, WindowSettings};
 use three_d::frame::output::FrameOutput;
 use three_d::core::render_target::{Screen, ClearState};
 use three_d::object::MeshProgram;
@@ -23,8 +23,8 @@ fn main() {
         env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
     }
 
-    let window = Window::new("panorama_tool", None).unwrap();
-    let context = window.gl();
+    let window = Window::new(WindowSettings{title: "panorama_tool".to_string(), ..Default::default()}).unwrap();
+    let context = window.gl().unwrap();
 
     let mut viewport_geometry = ViewportGeometry::try_new(
         WorldCoords{x:0.0, y:0.0},
@@ -32,8 +32,8 @@ fn main() {
         12_u32,
         1_u32,
         15_u32,
-        window.viewport().width,
-        window.viewport().height,
+        window.viewport().unwrap().width,
+        window.viewport().unwrap().height,
     ).unwrap();
 
 
