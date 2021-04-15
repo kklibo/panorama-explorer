@@ -4,7 +4,7 @@ use three_d::core::render_states::{CullType, BlendMultiplierType, BlendEquationT
 use three_d::core::render_target::{Screen, ClearState};
 use three_d::math::{Vec2, Vec3, Vec4, Mat4};
 use three_d::gui::GUI;
-use three_d::{Transform,Context,CameraControl,FrameInput,SquareMatrix,InnerSpace,RenderTarget};
+use three_d::{Transform,Context,CameraControl,FrameInput,SquareMatrix,InnerSpace,RenderTarget,ColorTargetTexture2D};
 
 use crate::control_state::{ControlState, DewarpShader};
 use crate::photo::Corner;
@@ -95,6 +95,7 @@ pub fn render(
 
             render_photos_to_render_target(
                 &render_target1,
+                &texture1,
                 &render_target2,
                 &frame_input,
                 &control_state,
@@ -105,24 +106,12 @@ pub fn render(
                 &entities,
             );
 
-            render_target2.apply_effect_to_screen_color(
-                &entities.copy_photos_effect,
-                &RenderStates {
-                    cull: CullType::Back,
-                    depth_test: DepthTestType::Always,
-                    write_mask: WriteMask::COLOR,
-                    blend: Some(BlendParameters {
-                        source_rgb_multiplier: BlendMultiplierType::SrcAlpha,
-                        source_alpha_multiplier: BlendMultiplierType::One,
-                        destination_rgb_multiplier: BlendMultiplierType::OneMinusSrcAlpha,
-                        destination_alpha_multiplier: BlendMultiplierType::Zero,
-                        rgb_equation: BlendEquationType::Add,
-                        alpha_equation: BlendEquationType::Add,
+            Screen::write(&context, &ClearState::none(), || {
 
-                    }),
-                },
-                frame_input.viewport
-            ).unwrap();
+                entities.copy_photos_effect.use_texture(&texture2, "colorMap")?;
+                entities.copy_photos_effect.apply(render_states, frame_input.viewport)
+
+            }).unwrap();
         }
 
         if control_state.control_points_visible {
@@ -276,6 +265,7 @@ pub fn render(
 
 pub fn render_photos_to_render_target(
     render_target1: &RenderTarget,
+    render_target1_texture: &ColorTargetTexture2D,
     render_target2: &RenderTarget,
     frame_input: &FrameInput,
     control_state: &ControlState,
@@ -322,6 +312,19 @@ pub fn render_photos_to_render_target(
         Ok(())
     }).unwrap();
 
-    render_target1.apply_effect_color(render_target2, &entities.average_effect, frame_input.viewport).unwrap();
+    let render_states =
+        RenderStates {
+            cull: CullType::Back,
+            depth_test: DepthTestType::Always,
+            write_mask: WriteMask::COLOR,
+            ..Default::default()
+        };
+
+    render_target2.write(&ClearState::none(), || {
+
+        entities.average_effect.use_texture(render_target1_texture, "colorMap")?;
+        entities.average_effect.apply(render_states, frame_input.viewport)
+
+    }).unwrap();
 
 }
