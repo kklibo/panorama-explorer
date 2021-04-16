@@ -66,7 +66,7 @@ pub fn render(
             use three_d::{ColorTargetTexture2D};
             use three_d::definition::cpu_texture::{Interpolation, Wrapping, Format};
 
-            let texture1 = ColorTargetTexture2D::new(
+            let tmp_texture = ColorTargetTexture2D::new(
                 &context,
                 frame_input.viewport.width,
                 frame_input.viewport.height,
@@ -78,7 +78,7 @@ pub fn render(
                 Format::RGBA32F,
             ).unwrap();
 
-            let texture2 = ColorTargetTexture2D::new(
+            let out_texture = ColorTargetTexture2D::new(
                 &context,
                 frame_input.viewport.width,
                 frame_input.viewport.height,
@@ -90,13 +90,10 @@ pub fn render(
                 Format::RGBA8,
             ).unwrap();
 
-            let render_target1 = RenderTarget::new_color(&context, &texture1).unwrap();
-            let render_target2 = RenderTarget::new_color(&context, &texture2).unwrap();
-
             render_photos_to_render_target(
-                &render_target1,
-                &texture1,
-                &render_target2,
+                &context,
+                &tmp_texture,
+                &out_texture,
                 &frame_input,
                 &control_state,
                 &camera,
@@ -108,7 +105,7 @@ pub fn render(
 
             Screen::write(&context, &ClearState::none(), || {
 
-                entities.copy_photos_effect.use_texture(&texture2, "colorMap")?;
+                entities.copy_photos_effect.use_texture(&out_texture, "colorMap")?;
                 entities.copy_photos_effect.apply(render_states, frame_input.viewport)
 
             }).unwrap();
@@ -264,9 +261,9 @@ pub fn render(
 
 
 pub fn render_photos_to_render_target(
-    render_target1: &RenderTarget,
-    render_target1_texture: &ColorTargetTexture2D,
-    render_target2: &RenderTarget,
+    context: &Context,
+    tmp_texture: &ColorTargetTexture2D,
+    out_texture: &ColorTargetTexture2D,
     frame_input: &FrameInput,
     control_state: &ControlState,
     camera: &CameraControl,
@@ -275,6 +272,10 @@ pub fn render_photos_to_render_target(
     texture_dewarp2_program: &MeshProgram,
     entities: &Entities
 ) {
+
+    let render_target1 = RenderTarget::new_color(&context, &tmp_texture).unwrap();
+    let render_target2 = RenderTarget::new_color(&context, &out_texture).unwrap();
+
     render_target1.write(&ClearState::color(0.0, 0.0, 0.0, 0.0), || {
         let render_states = RenderStates {
             cull: CullType::None,
@@ -322,7 +323,7 @@ pub fn render_photos_to_render_target(
 
     render_target2.write(&ClearState::none(), || {
 
-        entities.average_effect.use_texture(render_target1_texture, "colorMap")?;
+        entities.average_effect.use_texture(tmp_texture, "colorMap")?;
         entities.average_effect.apply(render_states, frame_input.viewport)
 
     }).unwrap();
