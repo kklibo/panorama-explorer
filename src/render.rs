@@ -1,6 +1,6 @@
 use three_d::definition::cpu_mesh::CPUMesh;
 use three_d::object::{Mesh, MeshProgram};
-use three_d::core::render_states::{CullType, BlendMultiplierType, BlendEquationType, BlendParameters, WriteMask, DepthTestType, RenderStates};
+use three_d::core::render_states::{CullType, BlendMultiplierType, BlendParameters, WriteMask, DepthTestType, RenderStates};
 use three_d::core::render_target::{Screen, ClearState};
 use three_d::math::{Vec2, Vec3, Vec4, Mat4};
 use three_d::gui::GUI;
@@ -63,37 +63,10 @@ pub fn render(
         }
         else {
             //in browse mode, use multipass rendering
-            use three_d::{ColorTargetTexture2D};
-            use three_d::definition::cpu_texture::{Interpolation, Wrapping, Format};
 
-            let tmp_texture = ColorTargetTexture2D::new(
+            let photo_texture =
+            render_photos_to_texture(
                 &context,
-                frame_input.viewport.width,
-                frame_input.viewport.height,
-                Interpolation::Nearest,
-                Interpolation::Nearest,
-                None,
-                Wrapping::ClampToEdge,
-                Wrapping::ClampToEdge,
-                Format::RGBA32F,
-            ).unwrap();
-
-            let out_texture = ColorTargetTexture2D::new(
-                &context,
-                frame_input.viewport.width,
-                frame_input.viewport.height,
-                Interpolation::Nearest,
-                Interpolation::Nearest,
-                None,
-                Wrapping::ClampToEdge,
-                Wrapping::ClampToEdge,
-                Format::RGBA8,
-            ).unwrap();
-
-            render_photos_to_render_target(
-                &context,
-                &tmp_texture,
-                &out_texture,
                 &frame_input,
                 &control_state,
                 &camera,
@@ -105,7 +78,7 @@ pub fn render(
 
             Screen::write(&context, &ClearState::none(), || {
 
-                entities.copy_photos_effect.use_texture(&out_texture, "colorMap")?;
+                entities.copy_photos_effect.use_texture(&photo_texture, "colorMap")?;
                 entities.copy_photos_effect.apply(render_states, frame_input.viewport)
 
             }).unwrap();
@@ -260,10 +233,8 @@ pub fn render(
 }
 
 
-pub fn render_photos_to_render_target(
+pub fn render_photos_to_texture(
     context: &Context,
-    tmp_texture: &ColorTargetTexture2D,
-    out_texture: &ColorTargetTexture2D,
     frame_input: &FrameInput,
     control_state: &ControlState,
     camera: &CameraControl,
@@ -271,61 +242,90 @@ pub fn render_photos_to_render_target(
     texture_dewarp_program: &MeshProgram,
     texture_dewarp2_program: &MeshProgram,
     entities: &Entities
-) {
+) -> ColorTargetTexture2D
+{
 
-    let render_target1 = RenderTarget::new_color(&context, &tmp_texture).unwrap();
-    let render_target2 = RenderTarget::new_color(&context, &out_texture).unwrap();
+    use three_d::definition::cpu_texture::{Interpolation, Wrapping, Format};
 
-    render_target1.write(&ClearState::color(0.0, 0.0, 0.0, 0.0), || {
-        let render_states = RenderStates {
-            cull: CullType::None,
+    let tmp_texture = ColorTargetTexture2D::new(
+        &context,
+        frame_input.viewport.width,
+        frame_input.viewport.height,
+        Interpolation::Nearest,
+        Interpolation::Nearest,
+        None,
+        Wrapping::ClampToEdge,
+        Wrapping::ClampToEdge,
+        Format::RGBA32F,
+    ).unwrap();
 
-            blend: Some(BlendParameters {
-                source_rgb_multiplier: BlendMultiplierType::One,
-                source_alpha_multiplier: BlendMultiplierType::One,
-                destination_rgb_multiplier: BlendMultiplierType::One,
-                destination_alpha_multiplier: BlendMultiplierType::One,
+    let out_texture = ColorTargetTexture2D::new(
+        &context,
+        frame_input.viewport.width,
+        frame_input.viewport.height,
+        Interpolation::Nearest,
+        Interpolation::Nearest,
+        None,
+        Wrapping::ClampToEdge,
+        Wrapping::ClampToEdge,
+        Format::RGBA8,
+    ).unwrap();
+
+    {
+        let render_target1 = RenderTarget::new_color(&context, &tmp_texture).unwrap();
+        let render_target2 = RenderTarget::new_color(&context, &out_texture).unwrap();
+
+        render_target1.write(&ClearState::color(0.0, 0.0, 0.0, 0.0), || {
+            let render_states = RenderStates {
+                cull: CullType::None,
+
+                blend: Some(BlendParameters {
+                    source_rgb_multiplier: BlendMultiplierType::One,
+                    source_alpha_multiplier: BlendMultiplierType::One,
+                    destination_rgb_multiplier: BlendMultiplierType::One,
+                    destination_alpha_multiplier: BlendMultiplierType::One,
+                    ..Default::default()
+                }),
+
+                write_mask: WriteMask::COLOR,
+                depth_test: DepthTestType::Always,
+
                 ..Default::default()
-            }),
-
-            write_mask: WriteMask::COLOR,
-            depth_test: DepthTestType::Always,
-
-            ..Default::default()
-        };
-
-
-        for m in &entities.photos {
-            let program = match control_state.dewarp_shader
-            {
-                DewarpShader::NoMorph => &texture_program,
-                DewarpShader::Dewarp1 => &texture_dewarp_program,
-                DewarpShader::Dewarp2 => &texture_dewarp2_program,
             };
 
-            program.use_texture(&m.loaded_image_mesh.texture_2d, "tex").unwrap();
-            program.use_uniform_float("out_alpha", &1.0).unwrap();
 
-            m.loaded_image_mesh.mesh.render(program, render_states,
-                                            frame_input.viewport, &m.to_world(), &camera)?;
-        }
+            for m in &entities.photos {
+                let program = match control_state.dewarp_shader
+                {
+                    DewarpShader::NoMorph => &texture_program,
+                    DewarpShader::Dewarp1 => &texture_dewarp_program,
+                    DewarpShader::Dewarp2 => &texture_dewarp2_program,
+                };
 
-        Ok(())
-    }).unwrap();
+                program.use_texture(&m.loaded_image_mesh.texture_2d, "tex").unwrap();
+                program.use_uniform_float("out_alpha", &1.0).unwrap();
 
-    let render_states =
-        RenderStates {
-            cull: CullType::Back,
-            depth_test: DepthTestType::Always,
-            write_mask: WriteMask::COLOR,
-            ..Default::default()
-        };
+                m.loaded_image_mesh.mesh.render(program, render_states,
+                                                frame_input.viewport, &m.to_world(), &camera)?;
+            }
 
-    render_target2.write(&ClearState::none(), || {
+            Ok(())
+        }).unwrap();
 
-        entities.average_effect.use_texture(tmp_texture, "colorMap")?;
-        entities.average_effect.apply(render_states, frame_input.viewport)
+        let render_states =
+            RenderStates {
+                cull: CullType::Back,
+                depth_test: DepthTestType::Always,
+                write_mask: WriteMask::COLOR,
+                ..Default::default()
+            };
 
-    }).unwrap();
+        render_target2.write(&ClearState::none(), || {
+            entities.average_effect.use_texture(&tmp_texture, "colorMap")?;
+            entities.average_effect.apply(render_states, frame_input.viewport)
 
+        }).unwrap();
+    }
+
+    out_texture
 }
