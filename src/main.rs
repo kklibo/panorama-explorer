@@ -156,7 +156,7 @@ fn main() {
                     alpha: Some(1.0),
                     depth: None,
                 };
-                Screen::write(&context, &clear_alpha, || { Ok(()) }).unwrap();
+                Screen::write(&context, clear_alpha, || { Ok(()) }).unwrap();
             }
 
             FrameOutput {swap_buffers: redraw, ..Default::default()}

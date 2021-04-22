@@ -25,9 +25,8 @@ pub fn render(
     color_program: &MeshProgram,
     entities: &Entities
 ) {
-    Screen::write(&context, &ClearState::color_and_depth(0.2, 0.2, 0.2, 1.0, 1.0), || {
+    Screen::write(&context, ClearState::color_and_depth(0.2, 0.2, 0.2, 1.0, 1.0), || {
         let render_states = RenderStates {
-            cull: CullType::None,
 
             blend: Some(BlendParameters {
                 source_rgb_multiplier: BlendMultiplierType::SrcAlpha,
@@ -54,11 +53,13 @@ pub fn render(
                     DewarpShader::Dewarp2 => &texture_dewarp2_program,
                 };
 
-            program.use_texture(&m.loaded_image_mesh.texture_2d, "tex").unwrap();
-            program.use_uniform_float("out_alpha", &0.5).unwrap();
+                program.use_texture(&m.loaded_image_mesh.texture_2d, "tex").unwrap();
+                program.use_uniform_float("out_alpha", &0.5).unwrap();
 
-            m.loaded_image_mesh.mesh.render(program, render_states,
-                                            frame_input.viewport, &m.to_world(), &camera)?;
+                let mut mesh = m.loaded_image_mesh.mesh.clone();
+                mesh.transformation = m.to_world();
+                mesh.render(program, render_states,
+                                            frame_input.viewport, &camera)?;
             }
         }
         else {
@@ -76,7 +77,7 @@ pub fn render(
                 &entities,
             );
 
-            Screen::write(&context, &ClearState::none(), || {
+            Screen::write(&context, ClearState::none(), || {
 
                 entities.copy_photos_effect.use_texture(&photo_texture, "colorMap")?;
                 entities.copy_photos_effect.apply(render_states, frame_input.viewport)
@@ -95,7 +96,9 @@ pub fn render(
 
 
                 color_program.use_uniform_vec4("color", &Vec4::new(0.8, 0.5, 0.2, 0.5)).unwrap();
-                entities.color_mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
+                let mut mesh = entities.color_mesh.clone();
+                mesh.transformation = t1;
+                mesh.render(&color_program, render_states, frame_input.viewport, &camera)?;
             }
 
             let points = &entities.image1_control_points;
@@ -107,7 +110,9 @@ pub fn render(
                 let t1 = entities.photos[1].convert_photo_px_to_world(v).concat(&t1);
 
                 color_program.use_uniform_vec4("color", &Vec4::new(0.2, 0.8, 0.2, 0.5)).unwrap();
-                entities.color_mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
+                let mut mesh = entities.color_mesh.clone();
+                mesh.transformation = t1;
+                mesh.render(&color_program, render_states, frame_input.viewport, &camera)?;
             }
         }
 
@@ -118,7 +123,9 @@ pub fn render(
             let t1 = Mat4::from_translation(Vec3::new(rp.point.x as f32, rp.point.y as f32, 0.0)).concat(&t1);
 
             color_program.use_uniform_vec4("color", &Vec4::new(0.8, 0.8, 0.2, 0.5)).unwrap();
-            entities.color_mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
+            let mut mesh = entities.color_mesh.clone();
+            mesh.transformation = t1;
+            mesh.render(&color_program, render_states, frame_input.viewport, &camera)?;
         }
 
         if let Some(ref rp) = control_state.active_rotation_point {
@@ -153,12 +160,13 @@ pub fn render(
                     ..Default::default()
                 };
 
-                let mesh = Mesh::new(&context, &cpu_mesh).unwrap();
-
+                let mut mesh = Mesh::new(&context, &cpu_mesh).unwrap();
+                mesh.cull = CullType::None;
                 let t1 = Mat4::identity();
 
                 color_program.use_uniform_vec4("color", &Vec4::new(0.2, 0.2, 0.8, 0.5)).unwrap();
-                mesh.render(&color_program, render_states, frame_input.viewport, &t1, &camera)?;
+                mesh.transformation = t1;
+                mesh.render(&color_program, render_states, frame_input.viewport, &camera)?;
 
 
                 //draw angle lines to indicate dragged rotation angle
@@ -166,8 +174,11 @@ pub fn render(
                 let dragged_line_mat4 = line_transform(&viewport_geometry, rp.point, rd.mouse_coords, 1.0);
 
                 color_program.use_uniform_vec4("color", &Vec4::new(0.8, 0.8, 0.2, 1.0)).unwrap();
-                entities.line_mesh.render(&color_program, render_states, frame_input.viewport, &start_line_mat4,   &camera)?;
-                entities.line_mesh.render(&color_program, render_states, frame_input.viewport, &dragged_line_mat4, &camera)?;
+                let mut mesh =  entities.line_mesh.clone();
+                mesh.transformation = start_line_mat4;
+                mesh.render(&color_program, render_states, frame_input.viewport, &camera)?;
+                mesh.transformation = dragged_line_mat4;
+                mesh.render(&color_program, render_states, frame_input.viewport, &camera)?;
 
             }
         }
@@ -222,7 +233,9 @@ pub fn render(
             //draw lines
             for ref line in lines {
                 color_program.use_uniform_vec4("color", &Vec4::new(0.2, 0.8, 0.2, 1.0)).unwrap();
-                entities.line_mesh.render(&color_program, render_states, frame_input.viewport, line, &camera)?;
+                let mut mesh  = entities.line_mesh.clone();
+                mesh.transformation = *line;
+                mesh.render(&color_program, render_states, frame_input.viewport, &camera)?;
             }
         }
 
@@ -272,12 +285,8 @@ pub fn render_photos_to_texture(
     ).unwrap();
 
     {
-        let render_target1 = RenderTarget::new_color(&context, &tmp_texture).unwrap();
-        let render_target2 = RenderTarget::new_color(&context, &out_texture).unwrap();
-
-        render_target1.write(&ClearState::color(0.0, 0.0, 0.0, 0.0), || {
+        tmp_texture.write(ClearState::color(0.0, 0.0, 0.0, 0.0), || {
             let render_states = RenderStates {
-                cull: CullType::None,
 
                 blend: Some(BlendParameters {
                     source_rgb_multiplier: BlendMultiplierType::One,
@@ -305,8 +314,10 @@ pub fn render_photos_to_texture(
                 program.use_texture(&m.loaded_image_mesh.texture_2d, "tex").unwrap();
                 program.use_uniform_float("out_alpha", &1.0).unwrap();
 
-                m.loaded_image_mesh.mesh.render(program, render_states,
-                                                frame_input.viewport, &m.to_world(), &camera)?;
+                let mut mesh =  m.loaded_image_mesh.mesh.clone();
+                mesh.transformation = m.to_world();
+                mesh.render(program, render_states,
+                                                frame_input.viewport, &camera)?;
             }
 
             Ok(())
@@ -314,13 +325,12 @@ pub fn render_photos_to_texture(
 
         let render_states =
             RenderStates {
-                cull: CullType::Back,
                 depth_test: DepthTestType::Always,
                 write_mask: WriteMask::COLOR,
                 ..Default::default()
             };
 
-        render_target2.write(&ClearState::none(), || {
+        out_texture.write(ClearState::none(), || {
             entities.average_effect.use_texture(&tmp_texture, "colorMap")?;
             entities.average_effect.apply(render_states, frame_input.viewport)
 

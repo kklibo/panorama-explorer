@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use three_d::{Loaded, Vec3, Context, ImageEffect};
+use three_d::{Loaded, Vec3, Context, ImageEffect, CullType};
 use three_d::definition::cpu_texture::{Interpolation, Wrapping};
 use three_d::definition::cpu_mesh::CPUMesh;
 use three_d::core::texture::Texture2D;
@@ -154,7 +154,8 @@ fn load_mesh_from_filepath(context: &Context, loaded: &Loaded, image_filepath: &
 
     let texture_2d = Texture2D::new_with_u8(&context, &cpu_texture).unwrap();
 
-    let mesh = Mesh::new(&context, &cpu_mesh).unwrap();
+    let mut mesh = Mesh::new(&context, &cpu_mesh).unwrap();
+    mesh.cull = CullType::Back;
 
     LoadedImageMesh {mesh, texture_2d}
 }
@@ -168,7 +169,8 @@ fn color_mesh(context: &Context) -> Mesh {
     };
     cpu_mesh.compute_normals();
 
-    let mesh = Mesh::new(&context, &cpu_mesh).unwrap();
+    let mut mesh = Mesh::new(&context, &cpu_mesh).unwrap();
+    mesh.cull = CullType::Back;
 
     mesh
 }
@@ -181,7 +183,10 @@ fn line_mesh(context: &Context) -> Mesh {
         ..Default::default()
     };
 
-    Mesh::new(&context, &cpu_mesh).unwrap()
+    let mut mesh = Mesh::new(&context, &cpu_mesh).unwrap();
+    mesh.cull = CullType::Back;
+
+    mesh
 }
 
 fn square_positions() -> Vec<f32> {
