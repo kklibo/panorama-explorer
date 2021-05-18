@@ -79,7 +79,7 @@ impl Photo {
         struct SavedFields {
             translate: Mat4,
             rotate: Mat4,
-        };
+        }
 
         let saved_fields: SavedFields = serde_json::from_str(s)?;
         self.translate = saved_fields.translate;

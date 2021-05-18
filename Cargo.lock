@@ -812,20 +812,20 @@ checksum = "830d08ce1d1d941e6b30645f1a0eb5643013d835ce3779a5fc208261dbe10f55"
 
 [[package]]
 name = "lexical"
-version = "2.2.2"
+version = "2.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8e0d09e60c187a6d0a3fa418aec8587c6a4ae9de872f6126f2134f319b5ed10d"
+checksum = "c9d189f82a78aa5c06e64f60cbd6f9ec37fe1cdb453dfd88ac2128c81157dc6c"
 dependencies = [
  "cfg-if 0.1.10",
- "lexical-core 0.4.6",
+ "lexical-core 0.4.8",
  "rustc_version",
 ]
 
 [[package]]
 name = "lexical-core"
-version = "0.4.6"
+version = "0.4.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2304bccb228c4b020f3a4835d247df0a02a7c4686098d4167762cfbbe4c5cb14"
+checksum = "34449d00c5d4066537f4dc72320b18e3aa421e8e92669250eecd664c618fefce"
 dependencies = [
  "arrayvec 0.4.12",
  "cfg-if 0.1.10",

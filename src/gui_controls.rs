@@ -1,8 +1,8 @@
 use three_d::camera::CameraControl;
 use three_d::frame::FrameInput;
-use three_d::frame::input::{Event, MouseButton, State, Key};
+use three_d::frame::{Event, MouseButton, State, Key};
 use three_d::gui::GUI;
-use three_d::egui_gui::egui::{SidePanel, Button, CollapsingHeader};
+use three_d::egui::{SidePanel, Button, CollapsingHeader};
 use three_d::math::{Vec2, InnerSpace};
 
 use log::info;

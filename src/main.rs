@@ -1,6 +1,6 @@
 use three_d::window::{Window, WindowSettings};
-use three_d::frame::output::FrameOutput;
-use three_d::core::render_target::{Screen, ClearState};
+use three_d::frame::FrameOutput;
+use three_d::core::{Screen, ClearState};
 use three_d::object::MeshProgram;
 use three_d::io::Loader;
 use three_d::camera::{Camera, CameraControl};

@@ -1,10 +1,10 @@
-use three_d::definition::cpu_mesh::CPUMesh;
+use three_d::definition::CPUMesh;
 use three_d::object::{Mesh, MeshProgram};
-use three_d::core::render_states::{CullType, BlendMultiplierType, BlendParameters, WriteMask, DepthTestType, RenderStates};
-use three_d::core::render_target::{Screen, ClearState};
+use three_d::core::{CullType, BlendMultiplierType, BlendParameters, WriteMask, DepthTestType, RenderStates};
+use three_d::core::{Screen, ClearState};
 use three_d::math::{Vec2, Vec3, Vec4, Mat4};
 use three_d::gui::GUI;
-use three_d::{Transform,Context,CameraControl,FrameInput,SquareMatrix,InnerSpace,RenderTarget,ColorTargetTexture2D};
+use three_d::{Transform,Context,CameraControl,FrameInput,SquareMatrix,InnerSpace,ColorTargetTexture2D};
 
 use crate::control_state::{ControlState, DewarpShader};
 use crate::photo::Corner;
@@ -258,7 +258,7 @@ pub fn render_photos_to_texture(
 ) -> ColorTargetTexture2D
 {
 
-    use three_d::definition::cpu_texture::{Interpolation, Wrapping, Format};
+    use three_d::definition::{Interpolation, Wrapping, Format};
 
     let tmp_texture = ColorTargetTexture2D::new(
         &context,

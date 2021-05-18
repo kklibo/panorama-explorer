@@ -1,9 +1,9 @@
 use std::rc::Rc;
 
 use three_d::{Loaded, Vec3, Context, ImageEffect, CullType};
-use three_d::definition::cpu_texture::{Interpolation, Wrapping};
-use three_d::definition::cpu_mesh::CPUMesh;
-use three_d::core::texture::Texture2D;
+use three_d::definition::{Interpolation, Wrapping};
+use three_d::definition::CPUMesh;
+use three_d::core::Texture2D;
 use three_d::object::Mesh;
 
 use log::info;
