@@ -4,7 +4,7 @@ use three_d::core::{CullType, BlendMultiplierType, BlendParameters, WriteMask, D
 use three_d::core::{Screen, ClearState};
 use three_d::math::{Vec2, Vec3, Vec4, Mat4};
 use three_d::gui::GUI;
-use three_d::{Transform,Context,CameraControl,FrameInput,SquareMatrix,InnerSpace,ColorTargetTexture2D};
+use three_d::{Transform, Context, CameraControl, FrameInput, SquareMatrix, InnerSpace, ColorTargetTexture2D, Camera};
 
 use crate::control_state::{ControlState, DewarpShader};
 use crate::photo::Corner;
@@ -239,10 +239,89 @@ pub fn render(
             }
         }
 
+
+        //render map overlay
+        render_map_overlay(
+            context,
+            frame_input,
+            viewport_geometry,
+        );
+
+
         gui.render().unwrap();
 
         Ok(())
     }).unwrap();
+}
+
+
+fn render_map_overlay(
+    context: &Context,
+    frame_input: &FrameInput,
+    viewport_geometry: &ViewportGeometry,
+)
+{
+
+    //create texture for overlay contents
+    use three_d::definition::{Interpolation, Wrapping, Format};
+
+    let overlay_texture = ColorTargetTexture2D::<u8>::new(
+        &context,
+        100,
+        100,
+        Interpolation::Nearest,
+        Interpolation::Nearest,
+        None,
+        Wrapping::ClampToEdge,
+        Wrapping::ClampToEdge,
+        Format::RGBA,
+    ).unwrap();
+
+    overlay_texture.write(ClearState::color(0.0, 0.5, 0.0, 1.0), || {Ok(())}).unwrap();
+
+
+    //three-d infrastructure for overlay
+    let cpu_mesh = CPUMesh {
+        positions: crate::entities::square_positions(),
+        uvs: Some(crate::entities::square_uvs()),
+
+        ..Default::default()
+    };
+
+    let mut mesh = Mesh::new(&context, &cpu_mesh).unwrap();
+    mesh.cull = CullType::Back;
+
+    let render_states = RenderStates {
+        write_mask: WriteMask::COLOR,
+        depth_test: DepthTestType::Always,
+
+        ..Default::default()
+    };
+
+
+
+    let viewport_width = viewport_geometry.width_in_pixels().get() as f32;
+    let viewport_height = viewport_geometry.height_in_pixels().get() as f32;
+
+    //orthographic camera view for UI rendering in viewport
+    use three_d::vec3;
+    let camera = Camera::new_orthographic(&context,
+                                 vec3(0.0, 0.0, 5.0),
+                                 vec3(0.0, 0.0, 0.0),
+                                 vec3(0.0, 1.0, 0.0),
+                                 viewport_width,
+                                 viewport_height,
+                                 10.0).unwrap();
+
+
+    //temp hardcode: render overlay in 200px square near lower right corner
+    let t1 = Mat4::from_scale(200.0);
+    let t1 = Mat4::from_translation(Vec3::new(viewport_width*0.5 - 110.0, viewport_height*-0.5 + 110.0, 0.0)).concat(&t1);
+    mesh.transformation = t1;
+
+    mesh.render_with_texture(&overlay_texture, render_states, frame_input.viewport, &camera).unwrap();
+
+
 }
 
 

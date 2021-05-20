@@ -189,7 +189,7 @@ fn line_mesh(context: &Context) -> Mesh {
     mesh
 }
 
-fn square_positions() -> Vec<f32> {
+pub fn square_positions() -> Vec<f32> {
     vec![
         -0.5, -0.5, 0.0,
         0.5, -0.5, 0.0,
@@ -200,7 +200,7 @@ fn square_positions() -> Vec<f32> {
     ]
 }
 
-fn square_uvs() -> Vec<f32> {
+pub fn square_uvs() -> Vec<f32> {
     vec![
         0.0, 0.0,
         1.0, 0.0,

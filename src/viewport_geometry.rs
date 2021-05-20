@@ -83,6 +83,14 @@ impl ViewportGeometry {
         }
     }
 
+    pub fn width_in_pixels(&self) -> NonZeroU32 {
+        self.width_in_pixels
+    }
+
+    pub fn height_in_pixels(&self) -> NonZeroU32 {
+        self.height_in_pixels
+    }
+
     pub fn width_in_world_units(&self) -> f64 {
 
         self.size_in_world_units()
