@@ -255,12 +255,12 @@ pub fn render_photos_to_texture(
     texture_dewarp_program: &MeshProgram,
     texture_dewarp2_program: &MeshProgram,
     entities: &Entities
-) -> ColorTargetTexture2D
+) -> ColorTargetTexture2D<u8>
 {
 
     use three_d::definition::{Interpolation, Wrapping, Format};
 
-    let tmp_texture = ColorTargetTexture2D::new(
+    let tmp_texture = ColorTargetTexture2D::<f32>::new(
         &context,
         frame_input.viewport.width,
         frame_input.viewport.height,
@@ -269,10 +269,10 @@ pub fn render_photos_to_texture(
         None,
         Wrapping::ClampToEdge,
         Wrapping::ClampToEdge,
-        Format::RGBA32F,
+        Format::RGBA,
     ).unwrap();
 
-    let out_texture = ColorTargetTexture2D::new(
+    let out_texture = ColorTargetTexture2D::<u8>::new(
         &context,
         frame_input.viewport.width,
         frame_input.viewport.height,
@@ -281,7 +281,7 @@ pub fn render_photos_to_texture(
         None,
         Wrapping::ClampToEdge,
         Wrapping::ClampToEdge,
-        Format::RGBA8,
+        Format::RGBA,
     ).unwrap();
 
     {

@@ -152,7 +152,7 @@ fn load_mesh_from_filepath(context: &Context, loaded: &Loaded, image_filepath: &
     cpu_texture.wrap_t = Wrapping::ClampToEdge;
     cpu_texture.wrap_r = Wrapping::ClampToEdge;
 
-    let texture_2d = Texture2D::new_with_u8(&context, &cpu_texture).unwrap();
+    let texture_2d = Texture2D::new(&context, &cpu_texture).unwrap();
 
     let mut mesh = Mesh::new(&context, &cpu_mesh).unwrap();
     mesh.cull = CullType::Back;
