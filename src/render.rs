@@ -36,7 +36,39 @@ pub struct Renderer<'a> {
 
 impl Renderer<'_> {
 
-    pub fn render(
+    pub fn new<'a>(
+        context: &'a Context,
+        frame_input: &'a FrameInput,
+        camera: &'a CameraControl,
+
+        texture_program: &'a MeshProgram,
+        texture_dewarp_program: &'a MeshProgram,
+        texture_dewarp2_program: &'a MeshProgram,
+        color_program: &'a MeshProgram,
+
+        viewport_geometry: &'a ViewportGeometry,
+        control_state: &'a ControlState,
+        entities: &'a Entities,
+        ) -> Renderer<'a>
+    {
+
+        Renderer {
+            context,
+            frame_input,
+            camera,
+
+            texture_program,
+            texture_dewarp_program,
+            texture_dewarp2_program,
+            color_program,
+
+            viewport_geometry,
+            control_state,
+            entities,
+        }
+    }
+
+    pub fn render(&self,
         context: &Context,
         frame_input: &FrameInput,
         gui: &mut GUI,

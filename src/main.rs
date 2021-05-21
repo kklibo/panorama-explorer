@@ -146,7 +146,22 @@ fn main() {
             // draw
             if redraw {
 
-                render::Renderer::render(
+                let renderer = render::Renderer::new(
+                    &context,
+                    &frame_input,
+                    &camera,
+
+                    &texture_program,
+                    &texture_dewarp_program,
+                    &texture_dewarp2_program,
+                    &color_program,
+
+                    &viewport_geometry,
+                    &control_state,
+                    &entities,
+                );
+
+                renderer.render(
                     &context,
                     &frame_input,
                     &mut gui,
