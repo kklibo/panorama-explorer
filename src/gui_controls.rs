@@ -356,10 +356,9 @@ pub fn handle_input_events(
                 viewport_geometry.camera_position.x += to_cursor.x;
                 viewport_geometry.camera_position.y += to_cursor.y;
 
-                //un-reverse direction in web mode (not sure why it's backwards)
-                match (delta.1 > 0.0, cfg!(target_arch = "wasm32")) {
-                    (true, true) | (false, false) => viewport_geometry.zoom_out(),
-                    (true, false) | (false, true) => viewport_geometry.zoom_in(),
+                match delta.1 > 0.0 {
+                    true => viewport_geometry.zoom_in(),
+                    false => viewport_geometry.zoom_out(),
                 }
 
                 //and translate back, at the new zoom level
