@@ -245,6 +245,9 @@ pub fn render(
             context,
             frame_input,
             viewport_geometry,
+            texture_program,
+            render_states,
+            entities,
         );
 
 
@@ -259,25 +262,54 @@ fn render_map_overlay(
     context: &Context,
     frame_input: &FrameInput,
     viewport_geometry: &ViewportGeometry,
+    texture_program: &MeshProgram,
+    render_states: RenderStates,
+    entities: &Entities,
 )
 {
 
     //create texture for overlay contents
     use three_d::definition::{Interpolation, Wrapping, Format};
+    use three_d::vec3;
+    use three_d::Viewport;
 
     let overlay_texture = ColorTargetTexture2D::<u8>::new(
         &context,
-        100,
-        100,
-        Interpolation::Nearest,
-        Interpolation::Nearest,
+        200,
+        200,
+        Interpolation::Linear,
+        Interpolation::Linear,
         None,
         Wrapping::ClampToEdge,
         Wrapping::ClampToEdge,
         Format::RGBA,
     ).unwrap();
 
-    overlay_texture.write(ClearState::color(0.0, 0.5, 0.0, 1.0), || {Ok(())}).unwrap();
+    overlay_texture.write(ClearState::color(0.0, 0.5, 0.0, 0.0), || {
+
+        texture_program.use_texture(&entities.overlay_mesh.texture_2d, "tex").unwrap();
+        texture_program.use_uniform_float("out_alpha", &1.0).unwrap();
+
+        let viewport = Viewport::new_at_origo(200,200);
+        let camera = Camera::new_orthographic(&context,
+                                     vec3(0.0, 0.0, 5.0),
+                                     vec3(0.0, 0.0, 0.0),
+                                     vec3(0.0, 1.0, 0.0),
+                                     1.0,
+                                     1.0,
+                                     10.0).unwrap();
+
+        let mut mesh = entities.overlay_mesh.mesh.clone();
+        mesh.transformation = Mat4::identity()
+            //flip y-coords
+            .concat(&Mat4::from_nonuniform_scale(1.0, -1.0, 1.0));
+
+        mesh.cull = CullType::None;
+        mesh.render(texture_program, render_states, viewport, &camera)?;
+
+        Ok(())
+
+    }).unwrap();
 
 
     //three-d infrastructure for overlay
@@ -304,7 +336,6 @@ fn render_map_overlay(
     let viewport_height = viewport_geometry.height_in_pixels().get() as f32;
 
     //orthographic camera view for UI rendering in viewport
-    use three_d::vec3;
     let camera = Camera::new_orthographic(&context,
                                  vec3(0.0, 0.0, 5.0),
                                  vec3(0.0, 0.0, 0.0),
@@ -320,7 +351,6 @@ fn render_map_overlay(
     mesh.transformation = t1;
 
     mesh.render_with_texture(&overlay_texture, render_states, frame_input.viewport, &camera).unwrap();
-
 
 }
 

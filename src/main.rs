@@ -61,6 +61,7 @@ fn main() {
         pto_file,
         reset_photos_string_file,
         align_photos_string_file,
+        "test_photos/map_test.jpg",
     //    "test_photos/test1_border.jpg",
     //    "test_photos/test2_border.jpg",
     //    "test_photos/test1.jpg",
