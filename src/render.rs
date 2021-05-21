@@ -4,7 +4,7 @@ use three_d::core::{CullType, BlendMultiplierType, BlendParameters, WriteMask, D
 use three_d::core::{Screen, ClearState};
 use three_d::math::{Vec2, Vec3, Vec4, Mat4};
 use three_d::gui::GUI;
-use three_d::{Transform,Context,CameraControl,FrameInput,SquareMatrix,InnerSpace,ColorTargetTexture2D};
+use three_d::{Transform, Context, CameraControl, FrameInput, SquareMatrix, InnerSpace, ColorTargetTexture2D, Camera};
 
 use crate::control_state::{ControlState, DewarpShader};
 use crate::photo::Corner;
@@ -239,10 +239,124 @@ pub fn render(
             }
         }
 
+
+        //render map overlay
+        render_map_overlay(
+            context,
+            frame_input,
+            viewport_geometry,
+            texture_program,
+            render_states,
+            entities,
+        );
+
+
         gui.render().unwrap();
 
         Ok(())
     }).unwrap();
+}
+
+
+fn render_map_overlay(
+    context: &Context,
+    frame_input: &FrameInput,
+    viewport_geometry: &ViewportGeometry,
+    texture_program: &MeshProgram,
+    render_states: RenderStates,
+    entities: &Entities,
+)
+{
+
+    //create texture for overlay contents
+    use three_d::definition::{Interpolation, Wrapping, Format};
+    use three_d::vec3;
+    use three_d::Viewport;
+
+    let overlay_width_px: u32 = 300;
+    let overlay_height_px: u32 = 300;
+
+    let overlay_texture = ColorTargetTexture2D::<u8>::new(
+        &context,
+        overlay_width_px,
+        overlay_height_px,
+        Interpolation::Linear,
+        Interpolation::Linear,
+        None,
+        Wrapping::ClampToEdge,
+        Wrapping::ClampToEdge,
+        Format::RGBA,
+    ).unwrap();
+
+    overlay_texture.write(ClearState::color(0.0, 0.5, 0.0, 0.0), || {
+
+        texture_program.use_texture(&entities.overlay_mesh.texture_2d, "tex").unwrap();
+        texture_program.use_uniform_float("out_alpha", &1.0).unwrap();
+
+        let viewport = Viewport::new_at_origo(overlay_width_px,overlay_height_px);
+        let camera = Camera::new_orthographic(&context,
+                                     vec3(0.0, 0.0, 5.0),
+                                     vec3(0.0, 0.0, 0.0),
+                                     vec3(0.0, 1.0, 0.0),
+                                     1.0,
+                                     1.0,
+                                     10.0).unwrap();
+
+        let mut mesh = entities.overlay_mesh.mesh.clone();
+        mesh.transformation = Mat4::identity()
+            //flip y-coords
+            .concat(&Mat4::from_nonuniform_scale(1.0, -1.0, 1.0)
+            .concat(&Mat4::from_scale(2.0))
+            );
+
+        mesh.cull = CullType::None;
+        mesh.render(texture_program, render_states, viewport, &camera)?;
+
+        Ok(())
+
+    }).unwrap();
+
+
+    //three-d infrastructure for overlay
+    let cpu_mesh = CPUMesh {
+        positions: crate::entities::square_positions(),
+        uvs: Some(crate::entities::square_uvs()),
+
+        ..Default::default()
+    };
+
+    let mut mesh = Mesh::new(&context, &cpu_mesh).unwrap();
+    mesh.cull = CullType::Back;
+
+    let render_states = RenderStates {
+        write_mask: WriteMask::COLOR,
+        depth_test: DepthTestType::Always,
+
+        ..Default::default()
+    };
+
+
+
+    let viewport_width = viewport_geometry.width_in_pixels().get() as f32;
+    let viewport_height = viewport_geometry.height_in_pixels().get() as f32;
+
+    //orthographic camera view for UI rendering in viewport
+    let camera = Camera::new_orthographic(&context,
+                                 vec3(0.0, 0.0, 5.0),
+                                 vec3(0.0, 0.0, 0.0),
+                                 vec3(0.0, 1.0, 0.0),
+                                 viewport_width,
+                                 viewport_height,
+                                 10.0).unwrap();
+
+
+    //temp hardcode: render overlay in square near lower right corner
+    let t1 = Mat4::from_scale(300.0);
+    let t1 = Mat4::from_translation(Vec3::new(viewport_width*0.5 - 160.0, viewport_height*-0.5 + 160.0, 0.0)).concat(&t1);
+    mesh.transformation = t1;
+
+    mesh.render_with_texture(&overlay_texture, render_states, frame_input.viewport, &camera).unwrap();
+
 }
 
 
@@ -255,12 +369,12 @@ pub fn render_photos_to_texture(
     texture_dewarp_program: &MeshProgram,
     texture_dewarp2_program: &MeshProgram,
     entities: &Entities
-) -> ColorTargetTexture2D
+) -> ColorTargetTexture2D<u8>
 {
 
     use three_d::definition::{Interpolation, Wrapping, Format};
 
-    let tmp_texture = ColorTargetTexture2D::new(
+    let tmp_texture = ColorTargetTexture2D::<f32>::new(
         &context,
         frame_input.viewport.width,
         frame_input.viewport.height,
@@ -269,10 +383,10 @@ pub fn render_photos_to_texture(
         None,
         Wrapping::ClampToEdge,
         Wrapping::ClampToEdge,
-        Format::RGBA32F,
+        Format::RGBA,
     ).unwrap();
 
-    let out_texture = ColorTargetTexture2D::new(
+    let out_texture = ColorTargetTexture2D::<u8>::new(
         &context,
         frame_input.viewport.width,
         frame_input.viewport.height,
@@ -281,7 +395,7 @@ pub fn render_photos_to_texture(
         None,
         Wrapping::ClampToEdge,
         Wrapping::ClampToEdge,
-        Format::RGBA8,
+        Format::RGBA,
     ).unwrap();
 
     {

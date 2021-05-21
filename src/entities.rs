@@ -22,6 +22,7 @@ pub struct Entities {
     pub align_photos_string: String,
     pub color_mesh: Mesh,
     pub line_mesh: Mesh,
+    pub overlay_mesh: Rc<LoadedImageMesh>,
     pub average_effect: ImageEffect,
     pub copy_photos_effect: ImageEffect,
 }
@@ -46,6 +47,7 @@ impl Entities {
         let s = std::str::from_utf8(file_u8).unwrap();
 
         let skip_non_mesh_files = 3;
+        let skip_non_photo_meshes = 1;
 
 
         let pairs = read_pto::read_control_point_pairs(s).unwrap();
@@ -80,7 +82,7 @@ impl Entities {
             Rc::new(load_mesh_from_filepath(&context, loaded, x))
         }).collect();
 
-        let mut photos: Vec<Photo> = meshes.iter().map(|mesh| {
+        let mut photos: Vec<Photo> = meshes.iter().skip(skip_non_photo_meshes).map(|mesh| {
             Photo::from_loaded_image_mesh(mesh.clone())
         }).collect();
 
@@ -94,6 +96,7 @@ impl Entities {
 
         let color_mesh = color_mesh(&context);
         let line_mesh = line_mesh(&context);
+        let overlay_mesh = meshes.get(0).unwrap().clone();
 
         let average_effect = ImageEffect::new(context, include_str!("shaders/average_effect.frag")).unwrap();
         let copy_photos_effect = ImageEffect::new(context, include_str!("shaders/copy_photos.frag")).unwrap();
@@ -106,6 +109,7 @@ impl Entities {
             align_photos_string,
             color_mesh,
             line_mesh,
+            overlay_mesh,
             average_effect,
             copy_photos_effect,
         };
@@ -152,7 +156,7 @@ fn load_mesh_from_filepath(context: &Context, loaded: &Loaded, image_filepath: &
     cpu_texture.wrap_t = Wrapping::ClampToEdge;
     cpu_texture.wrap_r = Wrapping::ClampToEdge;
 
-    let texture_2d = Texture2D::new_with_u8(&context, &cpu_texture).unwrap();
+    let texture_2d = Texture2D::new(&context, &cpu_texture).unwrap();
 
     let mut mesh = Mesh::new(&context, &cpu_mesh).unwrap();
     mesh.cull = CullType::Back;
@@ -189,7 +193,7 @@ fn line_mesh(context: &Context) -> Mesh {
     mesh
 }
 
-fn square_positions() -> Vec<f32> {
+pub fn square_positions() -> Vec<f32> {
     vec![
         -0.5, -0.5, 0.0,
         0.5, -0.5, 0.0,
@@ -200,7 +204,7 @@ fn square_positions() -> Vec<f32> {
     ]
 }
 
-fn square_uvs() -> Vec<f32> {
+pub fn square_uvs() -> Vec<f32> {
     vec![
         0.0, 0.0,
         1.0, 0.0,
