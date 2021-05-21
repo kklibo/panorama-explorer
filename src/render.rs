@@ -68,20 +68,9 @@ impl Renderer<'_> {
         }
     }
 
-    pub fn render(&self,
-        context: &Context,
-        frame_input: &FrameInput,
-        gui: &mut GUI,
-        control_state: &ControlState,
-        camera: &CameraControl,
-        viewport_geometry: &ViewportGeometry,
-        texture_program: &MeshProgram,
-        texture_dewarp_program: &MeshProgram,
-        texture_dewarp2_program: &MeshProgram,
-        color_program: &MeshProgram,
-        entities: &Entities
-    ) {
-        Screen::write(&context, ClearState::color_and_depth(0.2, 0.2, 0.2, 1.0, 1.0), || {
+    pub fn render(&self, gui: &mut GUI)
+    {
+        Screen::write(&self.context, ClearState::color_and_depth(0.2, 0.2, 0.2, 1.0, 1.0), || {
             let render_states = RenderStates {
 
                 blend: Some(BlendParameters {
@@ -98,15 +87,15 @@ impl Renderer<'_> {
                 ..Default::default()
             };
 
-            if control_state.alignment_mode {
+            if self.control_state.alignment_mode {
                 //in alignment mode, use standard transparency
 
-                for m in &entities.photos {
-                    let program = match control_state.dewarp_shader
+                for m in &self.entities.photos {
+                    let program = match self.control_state.dewarp_shader
                     {
-                        DewarpShader::NoMorph => &texture_program,
-                        DewarpShader::Dewarp1 => &texture_dewarp_program,
-                        DewarpShader::Dewarp2 => &texture_dewarp2_program,
+                        DewarpShader::NoMorph => &self.texture_program,
+                        DewarpShader::Dewarp1 => &self.texture_dewarp_program,
+                        DewarpShader::Dewarp2 => &self.texture_dewarp2_program,
                     };
 
                     program.use_texture(&m.loaded_image_mesh.texture_2d, "tex").unwrap();
@@ -115,7 +104,7 @@ impl Renderer<'_> {
                     let mut mesh = m.loaded_image_mesh.mesh.clone();
                     mesh.transformation = m.to_world();
                     mesh.render(program, render_states,
-                                                frame_input.viewport, &camera)?;
+                                                self.frame_input.viewport, &self.camera)?;
                 }
             }
             else {
@@ -123,69 +112,69 @@ impl Renderer<'_> {
 
                 let photo_texture =
                 Renderer::render_photos_to_texture(
-                    &context,
-                    &frame_input,
-                    &control_state,
-                    &camera,
-                    &texture_program,
-                    &texture_dewarp_program,
-                    &texture_dewarp2_program,
-                    &entities,
+                    &self.context,
+                    &self.frame_input,
+                    &self.control_state,
+                    &self.camera,
+                    &self.texture_program,
+                    &self.texture_dewarp_program,
+                    &self.texture_dewarp2_program,
+                    &self.entities,
                 );
 
-                Screen::write(&context, ClearState::none(), || {
+                Screen::write(&self.context, ClearState::none(), || {
 
-                    entities.copy_photos_effect.use_texture(&photo_texture, "colorMap")?;
-                    entities.copy_photos_effect.apply(render_states, frame_input.viewport)
+                    self.entities.copy_photos_effect.use_texture(&photo_texture, "colorMap")?;
+                    self.entities.copy_photos_effect.apply(render_states, self.frame_input.viewport)
 
                 }).unwrap();
             }
 
-            if control_state.control_points_visible {
+            if self.control_state.control_points_visible {
 
-                let points = &entities.image0_control_points;
+                let points = &self.entities.image0_control_points;
 
                 for &v in points {
                     let t1 = Mat4::from_nonuniform_scale(10.0, 10.0, 1.0);
 
-                    let t1 = entities.photos[0].convert_photo_px_to_world(v).concat(&t1);
+                    let t1 = self.entities.photos[0].convert_photo_px_to_world(v).concat(&t1);
 
 
-                    color_program.use_uniform_vec4("color", &Vec4::new(0.8, 0.5, 0.2, 0.5)).unwrap();
-                    let mut mesh = entities.color_mesh.clone();
+                    self.color_program.use_uniform_vec4("color", &Vec4::new(0.8, 0.5, 0.2, 0.5)).unwrap();
+                    let mut mesh = self.entities.color_mesh.clone();
                     mesh.transformation = t1;
-                    mesh.render(&color_program, render_states, frame_input.viewport, &camera)?;
+                    mesh.render(&self.color_program, render_states, self.frame_input.viewport, &self.camera)?;
                 }
 
-                let points = &entities.image1_control_points;
+                let points = &self.entities.image1_control_points;
 
                 for &v in points {
                     let t1 = Mat4::from_nonuniform_scale(10.0, 10.0, 1.0);
                     let t1 = Mat4::from_angle_z(cgmath::Deg(45.0)).concat(&t1);
 
-                    let t1 = entities.photos[1].convert_photo_px_to_world(v).concat(&t1);
+                    let t1 = self.entities.photos[1].convert_photo_px_to_world(v).concat(&t1);
 
-                    color_program.use_uniform_vec4("color", &Vec4::new(0.2, 0.8, 0.2, 0.5)).unwrap();
-                    let mut mesh = entities.color_mesh.clone();
+                    self.color_program.use_uniform_vec4("color", &Vec4::new(0.2, 0.8, 0.2, 0.5)).unwrap();
+                    let mut mesh = self.entities.color_mesh.clone();
                     mesh.transformation = t1;
-                    mesh.render(&color_program, render_states, frame_input.viewport, &camera)?;
+                    mesh.render(&self.color_program, render_states, self.frame_input.viewport, &self.camera)?;
                 }
             }
 
-            if let Some(ref rp) = control_state.active_rotation_point {
+            if let Some(ref rp) = self.control_state.active_rotation_point {
                 let t1 = Mat4::from_nonuniform_scale(10.0, 10.0, 1.0);
                 let t1 = Mat4::from_angle_z(cgmath::Deg(-45.0)).concat(&t1);
 
                 let t1 = Mat4::from_translation(Vec3::new(rp.point.x as f32, rp.point.y as f32, 0.0)).concat(&t1);
 
-                color_program.use_uniform_vec4("color", &Vec4::new(0.8, 0.8, 0.2, 0.5)).unwrap();
-                let mut mesh = entities.color_mesh.clone();
+                self.color_program.use_uniform_vec4("color", &Vec4::new(0.8, 0.8, 0.2, 0.5)).unwrap();
+                let mut mesh = self.entities.color_mesh.clone();
                 mesh.transformation = t1;
-                mesh.render(&color_program, render_states, frame_input.viewport, &camera)?;
+                mesh.render(&self.color_program, render_states, self.frame_input.viewport, &self.camera)?;
             }
 
-            if let Some(ref rp) = control_state.active_rotation_point {
-                if let Some(ref rd) = control_state.active_rotate_drag {
+            if let Some(ref rp) = self.control_state.active_rotation_point {
+                if let Some(ref rd) = self.control_state.active_rotate_drag {
 
                     //create resized line segment for dragged rotation start line
                     let mouse_coords_vec_length =
@@ -216,25 +205,25 @@ impl Renderer<'_> {
                         ..Default::default()
                     };
 
-                    let mut mesh = Mesh::new(&context, &cpu_mesh).unwrap();
+                    let mut mesh = Mesh::new(&self.context, &cpu_mesh).unwrap();
                     mesh.cull = CullType::None;
                     let t1 = Mat4::identity();
 
-                    color_program.use_uniform_vec4("color", &Vec4::new(0.2, 0.2, 0.8, 0.5)).unwrap();
+                    self.color_program.use_uniform_vec4("color", &Vec4::new(0.2, 0.2, 0.8, 0.5)).unwrap();
                     mesh.transformation = t1;
-                    mesh.render(&color_program, render_states, frame_input.viewport, &camera)?;
+                    mesh.render(&self.color_program, render_states, self.frame_input.viewport, &self.camera)?;
 
 
                     //draw angle lines to indicate dragged rotation angle
-                    let start_line_mat4 =   line_transform(&viewport_geometry, rp.point, mouse_start_resized,  1.0);
-                    let dragged_line_mat4 = line_transform(&viewport_geometry, rp.point, rd.mouse_coords, 1.0);
+                    let start_line_mat4 =   line_transform(&self.viewport_geometry, rp.point, mouse_start_resized,  1.0);
+                    let dragged_line_mat4 = line_transform(&self.viewport_geometry, rp.point, rd.mouse_coords, 1.0);
 
-                    color_program.use_uniform_vec4("color", &Vec4::new(0.8, 0.8, 0.2, 1.0)).unwrap();
-                    let mut mesh =  entities.line_mesh.clone();
+                    self.color_program.use_uniform_vec4("color", &Vec4::new(0.8, 0.8, 0.2, 1.0)).unwrap();
+                    let mut mesh =  self.entities.line_mesh.clone();
                     mesh.transformation = start_line_mat4;
-                    mesh.render(&color_program, render_states, frame_input.viewport, &camera)?;
+                    mesh.render(&self.color_program, render_states, self.frame_input.viewport, &self.camera)?;
                     mesh.transformation = dragged_line_mat4;
-                    mesh.render(&color_program, render_states, frame_input.viewport, &camera)?;
+                    mesh.render(&self.color_program, render_states, self.frame_input.viewport, &self.camera)?;
 
                 }
             }
@@ -268,15 +257,15 @@ impl Renderer<'_> {
             }
 
             //selected photo border rectangle
-            if let Some(index) = control_state.selected_photo_index {
+            if let Some(index) = self.control_state.selected_photo_index {
 
                 let mut lines = Vec::<Mat4>::new();
 
                 let mut add_corner_line = |corner1: Corner, corner2: Corner| {
                     lines.push(line_transform(
-                        &viewport_geometry,
-                        entities.photos[index].corner(corner1),
-                        entities.photos[index].corner(corner2),
+                        &self.viewport_geometry,
+                        self.entities.photos[index].corner(corner1),
+                        self.entities.photos[index].corner(corner2),
                         1.0
                     ));
                 };
@@ -288,22 +277,22 @@ impl Renderer<'_> {
 
                 //draw lines
                 for ref line in lines {
-                    color_program.use_uniform_vec4("color", &Vec4::new(0.2, 0.8, 0.2, 1.0)).unwrap();
-                    let mut mesh  = entities.line_mesh.clone();
+                    self.color_program.use_uniform_vec4("color", &Vec4::new(0.2, 0.8, 0.2, 1.0)).unwrap();
+                    let mut mesh  = self.entities.line_mesh.clone();
                     mesh.transformation = *line;
-                    mesh.render(&color_program, render_states, frame_input.viewport, &camera)?;
+                    mesh.render(&self.color_program, render_states, self.frame_input.viewport, &self.camera)?;
                 }
             }
 
 
             //render map overlay
             Renderer::render_map_overlay(
-                context,
-                frame_input,
-                viewport_geometry,
-                texture_program,
+                self.context,
+                self.frame_input,
+                self.viewport_geometry,
+                self.texture_program,
                 render_states,
-                entities,
+                self.entities,
             );
 
 

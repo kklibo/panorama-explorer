@@ -161,20 +161,7 @@ fn main() {
                     &entities,
                 );
 
-                renderer.render(
-                    &context,
-                    &frame_input,
-                    &mut gui,
-                    &control_state,
-                    &camera,
-                    &viewport_geometry,
-                    &texture_program,
-                    &texture_dewarp_program,
-                    &texture_dewarp2_program,
-                    &color_program,
-                    &entities,
-                );
-
+                renderer.render(&mut gui);
 
                 //set entire display buffer alpha to 1.0: prevents web browser pass-through transparency problem
                 let clear_alpha = ClearState {
