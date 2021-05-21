@@ -273,10 +273,13 @@ fn render_map_overlay(
     use three_d::vec3;
     use three_d::Viewport;
 
+    let overlay_width_px: u32 = 300;
+    let overlay_height_px: u32 = 300;
+
     let overlay_texture = ColorTargetTexture2D::<u8>::new(
         &context,
-        200,
-        200,
+        overlay_width_px,
+        overlay_height_px,
         Interpolation::Linear,
         Interpolation::Linear,
         None,
@@ -290,7 +293,7 @@ fn render_map_overlay(
         texture_program.use_texture(&entities.overlay_mesh.texture_2d, "tex").unwrap();
         texture_program.use_uniform_float("out_alpha", &1.0).unwrap();
 
-        let viewport = Viewport::new_at_origo(200,200);
+        let viewport = Viewport::new_at_origo(overlay_width_px,overlay_height_px);
         let camera = Camera::new_orthographic(&context,
                                      vec3(0.0, 0.0, 5.0),
                                      vec3(0.0, 0.0, 0.0),
@@ -302,7 +305,9 @@ fn render_map_overlay(
         let mut mesh = entities.overlay_mesh.mesh.clone();
         mesh.transformation = Mat4::identity()
             //flip y-coords
-            .concat(&Mat4::from_nonuniform_scale(1.0, -1.0, 1.0));
+            .concat(&Mat4::from_nonuniform_scale(1.0, -1.0, 1.0)
+            .concat(&Mat4::from_scale(2.0))
+            );
 
         mesh.cull = CullType::None;
         mesh.render(texture_program, render_states, viewport, &camera)?;
@@ -345,9 +350,9 @@ fn render_map_overlay(
                                  10.0).unwrap();
 
 
-    //temp hardcode: render overlay in 200px square near lower right corner
-    let t1 = Mat4::from_scale(200.0);
-    let t1 = Mat4::from_translation(Vec3::new(viewport_width*0.5 - 110.0, viewport_height*-0.5 + 110.0, 0.0)).concat(&t1);
+    //temp hardcode: render overlay in square near lower right corner
+    let t1 = Mat4::from_scale(300.0);
+    let t1 = Mat4::from_translation(Vec3::new(viewport_width*0.5 - 160.0, viewport_height*-0.5 + 160.0, 0.0)).concat(&t1);
     mesh.transformation = t1;
 
     mesh.render_with_texture(&overlay_texture, render_states, frame_input.viewport, &camera).unwrap();
