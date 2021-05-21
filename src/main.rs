@@ -146,7 +146,7 @@ fn main() {
             // draw
             if redraw {
 
-                render::render(
+                render::Renderer::render(
                     &context,
                     &frame_input,
                     &mut gui,

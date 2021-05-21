@@ -12,6 +12,30 @@ use crate::entities::Entities;
 use crate::viewport_geometry::{WorldCoords, ViewportGeometry};
 
 
+/// Stores immutable references used in rendering
+#[derive(Copy, Clone)]
+pub struct Renderer<'a> {
+
+    //three-d objects
+    context: &'a Context,
+    frame_input: &'a FrameInput,
+    camera: &'a CameraControl,
+
+    texture_program: &'a MeshProgram,
+    texture_dewarp_program: &'a MeshProgram,
+    texture_dewarp2_program: &'a MeshProgram,
+    color_program: &'a MeshProgram,
+
+
+    //crate objects
+    viewport_geometry: &'a ViewportGeometry,
+    control_state: &'a ControlState,
+    entities: &'a Entities,
+}
+
+
+impl Renderer<'_> {
+
 pub fn render(
     context: &Context,
     frame_input: &FrameInput,
@@ -66,7 +90,7 @@ pub fn render(
             //in browse mode, use multipass rendering
 
             let photo_texture =
-            render_photos_to_texture(
+            Renderer::render_photos_to_texture(
                 &context,
                 &frame_input,
                 &control_state,
@@ -241,7 +265,7 @@ pub fn render(
 
 
         //render map overlay
-        render_map_overlay(
+        Renderer::render_map_overlay(
             context,
             frame_input,
             viewport_geometry,
@@ -452,4 +476,5 @@ pub fn render_photos_to_texture(
     }
 
     out_texture
+}
 }
