@@ -209,45 +209,11 @@ impl Renderer<'_> {
 
 
                     //draw angle lines to indicate dragged rotation angle
-                    let start_line_mat4 =   line_transform(&self.viewport_geometry, rp.point, mouse_start_resized,  1.0);
-                    let dragged_line_mat4 = line_transform(&self.viewport_geometry, rp.point, rd.mouse_coords, 1.0);
-
-                    self.color_program.use_uniform_vec4("color", &Vec4::new(0.8, 0.8, 0.2, 1.0)).unwrap();
-                    let mut mesh =  self.entities.line_mesh.clone();
-                    mesh.transformation = start_line_mat4;
-                    mesh.render(&self.color_program, render_states, self.frame_input.viewport, &self.camera)?;
-                    mesh.transformation = dragged_line_mat4;
-                    mesh.render(&self.color_program, render_states, self.frame_input.viewport, &self.camera)?;
+                    let line_color = Vec4::new(0.8, 0.8, 0.2, 1.0);
+                    self.draw_line(rp.point, mouse_start_resized,  1.0, line_color)?;
+                    self.draw_line(rp.point, rd.mouse_coords,  1.0, line_color)?;
 
                 }
-            }
-
-
-            fn line_transform(
-                viewport_geometry: &ViewportGeometry,
-                p1: WorldCoords,
-                p2: WorldCoords,
-                pixel_thickness: f32,
-            ) -> Mat4
-            {
-                let p1v = Vec3::new(p1.x as f32, p1.y as f32, 0.0);
-
-                let dx = (p2.x - p1.x) as f32;
-                let dy = (p2.y - p1.y) as f32;
-
-                let line_x = Vec2::new(dx, dy);
-
-                let angle = Vec2::unit_x().angle(line_x);
-
-                let t1 = Mat4::from_nonuniform_scale(
-                    line_x.magnitude(),
-                    pixel_thickness * viewport_geometry.world_units_per_pixel() as f32,
-                    1.0
-                );
-                let t1 = Mat4::from_angle_z(angle).concat(&t1);
-                let t1 = Mat4::from_translation(p1v).concat(&t1);
-
-                t1
             }
 
             //selected photo border rectangle
@@ -256,7 +222,7 @@ impl Renderer<'_> {
                 let mut lines = Vec::<Mat4>::new();
 
                 let mut add_corner_line = |corner1: Corner, corner2: Corner| {
-                    lines.push(line_transform(
+                    lines.push(Renderer::line_transform(
                         &self.viewport_geometry,
                         self.entities.photos[index].corner(corner1),
                         self.entities.photos[index].corner(corner2),
@@ -327,6 +293,64 @@ impl Renderer<'_> {
         mesh.render(&self.color_program, render_states, self.frame_input.viewport, &self.camera)
     }
 
+    fn draw_line(
+        &self,
+        point1: WorldCoords,
+        point2: WorldCoords,
+        pixel_thickness: f32,
+        color: Vec4,
+    ) -> Result<(), Error>
+    {
+        let render_states = RenderStates {
+
+            blend: Some(BlendParameters {
+                source_rgb_multiplier: BlendMultiplierType::SrcAlpha,
+                source_alpha_multiplier: BlendMultiplierType::One,
+                destination_rgb_multiplier: BlendMultiplierType::OneMinusSrcAlpha,
+                destination_alpha_multiplier: BlendMultiplierType::Zero,
+                ..Default::default()
+            }),
+
+            write_mask: WriteMask::COLOR,
+            depth_test: DepthTestType::Always,
+
+            ..Default::default()
+        };
+
+        let mut mesh =  self.entities.line_mesh.clone();
+
+        mesh.transformation = Renderer::line_transform(&self.viewport_geometry, point1, point2, pixel_thickness);
+
+        self.color_program.use_uniform_vec4("color", &color).unwrap();
+        mesh.render(&self.color_program, render_states, self.frame_input.viewport, &self.camera)
+    }
+
+    fn line_transform(
+        viewport_geometry: &ViewportGeometry,
+        p1: WorldCoords,
+        p2: WorldCoords,
+        pixel_thickness: f32,
+    ) -> Mat4
+    {
+        let p1v = Vec3::new(p1.x as f32, p1.y as f32, 0.0);
+
+        let dx = (p2.x - p1.x) as f32;
+        let dy = (p2.y - p1.y) as f32;
+
+        let line_x = Vec2::new(dx, dy);
+
+        let angle = Vec2::unit_x().angle(line_x);
+
+        let t1 = Mat4::from_nonuniform_scale(
+            line_x.magnitude(),
+            pixel_thickness * viewport_geometry.world_units_per_pixel() as f32,
+            1.0
+        );
+        let t1 = Mat4::from_angle_z(angle).concat(&t1);
+        let t1 = Mat4::from_translation(p1v).concat(&t1);
+
+        t1
+    }
 
     fn render_map_overlay(
         context: &Context,
