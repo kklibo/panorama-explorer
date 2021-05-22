@@ -219,29 +219,20 @@ impl Renderer<'_> {
             //selected photo border rectangle
             if let Some(index) = self.control_state.selected_photo_index {
 
-                let mut lines = Vec::<Mat4>::new();
+                let draw_corner_line = |corner1: Corner, corner2: Corner| {
 
-                let mut add_corner_line = |corner1: Corner, corner2: Corner| {
-                    lines.push(Renderer::line_transform(
-                        &self.viewport_geometry,
+                    self.draw_line(
                         self.entities.photos[index].corner(corner1),
                         self.entities.photos[index].corner(corner2),
-                        1.0
-                    ));
+                        1.0,
+                        Vec4::new(0.2, 0.8, 0.2, 1.0),
+                    )
                 };
 
-                add_corner_line(Corner::BottomLeft, Corner::BottomRight);
-                add_corner_line(Corner::BottomRight, Corner::TopRight);
-                add_corner_line(Corner::TopRight, Corner::TopLeft);
-                add_corner_line(Corner::TopLeft, Corner::BottomLeft);
-
-                //draw lines
-                for ref line in lines {
-                    self.color_program.use_uniform_vec4("color", &Vec4::new(0.2, 0.8, 0.2, 1.0)).unwrap();
-                    let mut mesh  = self.entities.line_mesh.clone();
-                    mesh.transformation = *line;
-                    mesh.render(&self.color_program, render_states, self.frame_input.viewport, &self.camera)?;
-                }
+                draw_corner_line(Corner::BottomLeft, Corner::BottomRight)?;
+                draw_corner_line(Corner::BottomRight, Corner::TopRight)?;
+                draw_corner_line(Corner::TopRight, Corner::TopLeft)?;
+                draw_corner_line(Corner::TopLeft, Corner::BottomLeft)?;
             }
 
 
