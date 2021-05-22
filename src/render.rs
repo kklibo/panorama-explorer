@@ -332,15 +332,16 @@ impl Renderer<'_> {
 
         let angle = Vec2::unit_x().angle(line_x);
 
-        let t1 = Mat4::from_nonuniform_scale(
-            line_x.magnitude(),
-            pixel_thickness * viewport_geometry.world_units_per_pixel() as f32,
-            1.0
-        );
-        let t1 = Mat4::from_angle_z(angle).concat(&t1);
-        let t1 = Mat4::from_translation(p1v).concat(&t1);
+        let translate_to_p1 = Mat4::from_translation(p1v);
+        let rotate_around_p1 = Mat4::from_angle_z(angle);
+        let scale_length_and_thickness =
+            Mat4::from_nonuniform_scale(
+                line_x.magnitude(),
+                pixel_thickness * viewport_geometry.world_units_per_pixel() as f32,
+                1.0
+            );
 
-        t1
+        translate_to_p1 * rotate_around_p1 * scale_length_and_thickness
     }
 
     fn render_map_overlay(
