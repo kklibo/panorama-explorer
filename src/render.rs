@@ -315,13 +315,15 @@ impl Renderer<'_> {
             ..Default::default()
         };
 
-        let t1 = Mat4::from_nonuniform_scale(10.0, 10.0, 1.0);
-        let t1 = Mat4::from_angle_z(cgmath::Deg(rotation_deg)).concat(&t1);
-        let t1 = Mat4::from_translation(Vec3::new(point.x as f32, point.y as f32, 0.0)).concat(&t1);
+        let mut mesh = self.entities.color_mesh.clone();
+
+        let translate_to_point = Mat4::from_translation(Vec3::new(point.x as f32, point.y as f32, 0.0));
+        let rotate_marker = Mat4::from_angle_z(cgmath::Deg(rotation_deg));
+        let scale_marker = Mat4::from_nonuniform_scale(10.0, 10.0, 1.0);
+
+        mesh.transformation = translate_to_point * rotate_marker * scale_marker;
 
         self.color_program.use_uniform_vec4("color", &color).unwrap();
-        let mut mesh = self.entities.color_mesh.clone();
-        mesh.transformation = t1;
         mesh.render(&self.color_program, render_states, self.frame_input.viewport, &self.camera)
     }
 
