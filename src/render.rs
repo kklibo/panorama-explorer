@@ -5,6 +5,7 @@ use three_d::core::{Screen, ClearState};
 use three_d::math::{Vec2, Vec3, Vec4, Mat4};
 use three_d::gui::GUI;
 use three_d::{Transform, Context, CameraControl, FrameInput, SquareMatrix, InnerSpace, ColorTargetTexture2D, Camera};
+use three_d::Error;
 
 use crate::control_state::{ControlState, DewarpShader};
 use crate::photo::Corner;
@@ -162,15 +163,8 @@ impl Renderer<'_> {
             }
 
             if let Some(ref rp) = self.control_state.active_rotation_point {
-                let t1 = Mat4::from_nonuniform_scale(10.0, 10.0, 1.0);
-                let t1 = Mat4::from_angle_z(cgmath::Deg(-45.0)).concat(&t1);
 
-                let t1 = Mat4::from_translation(Vec3::new(rp.point.x as f32, rp.point.y as f32, 0.0)).concat(&t1);
-
-                self.color_program.use_uniform_vec4("color", &Vec4::new(0.8, 0.8, 0.2, 0.5)).unwrap();
-                let mut mesh = self.entities.color_mesh.clone();
-                mesh.transformation = t1;
-                mesh.render(&self.color_program, render_states, self.frame_input.viewport, &self.camera)?;
+                self.draw_point(rp.point, -45.0, Vec4::new(0.8, 0.8, 0.2, 0.5))?;
             }
 
             if let Some(ref rp) = self.control_state.active_rotation_point {
@@ -300,6 +294,35 @@ impl Renderer<'_> {
 
             Ok(())
         }).unwrap();
+    }
+
+
+    fn draw_point(&self, point: WorldCoords, rotation_deg: f32, color: Vec4) -> Result<(), Error> {
+
+        let render_states = RenderStates {
+
+            blend: Some(BlendParameters {
+                source_rgb_multiplier: BlendMultiplierType::SrcAlpha,
+                source_alpha_multiplier: BlendMultiplierType::One,
+                destination_rgb_multiplier: BlendMultiplierType::OneMinusSrcAlpha,
+                destination_alpha_multiplier: BlendMultiplierType::Zero,
+                ..Default::default()
+            }),
+
+            write_mask: WriteMask::COLOR,
+            depth_test: DepthTestType::Always,
+
+            ..Default::default()
+        };
+
+        let t1 = Mat4::from_nonuniform_scale(10.0, 10.0, 1.0);
+        let t1 = Mat4::from_angle_z(cgmath::Deg(rotation_deg)).concat(&t1);
+        let t1 = Mat4::from_translation(Vec3::new(point.x as f32, point.y as f32, 0.0)).concat(&t1);
+
+        self.color_program.use_uniform_vec4("color", &color).unwrap();
+        let mut mesh = self.entities.color_mesh.clone();
+        mesh.transformation = t1;
+        mesh.render(&self.color_program, render_states, self.frame_input.viewport, &self.camera)
     }
 
 
