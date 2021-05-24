@@ -111,17 +111,7 @@ impl Renderer<'_> {
             else {
                 //in browse mode, use multipass rendering
 
-                let photo_texture =
-                Renderer::render_photos_to_texture(
-                    &self.context,
-                    &self.frame_input,
-                    &self.control_state,
-                    &self.camera,
-                    &self.texture_program,
-                    &self.texture_dewarp_program,
-                    &self.texture_dewarp2_program,
-                    &self.entities,
-                );
+                let photo_texture = self.render_photos_to_texture();
 
                 Screen::write(&self.context, ClearState::none(), || {
 
@@ -237,14 +227,7 @@ impl Renderer<'_> {
 
 
             //render map overlay
-            Renderer::render_map_overlay(
-                self.context,
-                self.frame_input,
-                self.viewport_geometry,
-                self.texture_program,
-                render_states,
-                self.entities,
-            );
+            self.render_map_overlay(render_states);
 
 
             gui.render().unwrap();
@@ -344,15 +327,7 @@ impl Renderer<'_> {
         translate_to_p1 * rotate_around_p1 * scale_length_and_thickness
     }
 
-    fn render_map_overlay(
-        context: &Context,
-        frame_input: &FrameInput,
-        viewport_geometry: &ViewportGeometry,
-        texture_program: &MeshProgram,
-        render_states: RenderStates,
-        entities: &Entities,
-    )
-    {
+    fn render_map_overlay(&self, render_states: RenderStates) {
 
         //create texture for overlay contents
         use three_d::definition::{Interpolation, Wrapping, Format};
@@ -363,7 +338,7 @@ impl Renderer<'_> {
         let overlay_height_px: u32 = 300;
 
         let overlay_texture = ColorTargetTexture2D::<u8>::new(
-            &context,
+            &self.context,
             overlay_width_px,
             overlay_height_px,
             Interpolation::Linear,
@@ -376,11 +351,11 @@ impl Renderer<'_> {
 
         overlay_texture.write(ClearState::color(0.0, 0.5, 0.0, 0.0), || {
 
-            texture_program.use_texture(&entities.overlay_mesh.texture_2d, "tex").unwrap();
-            texture_program.use_uniform_float("out_alpha", &1.0).unwrap();
+            self.texture_program.use_texture(&self.entities.overlay_mesh.texture_2d, "tex").unwrap();
+            self.texture_program.use_uniform_float("out_alpha", &1.0).unwrap();
 
             let viewport = Viewport::new_at_origo(overlay_width_px,overlay_height_px);
-            let camera = Camera::new_orthographic(&context,
+            let camera = Camera::new_orthographic(&self.context,
                                          vec3(0.0, 0.0, 5.0),
                                          vec3(0.0, 0.0, 0.0),
                                          vec3(0.0, 1.0, 0.0),
@@ -388,7 +363,7 @@ impl Renderer<'_> {
                                          1.0,
                                          10.0).unwrap();
 
-            let mut mesh = entities.overlay_mesh.mesh.clone();
+            let mut mesh = self.entities.overlay_mesh.mesh.clone();
             mesh.transformation = Mat4::identity()
                 //flip y-coords
                 .concat(&Mat4::from_nonuniform_scale(1.0, -1.0, 1.0)
@@ -396,7 +371,7 @@ impl Renderer<'_> {
                 );
 
             mesh.cull = CullType::None;
-            mesh.render(texture_program, render_states, viewport, &camera)?;
+            mesh.render(self.texture_program, render_states, viewport, &camera)?;
 
             Ok(())
 
@@ -411,7 +386,7 @@ impl Renderer<'_> {
             ..Default::default()
         };
 
-        let mut mesh = Mesh::new(&context, &cpu_mesh).unwrap();
+        let mut mesh = Mesh::new(&self.context, &cpu_mesh).unwrap();
         mesh.cull = CullType::Back;
 
         let render_states = RenderStates {
@@ -423,11 +398,11 @@ impl Renderer<'_> {
 
 
 
-        let viewport_width = viewport_geometry.width_in_pixels().get() as f32;
-        let viewport_height = viewport_geometry.height_in_pixels().get() as f32;
+        let viewport_width = self.viewport_geometry.width_in_pixels().get() as f32;
+        let viewport_height = self.viewport_geometry.height_in_pixels().get() as f32;
 
         //orthographic camera view for UI rendering in viewport
-        let camera = Camera::new_orthographic(&context,
+        let camera = Camera::new_orthographic(&self.context,
                                      vec3(0.0, 0.0, 5.0),
                                      vec3(0.0, 0.0, 0.0),
                                      vec3(0.0, 1.0, 0.0),
@@ -441,29 +416,19 @@ impl Renderer<'_> {
         let t1 = Mat4::from_translation(Vec3::new(viewport_width*0.5 - 160.0, viewport_height*-0.5 + 160.0, 0.0)).concat(&t1);
         mesh.transformation = t1;
 
-        mesh.render_with_texture(&overlay_texture, render_states, frame_input.viewport, &camera).unwrap();
+        mesh.render_with_texture(&overlay_texture, render_states, self.frame_input.viewport, &camera).unwrap();
 
     }
 
 
-    pub fn render_photos_to_texture(
-        context: &Context,
-        frame_input: &FrameInput,
-        control_state: &ControlState,
-        camera: &CameraControl,
-        texture_program: &MeshProgram,
-        texture_dewarp_program: &MeshProgram,
-        texture_dewarp2_program: &MeshProgram,
-        entities: &Entities
-    ) -> ColorTargetTexture2D<u8>
-    {
+    pub fn render_photos_to_texture(&self) -> ColorTargetTexture2D<u8> {
 
         use three_d::definition::{Interpolation, Wrapping, Format};
 
         let tmp_texture = ColorTargetTexture2D::<f32>::new(
-            &context,
-            frame_input.viewport.width,
-            frame_input.viewport.height,
+            &self.context,
+            self.frame_input.viewport.width,
+            self.frame_input.viewport.height,
             Interpolation::Nearest,
             Interpolation::Nearest,
             None,
@@ -473,9 +438,9 @@ impl Renderer<'_> {
         ).unwrap();
 
         let out_texture = ColorTargetTexture2D::<u8>::new(
-            &context,
-            frame_input.viewport.width,
-            frame_input.viewport.height,
+            &self.context,
+            self.frame_input.viewport.width,
+            self.frame_input.viewport.height,
             Interpolation::Nearest,
             Interpolation::Nearest,
             None,
@@ -503,12 +468,12 @@ impl Renderer<'_> {
                 };
 
 
-                for m in &entities.photos {
-                    let program = match control_state.dewarp_shader
+                for m in &self.entities.photos {
+                    let program = match self.control_state.dewarp_shader
                     {
-                        DewarpShader::NoMorph => &texture_program,
-                        DewarpShader::Dewarp1 => &texture_dewarp_program,
-                        DewarpShader::Dewarp2 => &texture_dewarp2_program,
+                        DewarpShader::NoMorph => &self.texture_program,
+                        DewarpShader::Dewarp1 => &self.texture_dewarp_program,
+                        DewarpShader::Dewarp2 => &self.texture_dewarp2_program,
                     };
 
                     program.use_texture(&m.loaded_image_mesh.texture_2d, "tex").unwrap();
@@ -516,8 +481,7 @@ impl Renderer<'_> {
 
                     let mut mesh =  m.loaded_image_mesh.mesh.clone();
                     mesh.transformation = m.to_world();
-                    mesh.render(program, render_states,
-                                                    frame_input.viewport, &camera)?;
+                    mesh.render(program, render_states, self.frame_input.viewport, &self.camera)?;
                 }
 
                 Ok(())
@@ -531,8 +495,8 @@ impl Renderer<'_> {
                 };
 
             out_texture.write(ClearState::none(), || {
-                entities.average_effect.use_texture(&tmp_texture, "colorMap")?;
-                entities.average_effect.apply(render_states, frame_input.viewport)
+                self.entities.average_effect.use_texture(&tmp_texture, "colorMap")?;
+                self.entities.average_effect.apply(render_states, self.frame_input.viewport)
 
             }).unwrap();
         }
