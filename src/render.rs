@@ -12,6 +12,8 @@ use crate::photo::Corner;
 use crate::entities::Entities;
 use crate::viewport_geometry::{WorldCoords, ViewportGeometry};
 
+mod photo;
+
 
 /// Stores immutable references used in rendering
 #[derive(Copy, Clone)]
@@ -75,23 +77,7 @@ impl Renderer<'_> {
 
             if self.control_state.alignment_mode {
                 //in alignment mode, use standard transparency
-
-                for m in &self.entities.photos {
-                    let program = match self.control_state.dewarp_shader
-                    {
-                        DewarpShader::NoMorph => &self.texture_program,
-                        DewarpShader::Dewarp1 => &self.texture_dewarp_program,
-                        DewarpShader::Dewarp2 => &self.texture_dewarp2_program,
-                    };
-
-                    program.use_texture(&m.loaded_image_mesh.texture_2d, "tex").unwrap();
-                    program.use_uniform_float("out_alpha", &0.5).unwrap();
-
-                    let mut mesh = m.loaded_image_mesh.mesh.clone();
-                    mesh.transformation = m.to_world();
-                    mesh.render(program, Renderer::render_states_transparency(),
-                                                self.frame_input.viewport, &self.camera)?;
-                }
+                self.render_photos()?;
             }
             else {
                 //in browse mode, use multipass rendering
