@@ -77,7 +77,7 @@ impl Renderer<'_> {
 
             if self.control_state.alignment_mode {
                 //in alignment mode, use standard transparency
-                self.render_photos()?;
+                self.render_photos(0.5, Renderer::render_states_transparency())?;
             }
             else {
                 //in browse mode, use multipass rendering
