@@ -1,6 +1,6 @@
 use three_d::definition::CPUMesh;
 use three_d::object::{Mesh, MeshProgram};
-use three_d::core::{CullType, BlendMultiplierType, BlendParameters, BlendEquationType, WriteMask, DepthTestType, RenderStates};
+use three_d::CullType;
 use three_d::core::{Screen, ClearState};
 use three_d::math::{Vec3, Vec4, Mat4};
 use three_d::gui::GUI;
@@ -14,6 +14,7 @@ use crate::ViewportGeometry;
 mod photo;
 mod markers;
 mod primitives;
+mod render_states;
 
 
 /// Stores immutable references used in rendering
@@ -203,50 +204,5 @@ impl Renderer<'_> {
 
         mesh.render_with_texture(&overlay_texture, Renderer::render_states_no_blend(), self.frame_input.viewport, &camera).unwrap();
 
-    }
-
-    fn render_states_transparency() -> RenderStates {
-
-        RenderStates {
-
-            blend: Some(BlendParameters {
-                source_rgb_multiplier: BlendMultiplierType::SrcAlpha,
-                source_alpha_multiplier: BlendMultiplierType::One,
-                destination_rgb_multiplier: BlendMultiplierType::OneMinusSrcAlpha,
-                destination_alpha_multiplier: BlendMultiplierType::Zero,
-                rgb_equation: BlendEquationType::Add,
-                alpha_equation: BlendEquationType::Add,
-            }),
-
-            write_mask: WriteMask::COLOR,
-            depth_test: DepthTestType::Always,
-        }
-    }
-
-    fn render_states_accumulate() -> RenderStates {
-
-        RenderStates {
-
-            blend: Some(BlendParameters {
-                source_rgb_multiplier: BlendMultiplierType::One,
-                source_alpha_multiplier: BlendMultiplierType::One,
-                destination_rgb_multiplier: BlendMultiplierType::One,
-                destination_alpha_multiplier: BlendMultiplierType::One,
-                rgb_equation: BlendEquationType::Add,
-                alpha_equation: BlendEquationType::Add,
-            }),
-
-            write_mask: WriteMask::COLOR,
-            depth_test: DepthTestType::Always,
-        }
-    }
-
-    fn render_states_no_blend() -> RenderStates {
-
-        RenderStates {
-            blend: None,
-            write_mask: WriteMask::COLOR,
-            depth_test: DepthTestType::Always,
-        }
     }
 }
