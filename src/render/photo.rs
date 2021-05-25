@@ -1,4 +1,4 @@
-use three_d::{ClearState,RenderStates,ColorTargetTexture2D};
+use three_d::{Screen,ClearState,RenderStates,ColorTargetTexture2D};
 use three_d::Error;
 
 use crate::control_state::{ControlState, DewarpShader};
@@ -27,7 +27,7 @@ impl Renderer<'_> {
         Ok(())
     }
 
-    pub fn render_photos_to_texture(&self) -> ColorTargetTexture2D<u8> {
+    pub fn render_photos_with_pixel_averaging(&self) -> Result<(), Error> {
 
         use three_d::definition::{Interpolation, Wrapping, Format};
 
@@ -43,7 +43,7 @@ impl Renderer<'_> {
             Format::RGBA,
         ).unwrap();
 
-        let out_texture = ColorTargetTexture2D::<u8>::new(
+        let photo_texture = ColorTargetTexture2D::<u8>::new(
             &self.context,
             self.frame_input.viewport.width,
             self.frame_input.viewport.height,
@@ -62,13 +62,18 @@ impl Renderer<'_> {
 
             }).unwrap();
 
-            out_texture.write(ClearState::none(), || {
+            photo_texture.write(ClearState::none(), || {
                 self.entities.average_effect.use_texture(&tmp_texture, "colorMap")?;
                 self.entities.average_effect.apply(Renderer::render_states_no_blend(), self.frame_input.viewport)
 
             }).unwrap();
         }
 
-        out_texture
+        Screen::write(&self.context, ClearState::none(), || {
+
+            self.entities.copy_photos_effect.use_texture(&photo_texture, "colorMap")?;
+            self.entities.copy_photos_effect.apply(Renderer::render_states_transparency(), self.frame_input.viewport)
+
+        })
     }
 }

@@ -81,15 +81,7 @@ impl Renderer<'_> {
             }
             else {
                 //in browse mode, use multipass rendering
-
-                let photo_texture = self.render_photos_to_texture();
-
-                Screen::write(&self.context, ClearState::none(), || {
-
-                    self.entities.copy_photos_effect.use_texture(&photo_texture, "colorMap")?;
-                    self.entities.copy_photos_effect.apply(Renderer::render_states_transparency(), self.frame_input.viewport)
-
-                }).unwrap();
+                self.render_photos_with_pixel_averaging()?;
             }
 
             if self.control_state.control_points_visible {
