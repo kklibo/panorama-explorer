@@ -1,12 +1,12 @@
 use three_d::{Screen,ClearState,RenderStates,ColorTargetTexture2D};
 use three_d::Error;
 
-use crate::control_state::{ControlState, DewarpShader};
+use crate::control_state::DewarpShader;
 use super::Renderer;
 
 impl Renderer<'_> {
 
-    pub fn render_photos(&self, photo_alpha: f32, render_states: RenderStates) -> Result<(), Error> {
+    pub(in super) fn render_photos(&self, photo_alpha: f32, render_states: RenderStates) -> Result<(), Error> {
 
         for m in &self.entities.photos {
             let program = match self.control_state.dewarp_shader
@@ -27,7 +27,7 @@ impl Renderer<'_> {
         Ok(())
     }
 
-    pub fn render_photos_with_pixel_averaging(&self) -> Result<(), Error> {
+    pub(in super) fn render_photos_with_pixel_averaging(&self) -> Result<(), Error> {
 
         use three_d::definition::{Interpolation, Wrapping, Format};
 

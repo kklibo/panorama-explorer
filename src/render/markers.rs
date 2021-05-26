@@ -9,7 +9,7 @@ use super::{Renderer,Corner};
 
 impl Renderer<'_> {
 
-    pub fn render_control_points_temp(&self) -> Result<(), Error> {
+    pub(in super) fn render_control_points_temp(&self) -> Result<(), Error> {
 
         let points = &self.entities.image0_control_points;
 
@@ -42,7 +42,7 @@ impl Renderer<'_> {
         Ok(())
     }
 
-    pub fn draw_active_rotate_drag(&self, rp: &RotationPoint, rd: &RotateDrag) -> Result<(), Error> {
+    pub(in super) fn draw_active_rotate_drag(&self, rp: &RotationPoint, rd: &RotateDrag) -> Result<(), Error> {
 
         //create resized line segment for dragged rotation start line
         let mouse_coords_vec_length =
@@ -88,7 +88,7 @@ impl Renderer<'_> {
         self.draw_line(rp.point, rd.mouse_coords,  1.0, line_color)
     }
 
-    pub fn draw_selected_photo_border_rectangle(&self, index: usize) -> Result<(), Error> {
+    pub(in super) fn draw_selected_photo_border_rectangle(&self, index: usize) -> Result<(), Error> {
 
         let draw_corner_line = |corner1: Corner, corner2: Corner| {
 

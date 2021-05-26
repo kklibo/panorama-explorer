@@ -72,21 +72,31 @@ impl Renderer<'_> {
         }
     }
 
+    /// Use three-d to render the entire scene.
+    ///
+    /// Note: `gui` is passed as a separate parameter to allow mutability;
+    /// all other needed references are in the Renderer object.
     pub fn render(&self, gui: &mut GUI)
     {
         Screen::write(&self.context, ClearState::color_and_depth(0.2, 0.2, 0.2, 1.0, 1.0), || {
 
+            //depth testing is not used: draw order determines visibility (last = most visible)
+
+            //render photos
             if self.control_state.alignment_mode {
+
                 //in alignment mode, use standard transparency
                 self.render_photos(0.5, Renderer::render_states_transparency())?;
             }
             else {
-                //in browse mode, use multipass rendering
+
+                //in browse mode, use pixel averaging
                 self.render_photos_with_pixel_averaging()?;
             }
 
             if self.control_state.control_points_visible {
 
+                //(temporary) point renderer hardcoded to the first 2 images
                 self.render_control_points_temp()?;
             }
 
@@ -102,20 +112,19 @@ impl Renderer<'_> {
                 }
             }
 
-            //selected photo border rectangle
             if let Some(index) = self.control_state.selected_photo_index {
 
                 self.draw_selected_photo_border_rectangle(index)?;
             }
 
-
-            //render map overlay
             self.render_map_overlay();
 
 
-            gui.render().unwrap();
+            //render the egui UI
+            gui.render()?;
 
             Ok(())
+            
         }).unwrap();
     }
 }
