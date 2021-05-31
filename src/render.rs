@@ -114,7 +114,9 @@ impl Renderer<'_> {
 
             if let Some(index) = self.control_state.selected_photo_index {
 
-                self.draw_selected_photo_border_rectangle(index)?;
+                if let Some(photo) = self.entities.photos.get(index) {
+                    self.draw_selected_photo_border_rectangle(photo)?;
+                }
             }
 
             self.render_map_overlay();
@@ -124,7 +126,7 @@ impl Renderer<'_> {
             gui.render()?;
 
             Ok(())
-            
+
         }).unwrap();
     }
 }

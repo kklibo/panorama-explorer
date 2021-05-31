@@ -6,6 +6,7 @@ use crate::WorldCoords;
 use crate::control_state::{RotationPoint,RotateDrag};
 
 use super::{Renderer,Corner};
+use crate::photo::Photo;
 
 impl Renderer<'_> {
 
@@ -88,13 +89,13 @@ impl Renderer<'_> {
         self.draw_line(rp.point, rd.mouse_coords,  1.0, line_color)
     }
 
-    pub(in super) fn draw_selected_photo_border_rectangle(&self, index: usize) -> Result<(), Error> {
+    pub(in super) fn draw_selected_photo_border_rectangle(&self, photo: &Photo) -> Result<(), Error> {
 
         let draw_corner_line = |corner1: Corner, corner2: Corner| {
 
             self.draw_line(
-                self.entities.photos[index].corner(corner1),
-                self.entities.photos[index].corner(corner2),
+                photo.corner(corner1),
+                photo.corner(corner2),
                 1.0,
                 Vec4::new(0.2, 0.8, 0.2, 1.0),
             )
