@@ -5,7 +5,7 @@ use three_d::Error;
 use crate::WorldCoords;
 use crate::control_state::{RotationPoint,RotateDrag};
 
-use super::{Renderer,Corner,colors};
+use super::{Renderer,Corner,colors, render_states};
 use crate::photo::Photo;
 
 impl Renderer<'_> {
@@ -23,7 +23,7 @@ impl Renderer<'_> {
             self.color_program.use_uniform_vec4("color", &colors::photo1_control_points_temp()).unwrap();
             let mut mesh = self.entities.color_mesh.clone();
             mesh.transformation = t1;
-            mesh.render(&self.color_program, Renderer::render_states_transparency(), self.frame_input.viewport, &self.camera)?;
+            mesh.render(&self.color_program, render_states::render_states_transparency(), self.frame_input.viewport, &self.camera)?;
         }
 
         let points = &self.entities.image1_control_points;
@@ -37,7 +37,7 @@ impl Renderer<'_> {
             self.color_program.use_uniform_vec4("color", &colors::photo2_control_points_temp()).unwrap();
             let mut mesh = self.entities.color_mesh.clone();
             mesh.transformation = t1;
-            mesh.render(&self.color_program, Renderer::render_states_transparency(), self.frame_input.viewport, &self.camera)?;
+            mesh.render(&self.color_program, render_states::render_states_transparency(), self.frame_input.viewport, &self.camera)?;
         }
 
         Ok(())
@@ -80,7 +80,7 @@ impl Renderer<'_> {
 
         self.color_program.use_uniform_vec4("color", &colors::dragged_rotation_triangle()).unwrap();
         mesh.transformation = t1;
-        mesh.render(&self.color_program, Renderer::render_states_transparency(), self.frame_input.viewport, &self.camera)?;
+        mesh.render(&self.color_program, render_states::render_states_transparency(), self.frame_input.viewport, &self.camera)?;
 
 
         //draw angle lines to indicate dragged rotation angle

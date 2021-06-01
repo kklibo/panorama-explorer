@@ -2,7 +2,7 @@ use three_d::{Mesh,CPUMesh,ColorTargetTexture2D};
 use three_d::{Camera,CullType};
 use three_d::{Vec3,Mat4,SquareMatrix,Transform};
 
-use super::{Renderer,colors};
+use super::{Renderer,colors,render_states};
 
 impl Renderer<'_> {
 
@@ -51,7 +51,7 @@ impl Renderer<'_> {
                 );
 
             mesh.cull = CullType::None;
-            mesh.render(self.texture_program, Renderer::render_states_transparency(), viewport, &camera)?;
+            mesh.render(self.texture_program, render_states::render_states_transparency(), viewport, &camera)?;
 
             Ok(())
 
@@ -88,7 +88,7 @@ impl Renderer<'_> {
         let t1 = Mat4::from_translation(Vec3::new(viewport_width*0.5 - 160.0, viewport_height*-0.5 + 160.0, 0.0)).concat(&t1);
         mesh.transformation = t1;
 
-        mesh.render_with_texture(&overlay_texture, Renderer::render_states_no_blend(), self.frame_input.viewport, &camera).unwrap();
+        mesh.render_with_texture(&overlay_texture, render_states::render_states_no_blend(), self.frame_input.viewport, &camera).unwrap();
 
     }
 }

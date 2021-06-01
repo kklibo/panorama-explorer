@@ -3,7 +3,7 @@ use three_d::Error;
 
 use crate::{ViewportGeometry,WorldCoords};
 
-use super::Renderer;
+use super::{Renderer,render_states};
 
 impl Renderer<'_> {
 
@@ -18,7 +18,7 @@ impl Renderer<'_> {
         mesh.transformation = translate_to_point * rotate_marker * scale_marker;
 
         self.color_program.use_uniform_vec4("color", &color).unwrap();
-        mesh.render(&self.color_program, Renderer::render_states_transparency(), self.frame_input.viewport, &self.camera)
+        mesh.render(&self.color_program, render_states::render_states_transparency(), self.frame_input.viewport, &self.camera)
     }
 
     pub(in super) fn draw_line(
@@ -34,7 +34,7 @@ impl Renderer<'_> {
         mesh.transformation = Renderer::line_transform(&self.viewport_geometry, point1, point2, pixel_thickness);
 
         self.color_program.use_uniform_vec4("color", &color).unwrap();
-        mesh.render(&self.color_program, Renderer::render_states_transparency(), self.frame_input.viewport, &self.camera)
+        mesh.render(&self.color_program, render_states::render_states_transparency(), self.frame_input.viewport, &self.camera)
     }
 
     fn line_transform(

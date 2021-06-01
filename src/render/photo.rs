@@ -2,7 +2,7 @@ use three_d::{Screen,ClearState,RenderStates,ColorTargetTexture2D};
 use three_d::Error;
 
 use crate::control_state::DewarpShader;
-use super::Renderer;
+use super::{Renderer,render_states};
 
 impl Renderer<'_> {
 
@@ -58,13 +58,13 @@ impl Renderer<'_> {
         {
             tmp_texture.write(ClearState::color(0.0, 0.0, 0.0, 0.0), || {
 
-                self.render_photos(1.0, Renderer::render_states_accumulate())
+                self.render_photos(1.0, render_states::render_states_accumulate())
 
             }).unwrap();
 
             photo_texture.write(ClearState::none(), || {
                 self.entities.average_effect.use_texture(&tmp_texture, "colorMap")?;
-                self.entities.average_effect.apply(Renderer::render_states_no_blend(), self.frame_input.viewport)
+                self.entities.average_effect.apply(render_states::render_states_no_blend(), self.frame_input.viewport)
 
             }).unwrap();
         }
@@ -72,7 +72,7 @@ impl Renderer<'_> {
         Screen::write(&self.context, ClearState::none(), || {
 
             self.entities.copy_photos_effect.use_texture(&photo_texture, "colorMap")?;
-            self.entities.copy_photos_effect.apply(Renderer::render_states_transparency(), self.frame_input.viewport)
+            self.entities.copy_photos_effect.apply(render_states::render_states_transparency(), self.frame_input.viewport)
 
         })
     }
