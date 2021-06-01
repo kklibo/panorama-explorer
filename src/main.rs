@@ -56,12 +56,8 @@ fn main() {
     let pto_file = "test_photos/DSC_9108_12_5 - DSC_9109_12_5.pto";
     let reset_photos_string_file = "test_photos/reset_photos_string";
     let align_photos_string_file = "test_photos/align_photos_string";
-
-    let filepaths = [
-        pto_file,
-        reset_photos_string_file,
-        align_photos_string_file,
-        "test_photos/map_test.jpg",
+    let map_overlay_image = "test_photos/map_test.jpg";
+    let photo_images = vec!(
     //    "test_photos/test1_border.jpg",
     //    "test_photos/test2_border.jpg",
     //    "test_photos/test1.jpg",
@@ -69,7 +65,22 @@ fn main() {
         "test_photos/DSC_9108_12_5.JPG",
         "test_photos/DSC_9109_12_5.JPG",
         "test_photos/DSC_9110_12_5.JPG",
-    ];
+    );
+
+    //assemble filepaths to be loaded
+    let filepaths =
+    {
+        let mut filepaths =
+        vec!(
+            pto_file,
+            reset_photos_string_file,
+            align_photos_string_file,
+            map_overlay_image,
+        );
+
+        filepaths.append(&mut photo_images.clone());
+        filepaths
+    };
 
     Loader::load(&filepaths, move |loaded|
     {
@@ -80,7 +91,8 @@ fn main() {
             &pto_file,
             &reset_photos_string_file,
             &align_photos_string_file,
-            &filepaths.to_vec()
+            map_overlay_image,
+            &photo_images
         );
 
         let         texture_program = MeshProgram::new(&context, include_str!("shaders/texture.frag")).unwrap();
@@ -134,20 +146,22 @@ fn main() {
             // draw
             if redraw {
 
-                render::render(
+                let renderer = render::Renderer::new(
                     &context,
                     &frame_input,
-                    &mut gui,
-                    &control_state,
                     &camera,
-                    &viewport_geometry,
+
                     &texture_program,
                     &texture_dewarp_program,
                     &texture_dewarp2_program,
                     &color_program,
+
+                    &viewport_geometry,
+                    &control_state,
                     &entities,
                 );
 
+                renderer.render(&mut gui);
 
                 //set entire display buffer alpha to 1.0: prevents web browser pass-through transparency problem
                 let clear_alpha = ClearState {

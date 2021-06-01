@@ -35,7 +35,8 @@ impl Entities {
         pto_file: &str,
         reset_photos_string_file: &str,
         align_photos_string_file: &str,
-        filepaths: &Vec<&str>,) -> Entities
+        map_overlay_image: &str,
+        photo_images: &Vec<&str>) -> Entities
     {
         let file_u8 = loaded.bytes(reset_photos_string_file).unwrap();
         let reset_photos_string = std::str::from_utf8(file_u8).unwrap().to_string();
@@ -45,10 +46,6 @@ impl Entities {
 
         let file_u8 = loaded.bytes(pto_file).unwrap();
         let s = std::str::from_utf8(file_u8).unwrap();
-
-        let skip_non_mesh_files = 3;
-        let skip_non_photo_meshes = 1;
-
 
         let pairs = read_pto::read_control_point_pairs(s).unwrap();
 
@@ -78,11 +75,11 @@ impl Entities {
                 }
             }).collect::<Vec<Vec3>>();
 
-        let meshes: Vec<Rc<LoadedImageMesh>> = filepaths.iter().skip(skip_non_mesh_files).map(|x| {
+        let meshes: Vec<Rc<LoadedImageMesh>> = photo_images.iter().map(|x| {
             Rc::new(load_mesh_from_filepath(&context, loaded, x))
         }).collect();
 
-        let mut photos: Vec<Photo> = meshes.iter().skip(skip_non_photo_meshes).map(|mesh| {
+        let mut photos: Vec<Photo> = meshes.iter().map(|mesh| {
             Photo::from_loaded_image_mesh(mesh.clone())
         }).collect();
 
@@ -96,7 +93,7 @@ impl Entities {
 
         let color_mesh = color_mesh(&context);
         let line_mesh = line_mesh(&context);
-        let overlay_mesh = meshes.get(0).unwrap().clone();
+        let overlay_mesh = Rc::new(load_mesh_from_filepath(&context, loaded, map_overlay_image));
 
         let average_effect = ImageEffect::new(context, include_str!("shaders/average_effect.frag")).unwrap();
         let copy_photos_effect = ImageEffect::new(context, include_str!("shaders/copy_photos.frag")).unwrap();
