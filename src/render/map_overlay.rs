@@ -1,8 +1,8 @@
 use three_d::{Mesh,CPUMesh,ColorTargetTexture2D};
-use three_d::{ClearState,Camera,CullType};
+use three_d::{Camera,CullType};
 use three_d::{Vec3,Mat4,SquareMatrix,Transform};
 
-use super::Renderer;
+use super::{Renderer,colors};
 
 impl Renderer<'_> {
 
@@ -29,7 +29,7 @@ impl Renderer<'_> {
             Format::RGBA,
         ).unwrap();
 
-        overlay_texture.write(ClearState::color(0.0, 0.5, 0.0, 0.0), || {
+        overlay_texture.write(colors::map_overlay_clear(), || {
 
             self.texture_program.use_texture(&self.entities.overlay_mesh.texture_2d, "tex").unwrap();
             self.texture_program.use_uniform_float("out_alpha", &1.0).unwrap();

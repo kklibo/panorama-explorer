@@ -1,6 +1,5 @@
 use three_d::MeshProgram;
-use three_d::core::{Screen, ClearState};
-use three_d::Vec4;
+use three_d::Screen;
 use three_d::gui::GUI;
 use three_d::{Context, CameraControl, FrameInput};
 
@@ -14,6 +13,7 @@ mod markers;
 mod primitives;
 mod render_states;
 mod map_overlay;
+mod colors;
 
 
 /// Stores immutable references used in rendering
@@ -78,7 +78,7 @@ impl Renderer<'_> {
     /// all other needed references are in the Renderer object.
     pub fn render(&self, gui: &mut GUI)
     {
-        Screen::write(&self.context, ClearState::color_and_depth(0.2, 0.2, 0.2, 1.0, 1.0), || {
+        Screen::write(&self.context, colors::main_window_clear(), || {
 
             //depth testing is not used: draw order determines visibility (last = most visible)
 
@@ -102,7 +102,7 @@ impl Renderer<'_> {
 
             if let Some(ref rp) = self.control_state.active_rotation_point {
 
-                self.draw_point(rp.point, -45.0, Vec4::new(0.8, 0.8, 0.2, 0.5))?;
+                self.draw_point(rp.point, -45.0, colors::rotation_point())?;
             }
 
             if let Some(ref rp) = self.control_state.active_rotation_point {

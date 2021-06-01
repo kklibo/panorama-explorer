@@ -1,11 +1,11 @@
-use three_d::{Transform,InnerSpace,SquareMatrix,Vec2,Vec4,Mat4};
+use three_d::{Transform,InnerSpace,SquareMatrix,Vec2,Mat4};
 use three_d::{CPUMesh,Mesh,CullType};
 use three_d::Error;
 
 use crate::WorldCoords;
 use crate::control_state::{RotationPoint,RotateDrag};
 
-use super::{Renderer,Corner};
+use super::{Renderer,Corner,colors};
 use crate::photo::Photo;
 
 impl Renderer<'_> {
@@ -20,7 +20,7 @@ impl Renderer<'_> {
             let t1 = self.entities.photos[0].convert_photo_px_to_world(v).concat(&t1);
 
 
-            self.color_program.use_uniform_vec4("color", &Vec4::new(0.8, 0.5, 0.2, 0.5)).unwrap();
+            self.color_program.use_uniform_vec4("color", &colors::photo1_control_points_temp()).unwrap();
             let mut mesh = self.entities.color_mesh.clone();
             mesh.transformation = t1;
             mesh.render(&self.color_program, Renderer::render_states_transparency(), self.frame_input.viewport, &self.camera)?;
@@ -34,7 +34,7 @@ impl Renderer<'_> {
 
             let t1 = self.entities.photos[1].convert_photo_px_to_world(v).concat(&t1);
 
-            self.color_program.use_uniform_vec4("color", &Vec4::new(0.2, 0.8, 0.2, 0.5)).unwrap();
+            self.color_program.use_uniform_vec4("color", &colors::photo2_control_points_temp()).unwrap();
             let mut mesh = self.entities.color_mesh.clone();
             mesh.transformation = t1;
             mesh.render(&self.color_program, Renderer::render_states_transparency(), self.frame_input.viewport, &self.camera)?;
@@ -78,13 +78,13 @@ impl Renderer<'_> {
         mesh.cull = CullType::None;
         let t1 = Mat4::identity();
 
-        self.color_program.use_uniform_vec4("color", &Vec4::new(0.2, 0.2, 0.8, 0.5)).unwrap();
+        self.color_program.use_uniform_vec4("color", &colors::dragged_rotation_triangle()).unwrap();
         mesh.transformation = t1;
         mesh.render(&self.color_program, Renderer::render_states_transparency(), self.frame_input.viewport, &self.camera)?;
 
 
         //draw angle lines to indicate dragged rotation angle
-        let line_color = Vec4::new(0.8, 0.8, 0.2, 1.0);
+        let line_color = colors::dragged_rotation_angle_lines();
         self.draw_line(rp.point, mouse_start_resized,  1.0, line_color)?;
         self.draw_line(rp.point, rd.mouse_coords,  1.0, line_color)
     }
@@ -97,7 +97,7 @@ impl Renderer<'_> {
                 photo.corner(corner1),
                 photo.corner(corner2),
                 1.0,
-                Vec4::new(0.2, 0.8, 0.2, 1.0),
+                colors::selected_photo_border_rectangle(),
             )
         };
 
