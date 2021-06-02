@@ -5,8 +5,9 @@ use three_d::Error;
 use crate::WorldCoords;
 use crate::control_state::{RotationPoint,RotateDrag};
 
-use super::{Renderer,Corner,colors, render_states};
+use super::{Renderer,colors,render_states};
 use crate::photo::Photo;
+use crate::world_rectangle::Corner;
 
 impl Renderer<'_> {
 
@@ -17,7 +18,7 @@ impl Renderer<'_> {
         for &v in points {
             let t1 = Mat4::from_nonuniform_scale(10.0, 10.0, 1.0);
 
-            let t1 = self.entities.photos[0].convert_photo_px_to_world(v).concat(&t1);
+            let t1 = self.entities.photos[0].orientation().convert_local_to_world(v).concat(&t1);
 
 
             self.color_program.use_uniform_vec4("color", &colors::photo1_control_points_temp()).unwrap();
@@ -32,7 +33,7 @@ impl Renderer<'_> {
             let t1 = Mat4::from_nonuniform_scale(10.0, 10.0, 1.0);
             let t1 = Mat4::from_angle_z(cgmath::Deg(45.0)).concat(&t1);
 
-            let t1 = self.entities.photos[1].convert_photo_px_to_world(v).concat(&t1);
+            let t1 = self.entities.photos[1].orientation().convert_local_to_world(v).concat(&t1);
 
             self.color_program.use_uniform_vec4("color", &colors::photo2_control_points_temp()).unwrap();
             let mut mesh = self.entities.color_mesh.clone();
@@ -94,8 +95,8 @@ impl Renderer<'_> {
         let draw_corner_line = |corner1: Corner, corner2: Corner| {
 
             self.draw_line(
-                photo.corner(corner1),
-                photo.corner(corner2),
+                photo.orientation().corner(corner1),
+                photo.orientation().corner(corner2),
                 1.0,
                 colors::selected_photo_border_rectangle(),
             )

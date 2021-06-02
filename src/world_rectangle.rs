@@ -12,9 +12,9 @@ use crate::viewport_geometry::WorldCoords;
 
 pub struct WorldRectangle {
 
-    scale: Mat4,     //in WorldCoords units
-    translate: Mat4, //in WorldCoords units
-    rotate: Mat4,    //rotation around center
+    pub scale: Mat4,     //in WorldCoords units
+    pub translate: Mat4, //in WorldCoords units
+    pub rotate: Mat4,    //rotation around center
 
 }
 

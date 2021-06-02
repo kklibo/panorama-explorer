@@ -20,7 +20,7 @@ impl Renderer<'_> {
             program.use_uniform_float("out_alpha", &photo_alpha).unwrap();
 
             let mut mesh = m.loaded_image_mesh.mesh.clone();
-            mesh.transformation = m.to_world();
+            mesh.transformation = m.orientation().to_world();
             mesh.render(program, render_states, self.frame_input.viewport, &self.camera)?;
         }
 
