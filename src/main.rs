@@ -9,6 +9,7 @@ use three_d::math::vec3;
 mod viewport_geometry;
 mod read_pto;
 mod photo;
+mod world_rectangle;
 mod control_state;
 mod gui_controls;
 mod render;

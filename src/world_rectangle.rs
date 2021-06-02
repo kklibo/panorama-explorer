@@ -1,42 +1,41 @@
-use std::rc::Rc;
+
 use std::fmt::{Display,Formatter};
 
-use three_d::{Vec2,Vec3,Vec4,Mat4,Texture,Transform,InnerSpace,SquareMatrix};
+use three_d::{Vec2,Vec3,Vec4,Mat4,Transform,InnerSpace,SquareMatrix};
 use cgmath::Deg;
 
 use serde::{Serialize, Deserialize, Serializer};
 use serde::ser::SerializeStruct;
 
-pub use crate::entities::LoadedImageMesh;
 use crate::viewport_geometry::WorldCoords;
 
 
-pub struct Photo {
+pub struct WorldRectangle {
 
-    pub loaded_image_mesh: Rc<LoadedImageMesh>,
-    scale: Mat4,     //scales 1 (unwarped) pixel to 1 WorldCoords unit
+    scale: Mat4,     //in WorldCoords units
     translate: Mat4, //in WorldCoords units
-    rotate: Mat4,    //around photo center
+    rotate: Mat4,    //rotation around center
 
 }
 
-//todo: make this complete?
-impl Serialize for Photo {
+impl Serialize for WorldRectangle {
 
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error> where
         S: Serializer {
 
-        let mut state = serializer.serialize_struct("Photo", 2)?;
+        let mut state = serializer.serialize_struct("WorldRectangle", 3)?;
+        state.serialize_field("scale", &self.scale)?;
         state.serialize_field("translate", &self.translate)?;
         state.serialize_field("rotate", &self.rotate)?;
         state.end()
     }
 }
 
-impl Display for Photo {
+impl Display for WorldRectangle {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "scale: {:?}", self.scale)?;
         writeln!(f, "translate: {:?}", self.translate)?;
+        writeln!(f, "rotate: {:?}", self.rotate)?;
         Ok(())
     }
 }
@@ -57,16 +56,15 @@ pub enum Edge {
     Bottom,
 }
 
-impl Photo {
+impl WorldRectangle {
 
-    pub fn from_loaded_image_mesh(m: Rc<LoadedImageMesh>) -> Photo {
+    pub fn new(width: f32, height: f32) -> Self {
 
-        let scale = Mat4::from_nonuniform_scale(m.texture_2d.width() as f32,m.texture_2d.height() as f32,1 as f32);
+        let scale = Mat4::from_nonuniform_scale(width, height,1 as f32);
         let translate = Mat4::from_translation(Vec3::new(0f32, 0f32, 0f32));
         let rotate = Mat4::from_angle_z(Deg(0.0));
 
-        Photo {
-            loaded_image_mesh: m,
+        Self {
             scale,
             translate,
             rotate,
@@ -77,11 +75,13 @@ impl Photo {
 
         #[derive(Deserialize)]
         struct SavedFields {
+            scale: Mat4,
             translate: Mat4,
             rotate: Mat4,
         }
 
         let saved_fields: SavedFields = serde_json::from_str(s)?;
+        self.scale = saved_fields.scale;
         self.translate = saved_fields.translate;
         self.rotate = saved_fields.rotate;
 
@@ -125,12 +125,12 @@ impl Photo {
         //In this function, all translations and vectors are in WorldCoords units
 
        //adjust translation
-        //get photo center
-        let photo_center = self.translate * Vec4::unit_w();
+        //get rectangle center
+        let rectangle_center = self.translate * Vec4::unit_w();
 
         //get offset vector: image center to rotation point
         let rotation_point = Vec4::new(point.x as f32, point.y as f32, 0.0, 0.0);
-        let to_rotation_point = rotation_point - photo_center;
+        let to_rotation_point = rotation_point - rectangle_center;
 
         //add it to translate
         self.translate =
@@ -194,7 +194,7 @@ impl Photo {
         WorldCoords{x: v.x as f64, y: v.y as f64}
     }
 
-    ///true IFF the point is within the undistorted edges of this photo
+    ///true IFF the point is within the undistorted edges of this rectangle
     pub fn contains(&self, point: WorldCoords) -> bool {
 
         self.is_inside(point, Edge::Left) &&
@@ -203,8 +203,8 @@ impl Photo {
         self.is_inside(point, Edge::Bottom)
     }
 
-    ///returns a matrix to translate a location in this photo (in pixel units) to a world location (in worldcoord units)
-    pub fn convert_photo_px_to_world(&self, v: Vec3) -> Mat4 {
+    ///returns a matrix to translate a location in this rectangle to a world location
+    pub fn convert_local_to_world(&self, v: Vec3) -> Mat4 {
 
         let to_bottom_left = Mat4::from_translation(Vec3::new(-0.5,-0.5,0.0));
         let to_v = Mat4::from_translation(v);
@@ -216,7 +216,7 @@ impl Photo {
             .concat(&Mat4::from_nonuniform_scale(1.0, -1.0, 1.0))
             .concat(&to_v)
             .concat(&self.scale)
-            //scaled to photo space
+            //scaled to rectangle size
             .concat(&to_bottom_left);
 
 
