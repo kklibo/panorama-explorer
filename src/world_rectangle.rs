@@ -2,7 +2,7 @@
 use std::fmt::{Display,Formatter};
 
 use three_d::{Vec2,Vec3,Vec4,Mat4,Transform,InnerSpace,SquareMatrix};
-use cgmath::Deg;
+use cgmath::{Deg, AbsDiffEq};
 
 use serde::{Serialize, Deserialize, Serializer};
 use serde::ser::SerializeStruct;
@@ -10,12 +10,29 @@ use serde::ser::SerializeStruct;
 use crate::viewport_geometry::WorldCoords;
 
 
+#[derive(Debug, PartialEq)]
 pub struct WorldRectangle {
 
     pub scale: Mat4,     //in WorldCoords units
     pub translate: Mat4, //in WorldCoords units
     pub rotate: Mat4,    //rotation around center
 
+}
+
+impl AbsDiffEq<WorldRectangle> for WorldRectangle {
+    type Epsilon = f32;
+
+    fn default_epsilon() -> Self::Epsilon {
+        //f32::default_epsilon()
+        0.00001
+    }
+
+    fn abs_diff_eq(&self, other: &Self, epsilon: Self::Epsilon) -> bool {
+
+        self.scale.abs_diff_eq(&other.scale, epsilon) &&
+        self.translate.abs_diff_eq(&other.translate, epsilon) &&
+        self.rotate.abs_diff_eq(&other.rotate, epsilon)
+    }
 }
 
 impl Serialize for WorldRectangle {
@@ -225,4 +242,137 @@ impl WorldRectangle {
 
         just_translation
     }
+}
+
+
+#[cfg(test)]
+mod test {
+
+    use super::*;
+    use std::error::Error;
+    use cgmath::assert_abs_diff_eq;
+
+    /*
+        not tested yet:
+
+            Display::fmt
+            new
+
+            to_world
+            corner_worldcoords_vec2
+            is_inside
+            corner
+            contains
+            convert_local_to_world
+    */
+
+
+    #[test]
+    fn serde_test() -> Result<(), Box<dyn Error>> {
+
+        let mut serde_in = WorldRectangle::new(300.0, 200.0);
+        serde_in.set_rotation(10.0);
+        serde_in.set_translation(WorldCoords{x: 50.0, y: 65.0});
+
+        let serde_string = serde_json::to_string(&serde_in)?;
+
+        let mut serde_out = WorldRectangle::new(0.0, 0.0);
+        serde_out.set_from_json_serde_string(&serde_string)?;
+
+        assert_eq!(serde_in, serde_out);
+
+        Ok(())
+    }
+
+    #[test]
+    fn translation_test() -> Result<(), Box<dyn Error>> {
+
+        {
+            let mut world_rectangle = WorldRectangle::new(300.0, 200.0);
+            let translation = WorldCoords { x: 50.0, y: 65.0 };
+            world_rectangle.set_translation(translation);
+            assert_eq!(translation, world_rectangle.translation());
+        }
+
+        {
+            let mut world_rectangle = WorldRectangle::new(300.0, 200.0);
+            let translation = WorldCoords { x: -50.0, y: -65.0 };
+            world_rectangle.set_translation(translation);
+            assert_eq!(translation, world_rectangle.translation());
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn rotation_test() -> Result<(), Box<dyn Error>> {
+
+        {
+            let mut world_rectangle = WorldRectangle::new(300.0, 200.0);
+            let rotation_deg = 25.0;
+            world_rectangle.set_rotation(rotation_deg);
+            assert_eq!(rotation_deg, world_rectangle.rotation());
+        }
+
+        {
+            let mut world_rectangle = WorldRectangle::new(300.0, 200.0);
+            let rotation_deg = -25.0;
+            world_rectangle.set_rotation(rotation_deg);
+            assert_eq!(rotation_deg, world_rectangle.rotation());
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn rotate_around_point_test() -> Result<(), Box<dyn Error>> {
+
+        //no-op rotation at origin
+        {
+            let mut world_rectangle = WorldRectangle::new(300.0, 200.0);
+            world_rectangle.set_rotation(0.0);
+            world_rectangle.set_translation(WorldCoords { x: 0.0, y: 0.0 });
+
+            let mut after_rotation = WorldRectangle::new(300.0, 200.0);
+            after_rotation.set_rotation(0.0);
+            after_rotation.set_translation(WorldCoords { x: 0.0, y: 0.0 });
+
+            world_rectangle.rotate_around_point(0.0, WorldCoords{x: 0.0, y: 0.0});
+
+            assert_abs_diff_eq!(world_rectangle, after_rotation)
+        }
+
+        //90deg rotation around origin
+        {
+            let mut world_rectangle = WorldRectangle::new(300.0, 200.0);
+            world_rectangle.set_rotation(0.0);
+            world_rectangle.set_translation(WorldCoords { x: 50.0, y: 50.0 });
+
+            let mut after_rotation = WorldRectangle::new(300.0, 200.0);
+            after_rotation.set_rotation(90.0);
+            after_rotation.set_translation(WorldCoords { x: -50.0, y: 50.0 });
+
+            world_rectangle.rotate_around_point(90.0, WorldCoords{x: 0.0, y: 0.0});
+
+            assert_abs_diff_eq!(world_rectangle, after_rotation)
+        }
+
+        //180deg rotation away from origin
+        {
+            let mut world_rectangle = WorldRectangle::new(300.0, 200.0);
+            world_rectangle.set_rotation(0.0);
+            world_rectangle.set_translation(WorldCoords { x: 0.0, y: 0.0 });
+
+            let mut after_rotation = WorldRectangle::new(300.0, 200.0);
+            after_rotation.set_rotation(180.0);
+            after_rotation.set_translation(WorldCoords { x: 100.0, y: 100.0 });
+
+            world_rectangle.rotate_around_point(180.0, WorldCoords{x: 50.0, y: 50.0});
+
+            assert_abs_diff_eq!(world_rectangle, after_rotation)
+        }
+
+        Ok(())
+    }
+
 }
