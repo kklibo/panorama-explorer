@@ -259,8 +259,6 @@ mod test {
             new
 
             to_world
-            is_inside
-            contains
             convert_local_to_world
     */
 
@@ -405,4 +403,70 @@ mod test {
         Ok(())
     }
 
+    #[test]
+    fn is_inside_and_contains_test() -> Result<(), Box<dyn Error>> {
+
+        //at origin, no rotation
+        {
+            let mut world_rectangle = WorldRectangle::new(200.0, 100.0);
+            world_rectangle.set_rotation(0.0);
+            world_rectangle.set_translation(WorldCoords { x: 0.0, y: 0.0 });
+
+            let origin = WorldCoords { x: 0.0, y: 0.0 };
+            let top_left_corner = WorldCoords { x: -100.0, y: 50.0 };
+            let top_right_corner = WorldCoords { x: 100.0, y: 50.0 };
+            let bottom_left_corner = WorldCoords { x: -100.0, y: -50.0 };
+            let bottom_right_corner = WorldCoords { x: 100.0, y: -50.0 };
+
+            let all_edges = [Edge::Top, Edge::Bottom, Edge::Left, Edge::Right];
+
+            for &edge in all_edges.iter() {
+
+                assert!(world_rectangle.is_inside(origin, edge));
+                assert!(world_rectangle.is_inside(top_left_corner, edge));
+                assert!(world_rectangle.is_inside(top_right_corner, edge));
+                assert!(world_rectangle.is_inside(bottom_left_corner, edge));
+                assert!(world_rectangle.is_inside(bottom_right_corner, edge));
+            }
+
+            let beyond_top_left_corner = top_left_corner + top_left_corner;
+            let beyond_top_right_corner = top_right_corner + top_right_corner;
+            let beyond_bottom_left_corner = bottom_left_corner + bottom_left_corner;
+            let beyond_bottom_right_corner = bottom_right_corner + bottom_right_corner;
+
+            assert!( ! world_rectangle.is_inside(beyond_top_left_corner, Edge::Top));
+            assert!( ! world_rectangle.is_inside(beyond_top_right_corner, Edge::Top));
+            assert!(   world_rectangle.is_inside(beyond_bottom_left_corner, Edge::Top));
+            assert!(   world_rectangle.is_inside(beyond_bottom_right_corner, Edge::Top));
+
+            assert!( ! world_rectangle.is_inside(beyond_top_left_corner, Edge::Left));
+            assert!(   world_rectangle.is_inside(beyond_top_right_corner, Edge::Left));
+            assert!( ! world_rectangle.is_inside(beyond_bottom_left_corner, Edge::Left));
+            assert!(   world_rectangle.is_inside(beyond_bottom_right_corner, Edge::Left));
+
+            assert!(   world_rectangle.is_inside(beyond_top_left_corner, Edge::Right));
+            assert!( ! world_rectangle.is_inside(beyond_top_right_corner, Edge::Right));
+            assert!(   world_rectangle.is_inside(beyond_bottom_left_corner, Edge::Right));
+            assert!( ! world_rectangle.is_inside(beyond_bottom_right_corner, Edge::Right));
+
+            assert!(   world_rectangle.is_inside(beyond_top_left_corner, Edge::Bottom));
+            assert!(   world_rectangle.is_inside(beyond_top_right_corner, Edge::Bottom));
+            assert!( ! world_rectangle.is_inside(beyond_bottom_left_corner, Edge::Bottom));
+            assert!( ! world_rectangle.is_inside(beyond_bottom_right_corner, Edge::Bottom));
+
+
+            assert!(world_rectangle.contains(origin));
+            assert!(world_rectangle.contains(top_left_corner));
+            assert!(world_rectangle.contains(top_right_corner));
+            assert!(world_rectangle.contains(bottom_left_corner));
+            assert!(world_rectangle.contains(bottom_right_corner));
+            assert!( ! world_rectangle.contains(beyond_top_left_corner));
+            assert!( ! world_rectangle.contains(beyond_top_right_corner));
+            assert!( ! world_rectangle.contains(beyond_bottom_left_corner));
+            assert!( ! world_rectangle.contains(beyond_bottom_right_corner));
+
+        }
+
+        Ok(())
+    }
 }
