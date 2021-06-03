@@ -9,7 +9,11 @@ use serde::ser::SerializeStruct;
 
 use crate::viewport_geometry::WorldCoords;
 
-
+/// A rectangle in the worldspace, defined by a scale, rotation, and translation.
+///
+/// In the rectangle's local coordinate system:
+/// * (0,0) is the center
+/// * (+/-0.5, +/-0.5) are corners
 #[derive(Debug, PartialEq)]
 pub struct WorldRectangle {
 
@@ -258,7 +262,6 @@ mod test {
             Display::fmt
             new
 
-            to_world
             convert_local_to_world
     */
 
@@ -277,6 +280,35 @@ mod test {
 
         assert_eq!(serde_in, serde_out);
 
+        Ok(())
+    }
+
+    #[test]
+    fn to_world_test() -> Result<(), Box<dyn Error>> {
+
+        //at origin, no rotation
+        {
+            let mut world_rectangle = WorldRectangle::new(200.0, 100.0);
+            world_rectangle.set_rotation(0.0);
+            world_rectangle.set_translation(WorldCoords { x: 0.0, y: 0.0 });
+
+            let m = world_rectangle.to_world();
+
+            assert_abs_diff_eq!(m * Vec4::new(0.0, 0.0, 0.0, 1.0) , Vec4::new(0.0, 0.0, 0.0, 1.0) );
+            assert_abs_diff_eq!(m * Vec4::new(1.0, 1.0, 0.0, 1.0) , Vec4::new(200.0, 100.0, 0.0, 1.0) );
+        }
+
+        //rotation + translation
+        {
+            let mut world_rectangle = WorldRectangle::new(200.0, 100.0);
+            world_rectangle.set_rotation(90.0);
+            world_rectangle.set_translation(WorldCoords { x: 2000.0, y: 1000.0 });
+
+            let m = world_rectangle.to_world();
+
+            assert_abs_diff_eq!(m * Vec4::new(0.0, 0.0, 0.0, 1.0) , Vec4::new(2000.0, 1000.0, 0.0, 1.0) );
+            assert_abs_diff_eq!(m * Vec4::new(1.0, 1.0, 0.0, 1.0) , Vec4::new(1900.0, 1200.0, 0.0, 1.0) );
+        }
         Ok(())
     }
 
