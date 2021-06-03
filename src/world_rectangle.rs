@@ -259,9 +259,7 @@ mod test {
             new
 
             to_world
-            corner_worldcoords_vec2
             is_inside
-            corner
             contains
             convert_local_to_world
     */
@@ -370,6 +368,38 @@ mod test {
             world_rectangle.rotate_around_point(180.0, WorldCoords{x: 50.0, y: 50.0});
 
             assert_abs_diff_eq!(world_rectangle, after_rotation)
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn corner_test() -> Result<(), Box<dyn Error>> {
+
+        //at origin, no rotation
+        {
+            let mut world_rectangle = WorldRectangle::new(200.0, 100.0);
+            world_rectangle.set_rotation(0.0);
+            world_rectangle.set_translation(WorldCoords { x: 0.0, y: 0.0 });
+
+            assert_eq!(world_rectangle.corner(Corner::TopLeft), WorldCoords{x: -100.0, y: 50.0});
+            assert_eq!(world_rectangle.corner(Corner::TopRight), WorldCoords{x: 100.0, y: 50.0});
+            assert_eq!(world_rectangle.corner(Corner::BottomLeft), WorldCoords{x: -100.0, y: -50.0});
+            assert_eq!(world_rectangle.corner(Corner::BottomRight), WorldCoords{x: 100.0, y: -50.0});
+        }
+
+        //rotated + translated
+        {
+            let mut world_rectangle = WorldRectangle::new(200.0, 100.0);
+            world_rectangle.set_rotation(90.0);
+            let x = 2000.0;
+            let y = 1000.0;
+            world_rectangle.set_translation(WorldCoords {x,y});
+
+            assert_eq!(world_rectangle.corner(Corner::TopLeft), WorldCoords{x: x - 50.0, y: y - 100.0});
+            assert_eq!(world_rectangle.corner(Corner::TopRight), WorldCoords{x: x - 50.0, y: y + 100.0});
+            assert_eq!(world_rectangle.corner(Corner::BottomLeft), WorldCoords{x: x + 50.0, y: y - 100.0});
+            assert_eq!(world_rectangle.corner(Corner::BottomRight), WorldCoords{x: x + 50.0, y: y + 100.0});
         }
 
         Ok(())
