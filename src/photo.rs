@@ -1,14 +1,14 @@
 use std::rc::Rc;
 use std::fmt::{Display,Formatter};
 
-use three_d::{Vec3,Vec4,Mat4,Texture};
+use three_d::{Mat4,Texture,InnerSpace};
 
 use serde::{Serialize, Deserialize, Serializer};
 use serde::ser::SerializeStruct;
 
 pub use crate::entities::LoadedImageMesh;
 use crate::viewport_geometry::{WorldCoords, PixelCoords};
-use crate::world_rectangle::WorldRectangle;
+use crate::world_rectangle::{WorldRectangle,LocalCoords};
 
 
 pub struct Photo {
@@ -98,12 +98,46 @@ impl Photo {
 
     fn world_coords_impl(world_rectangle: &WorldRectangle, pixel_coords: PixelCoords) -> WorldCoords {
 
-        let v = Vec3::new(pixel_coords.x as f32, pixel_coords.y as f32, 0.0);
-        let m = world_rectangle.convert_local_to_world(v);
+        let local_coords = Self::local_coords(world_rectangle, pixel_coords);
 
-        let out_v = m * Vec4::unit_w();
+        world_rectangle.world_coords(local_coords)
+    }
 
-        WorldCoords{x: out_v.x as f64, y: out_v.y as f64}
+    fn local_coords(world_rectangle: &WorldRectangle, pixel_coords: PixelCoords) -> LocalCoords {
+
+        let width = world_rectangle.scale.x.magnitude() as f64;
+        let height = world_rectangle.scale.y.magnitude() as f64;
+
+
+        let local_x =
+        if width == 0.0 {
+            //if width is somehow 0, center on origin
+            0.0
+        }
+        else {
+            //scale to width = 1
+            let x = pixel_coords.x / width;
+            //center on origin
+            let x = x - 0.5;
+            x
+        };
+
+        let local_y =
+        if height == 0.0 {
+            //if height is somehow 0, center on origin
+            0.0
+        }
+        else {
+            //scale to width = 1
+            let y = pixel_coords.y / height;
+            //center on origin
+            let y = y - 0.5;
+            //flip y-coords to positive = up
+            let y = -y;
+            y
+        };
+
+        LocalCoords{x: local_x, y: local_y}
     }
 }
 
