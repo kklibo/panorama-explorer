@@ -77,6 +77,14 @@ pub enum Edge {
     Bottom,
 }
 
+#[derive(Debug, PartialOrd, PartialEq, Copy, Clone)]
+pub struct LocalCoords {
+    /// x location within this rectangle: [-0.5,0.5], positive is right
+    pub x: f64,
+    /// y location within this rectangle: [-0.5,0.5], positive is up
+    pub y: f64,
+}
+
 impl WorldRectangle {
 
     pub fn new(width: f32, height: f32) -> Self {
@@ -247,6 +255,17 @@ impl WorldRectangle {
 
         just_translation
     }
+
+    pub fn world_coords(&self, local_coords: LocalCoords) -> WorldCoords {
+
+        let local_coords = Vec4::new(local_coords.x as f32, local_coords.y as f32, 0.0, 1.0);
+
+        let world_coords = self.to_world() * local_coords;
+
+        WorldCoords{ x: world_coords.x as f64, y: world_coords.y as f64 }
+    }
+
+
 }
 
 
@@ -545,6 +564,60 @@ mod test {
                 let m = world_rectangle.convert_local_to_world(pixel_coords);
 
                 assert_eq!(m * Vec4::unit_w(), world_coords);
+            }
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn world_coords_test() -> Result<(), Box<dyn Error>> {
+
+        //at origin, no rotation
+        {
+            let mut world_rectangle = WorldRectangle::new(200.0, 100.0);
+            world_rectangle.set_rotation(0.0);
+            world_rectangle.set_translation(WorldCoords { x: 0.0, y: 0.0 });
+
+            //top left corner
+            {
+                let local_coords = LocalCoords { x: -0.5, y: 0.5 };
+                let world_coords = world_rectangle.world_coords(local_coords);
+
+                assert_eq!(world_coords, WorldCoords { x: -100.0, y: 50.0 });
+            }
+
+            //bottom right corner
+            {
+                let local_coords = LocalCoords { x: 0.5, y: -0.5 };
+                let world_coords = world_rectangle.world_coords(local_coords);
+
+                assert_eq!(world_coords, WorldCoords { x: 100.0, y: -50.0 });
+            }
+        }
+
+        //rotated + translated
+        {
+            let mut world_rectangle = WorldRectangle::new(200.0, 100.0);
+            world_rectangle.set_rotation(90.0);
+            let x = 2000.0;
+            let y = 1000.0;
+            world_rectangle.set_translation(WorldCoords {x,y});
+
+            //top left corner
+            {
+                let local_coords = LocalCoords { x: -0.5, y: 0.5 };
+                let world_coords = world_rectangle.world_coords(local_coords);
+
+                assert_eq!(world_coords, WorldCoords { x: x - 50.0, y: y - 100.0 });
+            }
+
+            //bottom right corner
+            {
+                let local_coords = LocalCoords { x: 0.5, y: -0.5 };
+                let world_coords = world_rectangle.world_coords(local_coords);
+
+                assert_eq!(world_coords, WorldCoords { x: x + 50.0, y: y + 100.0 });
             }
         }
 
