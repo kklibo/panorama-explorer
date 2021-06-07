@@ -1,7 +1,7 @@
 
 use std::fmt::{Display,Formatter};
 
-use three_d::{Vec2,Vec3,Vec4,Mat4,Transform,InnerSpace,SquareMatrix};
+use three_d::{Vec2,Vec3,Vec4,Mat4,Transform,InnerSpace};
 use cgmath::{Deg, AbsDiffEq};
 
 use serde::{Serialize, Deserialize, Serializer};
@@ -230,30 +230,6 @@ impl WorldRectangle {
         self.is_inside(point, Edge::Right) &&
         self.is_inside(point, Edge::Top) &&
         self.is_inside(point, Edge::Bottom)
-    }
-
-    ///returns a matrix to translate a location in this rectangle to a world location
-    //todo: this uses pixel coords as input: refactor to elsewhere
-    pub fn convert_local_to_world(&self, v: Vec3) -> Mat4 {
-
-        let to_bottom_left = Mat4::from_translation(Vec3::new(-0.5,-0.5,0.0));
-        let to_v = Mat4::from_translation(v);
-
-        let transformation =
-            self.translate
-            .concat(&self.rotate)
-            //flip y-coords
-            .concat(&Mat4::from_nonuniform_scale(1.0, -1.0, 1.0))
-            .concat(&to_v)
-            .concat(&self.scale)
-            //scaled to rectangle size
-            .concat(&to_bottom_left);
-
-
-        let mut just_translation = Mat4::identity();
-        just_translation.w = transformation.w;
-
-        just_translation
     }
 
     pub fn world_coords(&self, local_coords: LocalCoords) -> WorldCoords {
@@ -507,64 +483,6 @@ mod test {
             assert!( ! world_rectangle.contains(beyond_bottom_left_corner));
             assert!( ! world_rectangle.contains(beyond_bottom_right_corner));
 
-        }
-
-        Ok(())
-    }
-
-    #[test]
-    fn convert_local_to_world_test() -> Result<(), Box<dyn Error>> {
-
-        //at origin, no rotation
-        {
-            let mut world_rectangle = WorldRectangle::new(200.0, 100.0);
-            world_rectangle.set_rotation(0.0);
-            world_rectangle.set_translation(WorldCoords { x: 0.0, y: 0.0 });
-
-            //top left corner
-            {
-                let pixel_coords = Vec3::new(0.0, 0.0, 0.0);
-                let world_coords = Vec4::new(-100.0, 50.0, 0.0, 1.0);
-                let m = world_rectangle.convert_local_to_world(pixel_coords);
-
-                assert_eq!(m * Vec4::unit_w(), world_coords);
-            }
-
-            //bottom right corner
-            {
-                let pixel_coords = Vec3::new(200.0, 100.0, 0.0);
-                let world_coords = Vec4::new(100.0, -50.0, 0.0, 1.0);
-                let m = world_rectangle.convert_local_to_world(pixel_coords);
-
-                assert_eq!(m * Vec4::unit_w(), world_coords);
-            }
-        }
-
-        //rotated + translated
-        {
-            let mut world_rectangle = WorldRectangle::new(200.0, 100.0);
-            world_rectangle.set_rotation(90.0);
-            let x = 2000.0;
-            let y = 1000.0;
-            world_rectangle.set_translation(WorldCoords {x,y});
-
-            //top left corner
-            {
-                let pixel_coords = Vec3::new(0.0, 0.0, 0.0);
-                let world_coords = Vec4::new(x as f32 - 50.0, y as f32 - 100.0, 0.0, 1.0);
-                let m = world_rectangle.convert_local_to_world(pixel_coords);
-
-                assert_eq!(m * Vec4::unit_w(), world_coords);
-            }
-
-            //bottom right corner
-            {
-                let pixel_coords = Vec3::new(200.0, 100.0, 0.0);
-                let world_coords = Vec4::new(x as f32 + 50.0, y as f32 + 100.0, 0.0, 1.0);
-                let m = world_rectangle.convert_local_to_world(pixel_coords);
-
-                assert_eq!(m * Vec4::unit_w(), world_coords);
-            }
         }
 
         Ok(())
