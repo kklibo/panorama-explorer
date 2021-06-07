@@ -1,12 +1,14 @@
-use three_d::{Transform,InnerSpace,SquareMatrix,Vec2,Mat4};
+use three_d::{InnerSpace,SquareMatrix,Vec2,Mat4};
 use three_d::{CPUMesh,Mesh,CullType};
 use three_d::Error;
 
 use crate::WorldCoords;
 use crate::control_state::{RotationPoint,RotateDrag};
 
-use super::{Renderer,Corner,colors, render_states};
+use super::{Renderer,colors,render_states};
 use crate::photo::Photo;
+use crate::world_rectangle::Corner;
+use crate::viewport_geometry::PixelCoords;
 
 impl Renderer<'_> {
 
@@ -15,29 +17,21 @@ impl Renderer<'_> {
         let points = &self.entities.image0_control_points;
 
         for &v in points {
-            let t1 = Mat4::from_nonuniform_scale(10.0, 10.0, 1.0);
 
-            let t1 = self.entities.photos[0].convert_photo_px_to_world(v).concat(&t1);
+            let pixel_coords = PixelCoords{ x: v.x as f64, y: v.y as f64};
+            let world_coords = self.entities.photos[0].world_coords(pixel_coords);
 
-
-            self.color_program.use_uniform_vec4("color", &colors::photo1_control_points_temp()).unwrap();
-            let mut mesh = self.entities.color_mesh.clone();
-            mesh.transformation = t1;
-            mesh.render(&self.color_program, render_states::render_states_transparency(), self.frame_input.viewport, &self.camera)?;
+            self.draw_point(world_coords, 0.0, colors::photo1_control_points_temp())?;
         }
 
         let points = &self.entities.image1_control_points;
 
         for &v in points {
-            let t1 = Mat4::from_nonuniform_scale(10.0, 10.0, 1.0);
-            let t1 = Mat4::from_angle_z(cgmath::Deg(45.0)).concat(&t1);
 
-            let t1 = self.entities.photos[1].convert_photo_px_to_world(v).concat(&t1);
+            let pixel_coords = PixelCoords{ x: v.x as f64, y: v.y as f64};
+            let world_coords = self.entities.photos[1].world_coords(pixel_coords);
 
-            self.color_program.use_uniform_vec4("color", &colors::photo2_control_points_temp()).unwrap();
-            let mut mesh = self.entities.color_mesh.clone();
-            mesh.transformation = t1;
-            mesh.render(&self.color_program, render_states::render_states_transparency(), self.frame_input.viewport, &self.camera)?;
+            self.draw_point(world_coords, 45.0, colors::photo2_control_points_temp())?;
         }
 
         Ok(())
@@ -94,8 +88,8 @@ impl Renderer<'_> {
         let draw_corner_line = |corner1: Corner, corner2: Corner| {
 
             self.draw_line(
-                photo.corner(corner1),
-                photo.corner(corner2),
+                photo.orientation().corner(corner1),
+                photo.orientation().corner(corner2),
                 1.0,
                 colors::selected_photo_border_rectangle(),
             )

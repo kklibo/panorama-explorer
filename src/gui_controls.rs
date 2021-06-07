@@ -62,9 +62,9 @@ pub fn run_gui_controls(
                          y: {:.2}\n\
                         Rotation: {:.2}°",
                         i,
-                        ph.translation().x,
-                        ph.translation().y,
-                        ph.rotation()
+                        ph.orientation().translation().x,
+                        ph.orientation().translation().y,
+                        ph.orientation().rotation()
                     );
                 }
             }
@@ -170,11 +170,11 @@ pub fn handle_input_events(
 
                             //only modify the selected photo (if there is one)
                             if let Some(i) = control_state.selected_photo_index {
-                                if photos[i].contains(world_coords) {
+                                if photos[i].orientation().contains(world_coords) {
                                         control_state.active_drag =
                                             Some(Drag {
                                                 mouse_start: *position,
-                                                photo_start: photos[i].translation(),
+                                                photo_start: photos[i].orientation().translation(),
                                                 photo_index: i,
                                             });
                                     }
@@ -183,11 +183,11 @@ pub fn handle_input_events(
                             //if no photo is selected, allow drags for any photo
                             else {
                                 for (i, ph) in photos.iter().enumerate() {
-                                    if ph.contains(world_coords) {
+                                    if ph.orientation().contains(world_coords) {
                                         control_state.active_drag =
                                             Some(Drag {
                                                 mouse_start: *position,
-                                                photo_start: ph.translation(),
+                                                photo_start: ph.orientation().translation(),
                                                 photo_index: i,
                                             });
                                         break;
@@ -219,7 +219,7 @@ pub fn handle_input_events(
                                     //collect all photos which are under the cursor
                                     let clicked_photos: Vec<(usize, &Photo)> =
                                         photos.iter().enumerate().filter(|(_, ph)| {
-                                            ph.contains(world_coords)
+                                            ph.orientation().contains(world_coords)
                                         }).collect();
 
                                     let next_photo =
@@ -268,8 +268,8 @@ pub fn handle_input_events(
                                                 RotateDrag {
                                                     mouse_start: world_coords,
                                                     mouse_coords: world_coords,
-                                                    translate_start: photos[index].translation(),
-                                                    rotate_start: photos[index].rotation(),
+                                                    translate_start: photos[index].orientation().translation(),
+                                                    rotate_start: photos[index].orientation().rotation(),
                                                     photo_index: index,
                                                 }
                                             });

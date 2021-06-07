@@ -4,7 +4,6 @@ use three_d::gui::GUI;
 use three_d::{Context, CameraControl, FrameInput};
 
 use crate::control_state::ControlState;
-use crate::photo::Corner;
 use crate::entities::Entities;
 use crate::ViewportGeometry;
 
