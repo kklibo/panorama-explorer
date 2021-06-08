@@ -333,31 +333,36 @@ pub fn handle_input_events(
                     photos[drag.photo_index].set_translation(new_translation);
                 }
 
+                let mut rotate_photo = |rotate_drag: &mut RotateDrag, rp: &RotationPoint| {
+
+                    let world_coords =
+                        viewport_geometry.pixels_to_world(&PixelCoords{x: position.0, y: position.1});
+
+                    rotate_drag.mouse_coords = world_coords; //update current mouse coords
+
+                    let start = Vec2::new(rotate_drag.mouse_start.x as f32, rotate_drag.mouse_start.y as f32);
+                    let axis = Vec2::new(rp.point.x as f32, rp.point.y as f32);
+                    let drag = Vec2::new(world_coords.x as f32, world_coords.y as f32);
+
+                    let axis_to_start = start - axis;
+                    let axis_to_drag = drag - axis;
+
+                    let drag_angle: cgmath::Deg<f32> = axis_to_start.angle(axis_to_drag).into();
+                    let drag_angle = drag_angle.0;
+
+                    //reset to values from start of rotation before rotate_around_point
+                    photos[rotate_drag.photo_index].set_rotation(rotate_drag.rotate_start);
+                    photos[rotate_drag.photo_index].set_translation(rotate_drag.translate_start);
+                    photos[rotate_drag.photo_index].rotate_around_point(drag_angle, rp.point);
+                };
+
                 if let Some(ref mut rotate_drag) = control_state.active_rotate_drag {
 
                     if let Some(ref rp) = control_state.active_rotation_point {
 
                         redraw = true;
 
-                        let world_coords =
-                            viewport_geometry.pixels_to_world(&PixelCoords{x: position.0, y: position.1});
-
-                        rotate_drag.mouse_coords = world_coords; //update current mouse coords
-
-                        let start = Vec2::new(rotate_drag.mouse_start.x as f32, rotate_drag.mouse_start.y as f32);
-                        let axis = Vec2::new(rp.point.x as f32, rp.point.y as f32);
-                        let drag = Vec2::new(world_coords.x as f32, world_coords.y as f32);
-
-                        let axis_to_start = start - axis;
-                        let axis_to_drag = drag - axis;
-
-                        let drag_angle: cgmath::Deg<f32> = axis_to_start.angle(axis_to_drag).into();
-                        let drag_angle = drag_angle.0;
-
-                        //reset to values from start of rotation before rotate_around_point
-                        photos[rotate_drag.photo_index].set_rotation(rotate_drag.rotate_start);
-                        photos[rotate_drag.photo_index].set_translation(rotate_drag.translate_start);
-                        photos[rotate_drag.photo_index].rotate_around_point(drag_angle, rp.point);
+                        rotate_photo(rotate_drag, rp);
                     }
                 }
             },
