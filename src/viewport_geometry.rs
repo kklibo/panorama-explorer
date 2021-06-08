@@ -83,10 +83,12 @@ impl ViewportGeometry {
         }
     }
 
+    #[allow(dead_code)]
     pub fn width_in_pixels(&self) -> NonZeroUsize {
         self.width_in_pixels
     }
 
+    #[allow(dead_code)]
     pub fn height_in_pixels(&self) -> NonZeroUsize {
         self.height_in_pixels
     }

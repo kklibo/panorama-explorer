@@ -6,7 +6,7 @@ use super::{Renderer,colors,render_states};
 
 impl Renderer<'_> {
 
-
+    #[allow(dead_code)]
     pub(in super) fn render_map_overlay(&self) {
 
         //create texture for overlay contents
