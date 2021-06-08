@@ -2,7 +2,7 @@ use three_d::camera::CameraControl;
 use three_d::frame::FrameInput;
 use three_d::frame::{Event, MouseButton, State, Key};
 use three_d::gui::GUI;
-use three_d::egui::{SidePanel, Button, CollapsingHeader};
+use three_d::egui::{Window, Button, CollapsingHeader};
 use three_d::math::{Vec2, InnerSpace};
 
 use log::info;
@@ -20,13 +20,11 @@ pub fn run_gui_controls(
     entities: &mut Entities,
 ) -> bool {
 
-    let panel_width = 200; //hardcode to prevent sizing problems
-
     let redraw = gui.update(frame_input, |gui_context| {
 
-        SidePanel::left("side_panel", panel_width as f32).show(gui_context, |ui| {
-            ui.heading("panorama_tool");
-            ui.separator();
+        let window = Window::new("panorama tool").scroll(true);
+
+        window.show(gui_context, |ui| {
 
             ui.heading("Left-click Tool:");
             ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::PanView, format!("{:?}", MouseTool::PanView));
