@@ -1,4 +1,4 @@
-use three_d::{InnerSpace,SquareMatrix,Vec2,Mat4};
+use three_d::{InnerSpace,SquareMatrix,Vec2,Vec4,Mat4};
 use three_d::{CPUMesh,Mesh,CullType};
 use three_d::Error;
 
@@ -83,7 +83,7 @@ impl Renderer<'_> {
         self.draw_line(rp.point, rd.mouse_coords,  1.0, line_color)
     }
 
-    pub(in super) fn draw_selected_photo_border_rectangle(&self, photo: &Photo) -> Result<(), Error> {
+    fn draw_photo_border_rectangle(&self, photo: &Photo, color: Vec4) -> Result<(), Error> {
 
         let draw_corner_line = |corner1: Corner, corner2: Corner| {
 
@@ -91,7 +91,7 @@ impl Renderer<'_> {
                 photo.orientation().corner(corner1),
                 photo.orientation().corner(corner2),
                 1.0,
-                colors::selected_photo_border_rectangle(),
+                color,
             )
         };
 
@@ -99,5 +99,10 @@ impl Renderer<'_> {
         draw_corner_line(Corner::BottomRight, Corner::TopRight)?;
         draw_corner_line(Corner::TopRight, Corner::TopLeft)?;
         draw_corner_line(Corner::TopLeft, Corner::BottomLeft)
+    }
+
+    pub(in super) fn draw_selected_photo_border_rectangle(&self, photo: &Photo) -> Result<(), Error> {
+
+        self.draw_photo_border_rectangle(photo, colors::selected_photo_border_rectangle())
     }
 }
