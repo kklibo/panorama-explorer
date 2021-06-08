@@ -8,7 +8,7 @@ use three_d::math::{Vec2, InnerSpace};
 use log::info;
 
 use crate::viewport_geometry::{ViewportGeometry, PixelCoords, WorldCoords};
-use crate::control_state::{ControlState, MouseTool, DewarpShader, Pan, Drag, RotateDrag, RotationPoint};
+use crate::control_state::{ControlState, MouseTool, DewarpShader, Pan, Drag, RotateDrag, RotationPoint, UiMode};
 use crate::photo::Photo;
 use crate::entities::Entities;
 
@@ -26,102 +26,117 @@ pub fn run_gui_controls(
 
         window.show(gui_context, |ui| {
 
-            ui.heading("Left-click Tool:");
-            ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::PanView, format!("{:?}", MouseTool::PanView));
-            ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::DragPhoto, format!("{:?}", MouseTool::DragPhoto));
-            ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::SelectPhoto, format!("{:?}", MouseTool::SelectPhoto));
-            ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::RotationPoint, format!("{:?}", MouseTool::RotationPoint));
-            ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::DragToRotate, format!("{:?}", MouseTool::DragToRotate));
-            ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::DragToRotateAllPhotos, format!("{:?}", MouseTool::DragToRotateAllPhotos));
-            ui.separator();
-
             ui.horizontal(|ui| {
-                if ui.add(Button::new("Zoom In")).clicked() {
-                    viewport_geometry.zoom_in();
-                }
-                if ui.add(Button::new("Zoom Out")).clicked() {
-                    viewport_geometry.zoom_out();
-                }
+                ui.selectable_value(&mut control_state.ui_mode, UiMode::Browse, "Browse");
+                ui.selectable_value(&mut control_state.ui_mode, UiMode::Edit, "Edit");
             });
-            ui.separator();
 
-            ui.heading("Dewarp Shader");
-            ui.radio_value(&mut control_state.dewarp_shader, DewarpShader::NoMorph, format!("Off"));
-            ui.radio_value(&mut control_state.dewarp_shader, DewarpShader::Dewarp2, format!("On"));
-            ui.separator();
+            match control_state.ui_mode {
 
-            let mut photo_ui_text = "None".to_string();
+                UiMode::Browse => {
 
-            if let Some(i) = control_state.selected_photo_index {
-                if let Some(ph) = entities.photos.get(i) {
-                    photo_ui_text = format!(
-                        "Photo {}\n\
-                        Center:\n\
-                         x: {:.2}\n\
-                         y: {:.2}\n\
-                        Rotation: {:.2}°",
-                        i,
-                        ph.orientation().translation().x,
-                        ph.orientation().translation().y,
-                        ph.orientation().rotation()
-                    );
-                }
-            }
-            ui.heading("Selected Photo Info");
-            ui.label(&photo_ui_text);
-            ui.separator();
+                    ui.label("browse mode");
+                },
+                UiMode::Edit => {
 
-            ui.label("demo");
+                    ui.heading("Left-click Tool:");
+                    ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::PanView, format!("{:?}", MouseTool::PanView));
+                    ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::DragPhoto, format!("{:?}", MouseTool::DragPhoto));
+                    ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::SelectPhoto, format!("{:?}", MouseTool::SelectPhoto));
+                    ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::RotationPoint, format!("{:?}", MouseTool::RotationPoint));
+                    ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::DragToRotate, format!("{:?}", MouseTool::DragToRotate));
+                    ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::DragToRotateAllPhotos, format!("{:?}", MouseTool::DragToRotateAllPhotos));
+                    ui.separator();
 
-            if ui.add(Button::new("reset photos")).clicked() {
+                    ui.horizontal(|ui| {
+                        if ui.add(Button::new("Zoom In")).clicked() {
+                            viewport_geometry.zoom_in();
+                        }
+                        if ui.add(Button::new("Zoom Out")).clicked() {
+                            viewport_geometry.zoom_out();
+                        }
+                    });
+                    ui.separator();
 
-                entities.set_photos_from_json_serde_string(&entities.reset_photos_string.clone()).unwrap();
-            }
-            if ui.add(Button::new("align photos")).clicked() {
+                    ui.heading("Dewarp Shader");
+                    ui.radio_value(&mut control_state.dewarp_shader, DewarpShader::NoMorph, format!("Off"));
+                    ui.radio_value(&mut control_state.dewarp_shader, DewarpShader::Dewarp2, format!("On"));
+                    ui.separator();
 
-                entities.set_photos_from_json_serde_string(&entities.align_photos_string.clone()).unwrap();
-            }
+                    let mut photo_ui_text = "None".to_string();
 
-            ui.separator();
-
-            CollapsingHeader::new("Help")
-                .default_open(false)
-                .show(ui, |ui| {
-
-                    ui.label(format!(
-                        "Left Mouse: use tool\n\
-                        Middle Mouse: pan view\n\
-                        Scroll Wheel: zoom in/out\n\
-                        Right Mouse: drag photo"
-                        )
-                    );
-
-                });
-
-
-            CollapsingHeader::new("Debug")
-                .default_open(false)
-                .show(ui, |ui| {
-
-                ui.heading("Mouse Location");
-                ui.label(&control_state.mouse_location_ui_text);
-                ui.separator();
-
-                ui.checkbox(&mut control_state.alignment_mode, "Alignment Mode (rendering)");
-                ui.separator();
-
-                ui.checkbox(&mut control_state.control_points_visible, "Show Control Points");
-                ui.separator();
-
-                ui.checkbox(&mut control_state.photo_borders_visible, "Show Photo Borders");
-                ui.separator();
-
-                if ui.add(Button::new("dump debug info")).clicked() {
-                    for ph in &entities.photos {
-                        info!("{}", serde_json::to_string(ph).unwrap());
+                    if let Some(i) = control_state.selected_photo_index {
+                        if let Some(ph) = entities.photos.get(i) {
+                            photo_ui_text = format!(
+                                "Photo {}\n\
+                                Center:\n\
+                                 x: {:.2}\n\
+                                 y: {:.2}\n\
+                                Rotation: {:.2}°",
+                                i,
+                                ph.orientation().translation().x,
+                                ph.orientation().translation().y,
+                                ph.orientation().rotation()
+                            );
+                        }
                     }
-                }
-            });
+                    ui.heading("Selected Photo Info");
+                    ui.label(&photo_ui_text);
+                    ui.separator();
+
+                    ui.label("demo");
+
+                    if ui.add(Button::new("reset photos")).clicked() {
+
+                        entities.set_photos_from_json_serde_string(&entities.reset_photos_string.clone()).unwrap();
+                    }
+                    if ui.add(Button::new("align photos")).clicked() {
+
+                        entities.set_photos_from_json_serde_string(&entities.align_photos_string.clone()).unwrap();
+                    }
+
+                    ui.separator();
+
+                    CollapsingHeader::new("Help")
+                        .default_open(false)
+                        .show(ui, |ui| {
+
+                            ui.label(format!(
+                                "Left Mouse: use tool\n\
+                                Middle Mouse: pan view\n\
+                                Scroll Wheel: zoom in/out\n\
+                                Right Mouse: drag photo"
+                                )
+                            );
+
+                        });
+
+
+                    CollapsingHeader::new("Debug")
+                        .default_open(false)
+                        .show(ui, |ui| {
+
+                        ui.heading("Mouse Location");
+                        ui.label(&control_state.mouse_location_ui_text);
+                        ui.separator();
+
+                        ui.checkbox(&mut control_state.alignment_mode, "Alignment Mode (rendering)");
+                        ui.separator();
+
+                        ui.checkbox(&mut control_state.control_points_visible, "Show Control Points");
+                        ui.separator();
+
+                        ui.checkbox(&mut control_state.photo_borders_visible, "Show Photo Borders");
+                        ui.separator();
+
+                        if ui.add(Button::new("dump debug info")).clicked() {
+                            for ph in &entities.photos {
+                                info!("{}", serde_json::to_string(ph).unwrap());
+                            }
+                        }
+                    });
+                },
+            }
         });
     }).unwrap();
 

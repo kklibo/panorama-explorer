@@ -3,6 +3,12 @@ use crate::WorldCoords;
 
 
 #[derive(PartialEq, Debug)]
+pub enum UiMode {
+    Browse,
+    Edit,
+}
+
+#[derive(PartialEq, Debug)]
 pub enum DewarpShader {
     NoMorph,
     Dewarp1,
@@ -43,6 +49,7 @@ pub enum MouseTool {
 }
 
 pub struct ControlState {
+    pub ui_mode: UiMode,
     pub dewarp_shader: DewarpShader,
     pub active_pan: Option<Pan>,
     pub active_drag: Option<Drag>,
@@ -65,6 +72,7 @@ impl Default for ControlState {
 
     fn default() -> Self {
         Self {
+            ui_mode: UiMode::Browse,
             dewarp_shader: DewarpShader::Dewarp2,
             active_pan: None,
             active_drag: None,
