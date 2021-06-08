@@ -118,7 +118,8 @@ impl Renderer<'_> {
                 }
             }
 
-            self.render_map_overlay();
+            //temporarily disabled
+            //self.render_map_overlay();
 
 
             //render the egui UI
