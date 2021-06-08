@@ -34,6 +34,7 @@ pub fn run_gui_controls(
             ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::SelectPhoto, format!("{:?}", MouseTool::SelectPhoto));
             ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::RotationPoint, format!("{:?}", MouseTool::RotationPoint));
             ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::DragToRotate, format!("{:?}", MouseTool::DragToRotate));
+            ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::DragToRotateAllPhotos, format!("{:?}", MouseTool::DragToRotateAllPhotos));
             ui.separator();
 
             ui.horizontal(|ui| {
@@ -275,6 +276,24 @@ pub fn handle_input_events(
                                             });
                                     },
                                     State::Released => control_state.active_rotate_drag = None,
+                                }
+                            MouseTool::DragToRotateAllPhotos =>
+                                match *state {
+                                    State::Pressed => {
+                                        control_state.active_rotate_all_photos_drag =
+
+                                            //create a new active RotateDrag instance for every photo
+                                            photos.iter().enumerate().map(|(index, p)| {
+                                                RotateDrag {
+                                                    mouse_start: world_coords,
+                                                    mouse_coords: world_coords,
+                                                    translate_start: p.orientation().translation(),
+                                                    rotate_start: p.orientation().rotation(),
+                                                    photo_index: index,
+                                                }
+                                            }).collect();
+                                    },
+                                    State::Released => control_state.active_rotate_all_photos_drag = Vec::new(),
                                 }
 
                         }

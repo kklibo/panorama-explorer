@@ -39,6 +39,7 @@ pub enum MouseTool {
     SelectPhoto,
     RotationPoint,
     DragToRotate,
+    DragToRotateAllPhotos,
 }
 
 pub struct ControlState {
@@ -47,6 +48,7 @@ pub struct ControlState {
     pub active_drag: Option<Drag>,
     pub active_rotation_point: Option<RotationPoint>,
     pub active_rotate_drag: Option<RotateDrag>,
+    pub active_rotate_all_photos_drag: Vec<RotateDrag>,
     pub active_mouse_tool: MouseTool,
 
     pub selected_photo_index: Option<usize>,
@@ -67,6 +69,7 @@ impl Default for ControlState {
             active_drag: None,
             active_rotation_point: None,
             active_rotate_drag: None,
+            active_rotate_all_photos_drag: Vec::new(),
             active_mouse_tool: MouseTool::SelectPhoto,
 
             selected_photo_index: None,
