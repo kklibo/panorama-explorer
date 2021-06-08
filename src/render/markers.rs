@@ -105,4 +105,14 @@ impl Renderer<'_> {
 
         self.draw_photo_border_rectangle(photo, colors::selected_photo_border_rectangle())
     }
+
+    pub(in super) fn draw_photo_border_rectangles(&self, photos: &Vec<Photo>) -> Result<(), Error> {
+
+        for photo in photos {
+
+            self.draw_photo_border_rectangle(photo, colors::photo_border_rectangle())?;
+        }
+
+        Ok(())
+    }
 }

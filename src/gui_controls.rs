@@ -115,6 +115,9 @@ pub fn run_gui_controls(
                 ui.checkbox(&mut control_state.control_points_visible, "Show Control Points");
                 ui.separator();
 
+                ui.checkbox(&mut control_state.photo_borders_visible, "Show Photo Borders");
+                ui.separator();
+
                 if ui.add(Button::new("dump debug info")).clicked() {
                     for ph in &entities.photos {
                         info!("{}", serde_json::to_string(ph).unwrap());

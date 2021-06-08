@@ -111,6 +111,11 @@ impl Renderer<'_> {
                 }
             }
 
+            if self.control_state.photo_borders_visible {
+
+                self.draw_photo_border_rectangles(&self.entities.photos)?;
+            }
+
             if let Some(index) = self.control_state.selected_photo_index {
 
                 if let Some(photo) = self.entities.photos.get(index) {
