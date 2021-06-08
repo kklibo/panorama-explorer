@@ -333,6 +333,7 @@ pub fn handle_input_events(
                     photos[drag.photo_index].set_translation(new_translation);
                 }
 
+                //photo rotation function, for DragToRotate + DragToRotateAllPhotos
                 let mut rotate_photo = |rotate_drag: &mut RotateDrag, rp: &RotationPoint| {
 
                     let world_coords =
@@ -363,6 +364,18 @@ pub fn handle_input_events(
                         redraw = true;
 
                         rotate_photo(rotate_drag, rp);
+                    }
+                }
+
+                if !control_state.active_rotate_all_photos_drag.is_empty() {
+
+                    if let Some(ref rp) = control_state.active_rotation_point {
+
+                        redraw = true;
+
+                        for rotate_drag in &mut control_state.active_rotate_all_photos_drag {
+                            rotate_photo(rotate_drag, rp);
+                        }
                     }
                 }
             },
