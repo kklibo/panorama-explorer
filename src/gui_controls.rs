@@ -30,12 +30,30 @@ pub fn run_gui_controls(
                 ui.selectable_value(&mut control_state.ui_mode, UiMode::Browse, "Browse");
                 ui.selectable_value(&mut control_state.ui_mode, UiMode::Edit, "Edit");
             });
+            ui.separator();
 
             match control_state.ui_mode {
 
                 UiMode::Browse => {
 
-                    ui.label("browse mode");
+                    ui.label(format!(
+                        "Left Mouse: pan view\n\
+                        Scroll Wheel: zoom in/out"
+                        )
+                    );
+
+                    ui.horizontal(|ui| {
+                        if ui.add(Button::new("Zoom In")).clicked() {
+                            viewport_geometry.zoom_in();
+                        }
+                        if ui.add(Button::new("Zoom Out")).clicked() {
+                            viewport_geometry.zoom_out();
+                        }
+                    });
+
+                    ui.separator();
+                    ui.checkbox(&mut control_state.photo_borders_visible, "Show Photo Borders");
+
                 },
                 UiMode::Edit => {
 
