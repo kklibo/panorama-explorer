@@ -100,6 +100,7 @@ impl WorldRectangle {
         }
     }
 
+    #[allow(dead_code)]
     pub fn set_from_json_serde_string(&mut self, s: &str) -> Result<(), Box<dyn std::error::Error>> {
 
         #[derive(Deserialize)]

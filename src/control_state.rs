@@ -11,6 +11,7 @@ pub enum UiMode {
 #[derive(PartialEq, Debug)]
 pub enum DewarpShader {
     NoMorph,
+    #[allow(dead_code)]
     Dewarp1,
     Dewarp2,
 }
