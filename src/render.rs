@@ -3,7 +3,7 @@ use three_d::Screen;
 use three_d::gui::GUI;
 use three_d::{Context, CameraControl, FrameInput};
 
-use crate::control_state::ControlState;
+use crate::control_state::{ControlState, UiMode};
 use crate::entities::Entities;
 use crate::ViewportGeometry;
 
@@ -82,32 +82,41 @@ impl Renderer<'_> {
             //depth testing is not used: draw order determines visibility (last = most visible)
 
             //render photos
-            if self.control_state.alignment_mode {
+            match self.control_state.ui_mode {
+                UiMode::Browse => self.render_photos_with_pixel_averaging()?,
+                UiMode::Edit => {
 
-                //in alignment mode, use standard transparency
-                self.render_photos(0.5, render_states::render_states_transparency())?;
-            }
-            else {
+                    if self.control_state.alignment_mode {
 
-                //in browse mode, use pixel averaging
-                self.render_photos_with_pixel_averaging()?;
-            }
+                        //in alignment mode, use standard transparency
+                        self.render_photos(0.5, render_states::render_states_transparency())?;
+                    }
+                    else {
 
-            if self.control_state.control_points_visible {
-
-                //(temporary) point renderer hardcoded to the first 2 images
-                self.render_control_points_temp()?;
-            }
-
-            if let Some(ref rp) = self.control_state.active_rotation_point {
-
-                self.draw_point(rp.point, -45.0, colors::rotation_point())?;
+                        //otherwise, use pixel averaging
+                        self.render_photos_with_pixel_averaging()?;
+                    }
+                },
             }
 
-            if let Some(ref rp) = self.control_state.active_rotation_point {
-                if let Some(ref rd) = self.control_state.active_rotate_drag {
+            if self.control_state.ui_mode == UiMode::Edit {
 
-                    self.draw_active_rotate_drag(rp, rd)?;
+                if self.control_state.control_points_visible {
+
+                    //(temporary) point renderer hardcoded to the first 2 images
+                    self.render_control_points_temp()?;
+                }
+
+                if let Some(ref rp) = self.control_state.active_rotation_point {
+
+                    self.draw_point(rp.point, -45.0, colors::rotation_point())?;
+                }
+
+                if let Some(ref rp) = self.control_state.active_rotation_point {
+                    if let Some(ref rd) = self.control_state.active_rotate_drag {
+
+                        self.draw_active_rotate_drag(rp, rd)?;
+                    }
                 }
             }
 
@@ -116,10 +125,13 @@ impl Renderer<'_> {
                 self.draw_photo_border_rectangles(&self.entities.photos)?;
             }
 
-            if let Some(index) = self.control_state.selected_photo_index {
+            if self.control_state.ui_mode == UiMode::Edit {
 
-                if let Some(photo) = self.entities.photos.get(index) {
-                    self.draw_selected_photo_border_rectangle(photo)?;
+                if let Some(index) = self.control_state.selected_photo_index {
+
+                    if let Some(photo) = self.entities.photos.get(index) {
+                        self.draw_selected_photo_border_rectangle(photo)?;
+                    }
                 }
             }
 
