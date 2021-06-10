@@ -60,6 +60,7 @@ pub fn run_gui_controls(
                     ui.heading("Left-click Tool:");
                     ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::PanView, format!("{:?}", MouseTool::PanView));
                     ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::DragPhoto, format!("{:?}", MouseTool::DragPhoto));
+                    ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::DragAllPhotos, format!("{:?}", MouseTool::DragAllPhotos));
                     ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::SelectPhoto, format!("{:?}", MouseTool::SelectPhoto));
                     ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::RotationPoint, format!("{:?}", MouseTool::RotationPoint));
                     ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::DragToRotate, format!("{:?}", MouseTool::DragToRotate));
@@ -234,6 +235,26 @@ pub fn handle_input_events(
                     };
                 };
 
+                //drag all photos click handler
+                let drag_all_photos = |control_state: &mut ControlState| {
+                    match *state {
+                        State::Pressed => {
+
+                            control_state.active_drag_all_photos =
+
+                            photos.iter().enumerate().map(|(i, ph)| {
+                                Drag {
+                                    mouse_start: *position,
+                                    photo_start: ph.orientation().translation(),
+                                    photo_index: i,
+                                }
+                            }).collect();
+
+                        },
+                        State::Released => control_state.active_drag_all_photos = Vec::new(),
+                    };
+                };
+
                 //in browse mode, left click always pans, other clicks do nothing
                 if control_state.ui_mode == UiMode::Browse {
                     match *button {
@@ -255,6 +276,8 @@ pub fn handle_input_events(
                             MouseTool::PanView => pan_view(control_state),
 
                             MouseTool::DragPhoto => drag_photo(control_state),
+
+                            MouseTool::DragAllPhotos => drag_all_photos(control_state),
 
                             MouseTool::SelectPhoto => {
 
@@ -374,6 +397,21 @@ pub fn handle_input_events(
                     };
 
                     photos[drag.photo_index].set_translation(new_translation);
+                }
+
+                if !control_state.active_drag_all_photos.is_empty() {
+
+                    redraw = true;
+
+                    for ref drag in &control_state.active_drag_all_photos {
+
+                        let new_translation = WorldCoords {
+                            x: drag.photo_start.x as f64 + ((position.0 - drag.mouse_start.0) * viewport_geometry.world_units_per_pixel()),
+                            y: drag.photo_start.y as f64 - ((position.1 - drag.mouse_start.1) * viewport_geometry.world_units_per_pixel()),
+                        };
+
+                        photos[drag.photo_index].set_translation(new_translation);
+                    }
                 }
 
                 //photo rotation function, for DragToRotate + DragToRotateAllPhotos

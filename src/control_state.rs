@@ -43,6 +43,7 @@ pub struct RotateDrag {
 pub enum MouseTool {
     PanView,
     DragPhoto,
+    DragAllPhotos,
     SelectPhoto,
     RotationPoint,
     DragToRotate,
@@ -54,6 +55,7 @@ pub struct ControlState {
     pub dewarp_shader: DewarpShader,
     pub active_pan: Option<Pan>,
     pub active_drag: Option<Drag>,
+    pub active_drag_all_photos: Vec<Drag>,
     pub active_rotation_point: Option<RotationPoint>,
     pub active_rotate_drag: Option<RotateDrag>,
     pub active_rotate_all_photos_drag: Vec<RotateDrag>,
@@ -77,6 +79,7 @@ impl Default for ControlState {
             dewarp_shader: DewarpShader::Dewarp2,
             active_pan: None,
             active_drag: None,
+            active_drag_all_photos: Vec::new(),
             active_rotation_point: None,
             active_rotate_drag: None,
             active_rotate_all_photos_drag: Vec::new(),
