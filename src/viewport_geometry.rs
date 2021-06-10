@@ -1,7 +1,7 @@
 
 use std::error::Error;
 use std::fmt::{Display, Formatter};
-use std::num::NonZeroU32;
+use std::num::NonZeroUsize;
 use std::ops::Add;
 
 #[derive(Debug, Copy, Clone)]
@@ -11,8 +11,8 @@ pub struct ViewportGeometry {
     pub zoom_value: u32,
     pub zoom_min: u32,
     pub zoom_max: u32,
-    width_in_pixels: NonZeroU32,
-    height_in_pixels: NonZeroU32,
+    width_in_pixels: NonZeroUsize,
+    height_in_pixels: NonZeroUsize,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -38,8 +38,8 @@ impl ViewportGeometry {
         zoom_value: u32,
         zoom_min: u32,
         zoom_max: u32,
-        width_in_pixels: u32,
-        height_in_pixels: u32,
+        width_in_pixels: usize,
+        height_in_pixels: usize,
     ) -> Result<ViewportGeometry, PixelDimensionError> {
 
         let (width_in_pixels, height_in_pixels) = Self::check_pixel_dimensions(width_in_pixels, height_in_pixels)?;
@@ -51,8 +51,8 @@ impl ViewportGeometry {
 
     pub fn set_pixel_dimensions(
         &mut self,
-        width_in_pixels: u32,
-        height_in_pixels: u32,
+        width_in_pixels: usize,
+        height_in_pixels: usize,
     ) -> Result<(), PixelDimensionError> {
 
         let (width_in_pixels, height_in_pixels) = Self::check_pixel_dimensions(width_in_pixels, height_in_pixels)?;
@@ -62,9 +62,9 @@ impl ViewportGeometry {
         Ok(())
     }
 
-    fn check_pixel_dimensions(width_in_pixels: u32, height_in_pixels: u32) -> Result<(NonZeroU32, NonZeroU32), PixelDimensionError> {
+    fn check_pixel_dimensions(width_in_pixels: usize, height_in_pixels: usize) -> Result<(NonZeroUsize, NonZeroUsize), PixelDimensionError> {
 
-        match (NonZeroU32::new(width_in_pixels), NonZeroU32::new(height_in_pixels)) {
+        match (NonZeroUsize::new(width_in_pixels), NonZeroUsize::new(height_in_pixels)) {
             (None,    Some(_)) => Err(PixelDimensionError::ZeroWidth),
             (Some(_), None   ) => Err(PixelDimensionError::ZeroHeight),
             (None,    None   ) => Err(PixelDimensionError::ZeroWidthAndHeight),
@@ -83,11 +83,13 @@ impl ViewportGeometry {
         }
     }
 
-    pub fn width_in_pixels(&self) -> NonZeroU32 {
+    #[allow(dead_code)]
+    pub fn width_in_pixels(&self) -> NonZeroUsize {
         self.width_in_pixels
     }
 
-    pub fn height_in_pixels(&self) -> NonZeroU32 {
+    #[allow(dead_code)]
+    pub fn height_in_pixels(&self) -> NonZeroUsize {
         self.height_in_pixels
     }
 
@@ -183,8 +185,8 @@ mod tests {
             ViewportGeometry::try_new(
                 WorldCoords{x: 0.0, y: 0.0},
                 1_f64, 10_u32, 1_u32, 15_u32,
-                0_u32,
-                100_u32,
+                0_usize,
+                100_usize,
             ),
             Err(PixelDimensionError::ZeroWidth)
         );
@@ -193,8 +195,8 @@ mod tests {
             ViewportGeometry::try_new(
                 WorldCoords{x: 0.0, y: 0.0},
                 1_f64, 10_u32, 1_u32, 15_u32,
-                100_u32,
-                0_u32,
+                100_usize,
+                0_usize,
             ),
             Err(PixelDimensionError::ZeroHeight)
         );
@@ -203,8 +205,8 @@ mod tests {
             ViewportGeometry::try_new(
                 WorldCoords{x: 0.0, y: 0.0},
                 1_f64, 10_u32, 1_u32, 15_u32,
-                0_u32,
-                0_u32,
+                0_usize,
+                0_usize,
             ),
             Err(PixelDimensionError::ZeroWidthAndHeight)
         );
@@ -212,8 +214,8 @@ mod tests {
         let res = ViewportGeometry::try_new(
                 WorldCoords{x: 123.4, y: 567.8},
                 1_f64, 10_u32, 1_u32, 15_u32,
-                100_u32,
-                200_u32,
+                100_usize,
+                200_usize,
             ).unwrap();
 
         assert_eq!(res.camera_position, WorldCoords{x: 123.4, y: 567.8});
@@ -221,8 +223,8 @@ mod tests {
         assert_eq!(res.zoom_value, 10_u32);
         assert_eq!(res.zoom_min, 1_u32);
         assert_eq!(res.zoom_max, 15_u32);
-        assert_eq!(res.width_in_pixels, NonZeroU32::new(100_u32).unwrap());
-        assert_eq!(res.height_in_pixels, NonZeroU32::new(200_u32).unwrap());
+        assert_eq!(res.width_in_pixels, NonZeroUsize::new(100_usize).unwrap());
+        assert_eq!(res.height_in_pixels, NonZeroUsize::new(200_usize).unwrap());
     }
 
     #[test]
@@ -331,8 +333,8 @@ mod tests {
     fn height_in_world_units_test() {
         let zoom_value = 10 as u32;
         let zoom_scale = 2 as f64;
-        let width_in_pixels = 400 as u32;
-        let height_in_pixels = 200 as u32;
+        let width_in_pixels = 400 as usize;
+        let height_in_pixels = 200 as usize;
         let v = ViewportGeometry::try_new(
                 WorldCoords{x: 0.0, y: 0.0},
             zoom_scale, zoom_value, 0, 10,
@@ -345,8 +347,8 @@ mod tests {
     fn world_units_per_pixel_test() {
         let zoom_value = 10 as u32;
         let zoom_scale = 2 as f64;
-        let width_in_pixels = 1024 as u32;
-        let height_in_pixels = 512 as u32;
+        let width_in_pixels = 1024 as usize;
+        let height_in_pixels = 512 as usize;
         let v = ViewportGeometry::try_new(
                 WorldCoords{x: 0.0, y: 0.0},
             zoom_scale, zoom_value, 0, 10,
@@ -359,8 +361,8 @@ mod tests {
     fn convert_pixel_to_screen_test() {
         let zoom_value = 10 as u32;
         let zoom_scale = 2 as f64;
-        let width_in_pixels = 1024 as u32;
-        let height_in_pixels = 512 as u32;
+        let width_in_pixels = 1024 as usize;
+        let height_in_pixels = 512 as usize;
         let v = ViewportGeometry::try_new(
                 WorldCoords{x: 0.0, y: 0.0},
             zoom_scale, zoom_value, 0, 10,
@@ -385,8 +387,8 @@ mod tests {
     fn convert_screen_to_world_at_origin_test() {
         let zoom_value = 10 as u32;
         let zoom_scale = 2 as f64;
-        let width_in_pixels = 400 as u32;
-        let height_in_pixels = 200 as u32;
+        let width_in_pixels = 400 as usize;
+        let height_in_pixels = 200 as usize;
         let v = ViewportGeometry::try_new(
                 WorldCoords{x: 0.0, y: 0.0},
             zoom_scale, zoom_value, 0, 10,
@@ -417,7 +419,7 @@ mod tests {
 
     #[test]
     fn aspect_ratio_x_to_y_test() {
-        let (width, height) = (100_u32, 200_u32);
+        let (width, height) = (100_usize, 200_usize);
         let v = ViewportGeometry::try_new(
                 WorldCoords{x: 0.0, y: 0.0},
             1.0, 0, 0, 10,

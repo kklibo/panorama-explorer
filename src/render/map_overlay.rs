@@ -6,7 +6,7 @@ use super::{Renderer,colors,render_states};
 
 impl Renderer<'_> {
 
-
+    #[allow(dead_code)]
     pub(in super) fn render_map_overlay(&self) {
 
         //create texture for overlay contents
@@ -14,8 +14,8 @@ impl Renderer<'_> {
         use three_d::vec3;
         use three_d::Viewport;
 
-        let overlay_width_px: u32 = 300;
-        let overlay_height_px: u32 = 300;
+        let overlay_width_px: usize = 300;
+        let overlay_height_px: usize = 300;
 
         let overlay_texture = ColorTargetTexture2D::<u8>::new(
             &self.context,

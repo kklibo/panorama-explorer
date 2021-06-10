@@ -1,14 +1,14 @@
 use three_d::camera::CameraControl;
 use three_d::frame::FrameInput;
-use three_d::frame::{Event, MouseButton, State, Key};
+use three_d::frame::{Event, MouseButton, State};
 use three_d::gui::GUI;
-use three_d::egui::{SidePanel, Button, CollapsingHeader};
+use three_d::egui::{Window, Button, CollapsingHeader};
 use three_d::math::{Vec2, InnerSpace};
 
 use log::info;
 
 use crate::viewport_geometry::{ViewportGeometry, PixelCoords, WorldCoords};
-use crate::control_state::{ControlState, MouseTool, DewarpShader, Pan, Drag, RotateDrag, RotationPoint};
+use crate::control_state::{ControlState, MouseTool, DewarpShader, Pan, Drag, RotateDrag, RotationPoint, UiMode};
 use crate::photo::Photo;
 use crate::entities::Entities;
 
@@ -20,106 +20,142 @@ pub fn run_gui_controls(
     entities: &mut Entities,
 ) -> bool {
 
-    let panel_width = 200; //hardcode to prevent sizing problems
-
     let redraw = gui.update(frame_input, |gui_context| {
 
-        SidePanel::left("side_panel", panel_width as f32).show(gui_context, |ui| {
-            ui.heading("panorama_tool");
-            ui.separator();
+        let window = Window::new("panorama tool").scroll(false);
 
-            ui.heading("Left-click Tool:");
-            ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::PanView, format!("{:?}", MouseTool::PanView));
-            ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::DragPhoto, format!("{:?}", MouseTool::DragPhoto));
-            ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::SelectPhoto, format!("{:?}", MouseTool::SelectPhoto));
-            ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::RotationPoint, format!("{:?}", MouseTool::RotationPoint));
-            ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::DragToRotate, format!("{:?}", MouseTool::DragToRotate));
-            ui.separator();
+        window.show(gui_context, |ui| {
 
             ui.horizontal(|ui| {
-                if ui.add(Button::new("Zoom In")).clicked() {
-                    viewport_geometry.zoom_in();
-                }
-                if ui.add(Button::new("Zoom Out")).clicked() {
-                    viewport_geometry.zoom_out();
-                }
+                ui.selectable_value(&mut control_state.ui_mode, UiMode::Browse, "Browse");
+                ui.selectable_value(&mut control_state.ui_mode, UiMode::Edit, "Edit");
             });
             ui.separator();
 
-            ui.heading("Dewarp Shader");
-            ui.radio_value(&mut control_state.dewarp_shader, DewarpShader::NoMorph, format!("Off"));
-            ui.radio_value(&mut control_state.dewarp_shader, DewarpShader::Dewarp2, format!("On"));
-            ui.separator();
+            match control_state.ui_mode {
 
-            let mut photo_ui_text = "None".to_string();
-
-            if let Some(i) = control_state.selected_photo_index {
-                if let Some(ph) = entities.photos.get(i) {
-                    photo_ui_text = format!(
-                        "Photo {}\n\
-                        Center:\n\
-                         x: {:.2}\n\
-                         y: {:.2}\n\
-                        Rotation: {:.2}°",
-                        i,
-                        ph.orientation().translation().x,
-                        ph.orientation().translation().y,
-                        ph.orientation().rotation()
-                    );
-                }
-            }
-            ui.heading("Selected Photo Info");
-            ui.label(&photo_ui_text);
-            ui.separator();
-
-            ui.label("demo");
-
-            if ui.add(Button::new("reset photos")).clicked() {
-
-                entities.set_photos_from_json_serde_string(&entities.reset_photos_string.clone()).unwrap();
-            }
-            if ui.add(Button::new("align photos")).clicked() {
-
-                entities.set_photos_from_json_serde_string(&entities.align_photos_string.clone()).unwrap();
-            }
-
-            ui.separator();
-
-            CollapsingHeader::new("Help")
-                .default_open(false)
-                .show(ui, |ui| {
+                UiMode::Browse => {
 
                     ui.label(format!(
-                        "Left Mouse: use tool\n\
-                        Middle Mouse: pan view\n\
-                        Scroll Wheel: zoom in/out\n\
-                        Right Mouse: drag photo"
+                        "Left Mouse: pan view\n\
+                        Scroll Wheel: zoom in/out"
                         )
                     );
 
-                });
+                    ui.horizontal(|ui| {
+                        if ui.add(Button::new("Zoom In")).clicked() {
+                            viewport_geometry.zoom_in();
+                        }
+                        if ui.add(Button::new("Zoom Out")).clicked() {
+                            viewport_geometry.zoom_out();
+                        }
+                    });
 
+                    ui.separator();
+                    ui.checkbox(&mut control_state.photo_borders_visible, "Show Photo Borders");
 
-            CollapsingHeader::new("Debug")
-                .default_open(false)
-                .show(ui, |ui| {
+                },
+                UiMode::Edit => {
 
-                ui.heading("Mouse Location");
-                ui.label(&control_state.mouse_location_ui_text);
-                ui.separator();
+                    ui.heading("Left-click Tool:");
+                    ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::PanView, format!("{:?}", MouseTool::PanView));
+                    ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::DragPhoto, format!("{:?}", MouseTool::DragPhoto));
+                    ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::DragAllPhotos, format!("{:?}", MouseTool::DragAllPhotos));
+                    ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::SelectPhoto, format!("{:?}", MouseTool::SelectPhoto));
+                    ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::RotationPoint, format!("{:?}", MouseTool::RotationPoint));
+                    ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::DragToRotate, format!("{:?}", MouseTool::DragToRotate));
+                    ui.radio_value(&mut control_state.active_mouse_tool, MouseTool::DragToRotateAllPhotos, format!("{:?}", MouseTool::DragToRotateAllPhotos));
+                    ui.separator();
 
-                ui.checkbox(&mut control_state.alignment_mode, "Alignment Mode (rendering)");
-                ui.separator();
+                    ui.horizontal(|ui| {
+                        if ui.add(Button::new("Zoom In")).clicked() {
+                            viewport_geometry.zoom_in();
+                        }
+                        if ui.add(Button::new("Zoom Out")).clicked() {
+                            viewport_geometry.zoom_out();
+                        }
+                    });
+                    ui.separator();
 
-                ui.checkbox(&mut control_state.control_points_visible, "Show Control Points");
-                ui.separator();
+                    ui.heading("Dewarp Shader");
+                    ui.radio_value(&mut control_state.dewarp_shader, DewarpShader::NoMorph, format!("Off"));
+                    ui.radio_value(&mut control_state.dewarp_shader, DewarpShader::Dewarp2, format!("On"));
+                    ui.separator();
 
-                if ui.add(Button::new("dump debug info")).clicked() {
-                    for ph in &entities.photos {
-                        info!("{}", serde_json::to_string(ph).unwrap());
+                    let mut photo_ui_text = "None".to_string();
+
+                    if let Some(i) = control_state.selected_photo_index {
+                        if let Some(ph) = entities.photos.get(i) {
+                            photo_ui_text = format!(
+                                "Photo {}\n\
+                                Center:\n\
+                                 x: {:.2}\n\
+                                 y: {:.2}\n\
+                                Rotation: {:.2}°",
+                                i,
+                                ph.orientation().translation().x,
+                                ph.orientation().translation().y,
+                                ph.orientation().rotation()
+                            );
+                        }
                     }
-                }
-            });
+                    ui.heading("Selected Photo Info");
+                    ui.label(&photo_ui_text);
+                    ui.separator();
+
+                    ui.label("demo");
+
+                    if ui.add(Button::new("reset photos")).clicked() {
+
+                        entities.set_photos_from_json_serde_string(&entities.reset_photos_string.clone()).unwrap();
+                    }
+                    if ui.add(Button::new("align photos")).clicked() {
+
+                        entities.set_photos_from_json_serde_string(&entities.align_photos_string.clone()).unwrap();
+                    }
+
+                    ui.separator();
+
+                    CollapsingHeader::new("Help")
+                        .default_open(false)
+                        .show(ui, |ui| {
+
+                            ui.label(format!(
+                                "Left Mouse: use tool\n\
+                                Middle Mouse: pan view\n\
+                                Scroll Wheel: zoom in/out\n\
+                                Right Mouse: drag photo"
+                                )
+                            );
+
+                        });
+
+
+                    CollapsingHeader::new("Debug")
+                        .default_open(false)
+                        .show(ui, |ui| {
+
+                        ui.heading("Mouse Location");
+                        ui.label(&control_state.mouse_location_ui_text);
+                        ui.separator();
+
+                        ui.checkbox(&mut control_state.alignment_mode, "Alignment Mode (rendering)");
+                        ui.separator();
+
+                        ui.checkbox(&mut control_state.control_points_visible, "Show Control Points");
+                        ui.separator();
+
+                        ui.checkbox(&mut control_state.photo_borders_visible, "Show Photo Borders");
+                        ui.separator();
+
+                        if ui.add(Button::new("dump debug info")).clicked() {
+                            for ph in &entities.photos {
+                                info!("{}", serde_json::to_string(ph).unwrap());
+                            }
+                        }
+                    });
+                },
+            }
         });
     }).unwrap();
 
@@ -199,6 +235,35 @@ pub fn handle_input_events(
                     };
                 };
 
+                //drag all photos click handler
+                let drag_all_photos = |control_state: &mut ControlState| {
+                    match *state {
+                        State::Pressed => {
+
+                            control_state.active_drag_all_photos =
+
+                            photos.iter().enumerate().map(|(i, ph)| {
+                                Drag {
+                                    mouse_start: *position,
+                                    photo_start: ph.orientation().translation(),
+                                    photo_index: i,
+                                }
+                            }).collect();
+
+                        },
+                        State::Released => control_state.active_drag_all_photos = Vec::new(),
+                    };
+                };
+
+                //in browse mode, left click always pans, other clicks do nothing
+                if control_state.ui_mode == UiMode::Browse {
+                    match *button {
+                        MouseButton::Left => pan_view(control_state),
+                        MouseButton::Middle => {},
+                        MouseButton::Right => {},
+                    }
+                    break;
+                }
 
                 match *button {
 
@@ -211,6 +276,8 @@ pub fn handle_input_events(
                             MouseTool::PanView => pan_view(control_state),
 
                             MouseTool::DragPhoto => drag_photo(control_state),
+
+                            MouseTool::DragAllPhotos => drag_all_photos(control_state),
 
                             MouseTool::SelectPhoto => {
 
@@ -276,6 +343,24 @@ pub fn handle_input_events(
                                     },
                                     State::Released => control_state.active_rotate_drag = None,
                                 }
+                            MouseTool::DragToRotateAllPhotos =>
+                                match *state {
+                                    State::Pressed => {
+                                        control_state.active_rotate_all_photos_drag =
+
+                                            //create a new active RotateDrag instance for every photo
+                                            photos.iter().enumerate().map(|(index, p)| {
+                                                RotateDrag {
+                                                    mouse_start: world_coords,
+                                                    mouse_coords: world_coords,
+                                                    translate_start: p.orientation().translation(),
+                                                    rotate_start: p.orientation().rotation(),
+                                                    photo_index: index,
+                                                }
+                                            }).collect();
+                                    },
+                                    State::Released => control_state.active_rotate_all_photos_drag = Vec::new(),
+                                }
 
                         }
 
@@ -314,31 +399,64 @@ pub fn handle_input_events(
                     photos[drag.photo_index].set_translation(new_translation);
                 }
 
+                if !control_state.active_drag_all_photos.is_empty() {
+
+                    redraw = true;
+
+                    for ref drag in &control_state.active_drag_all_photos {
+
+                        let new_translation = WorldCoords {
+                            x: drag.photo_start.x as f64 + ((position.0 - drag.mouse_start.0) * viewport_geometry.world_units_per_pixel()),
+                            y: drag.photo_start.y as f64 - ((position.1 - drag.mouse_start.1) * viewport_geometry.world_units_per_pixel()),
+                        };
+
+                        photos[drag.photo_index].set_translation(new_translation);
+                    }
+                }
+
+                //photo rotation function, for DragToRotate + DragToRotateAllPhotos
+                let mut rotate_photo = |rotate_drag: &mut RotateDrag, rp: &RotationPoint| {
+
+                    let world_coords =
+                        viewport_geometry.pixels_to_world(&PixelCoords{x: position.0, y: position.1});
+
+                    rotate_drag.mouse_coords = world_coords; //update current mouse coords
+
+                    let start = Vec2::new(rotate_drag.mouse_start.x as f32, rotate_drag.mouse_start.y as f32);
+                    let axis = Vec2::new(rp.point.x as f32, rp.point.y as f32);
+                    let drag = Vec2::new(world_coords.x as f32, world_coords.y as f32);
+
+                    let axis_to_start = start - axis;
+                    let axis_to_drag = drag - axis;
+
+                    let drag_angle: cgmath::Deg<f32> = axis_to_start.angle(axis_to_drag).into();
+                    let drag_angle = drag_angle.0;
+
+                    //reset to values from start of rotation before rotate_around_point
+                    photos[rotate_drag.photo_index].set_rotation(rotate_drag.rotate_start);
+                    photos[rotate_drag.photo_index].set_translation(rotate_drag.translate_start);
+                    photos[rotate_drag.photo_index].rotate_around_point(drag_angle, rp.point);
+                };
+
                 if let Some(ref mut rotate_drag) = control_state.active_rotate_drag {
 
                     if let Some(ref rp) = control_state.active_rotation_point {
 
                         redraw = true;
 
-                        let world_coords =
-                            viewport_geometry.pixels_to_world(&PixelCoords{x: position.0, y: position.1});
+                        rotate_photo(rotate_drag, rp);
+                    }
+                }
 
-                        rotate_drag.mouse_coords = world_coords; //update current mouse coords
+                if !control_state.active_rotate_all_photos_drag.is_empty() {
 
-                        let start = Vec2::new(rotate_drag.mouse_start.x as f32, rotate_drag.mouse_start.y as f32);
-                        let axis = Vec2::new(rp.point.x as f32, rp.point.y as f32);
-                        let drag = Vec2::new(world_coords.x as f32, world_coords.y as f32);
+                    if let Some(ref rp) = control_state.active_rotation_point {
 
-                        let axis_to_start = start - axis;
-                        let axis_to_drag = drag - axis;
+                        redraw = true;
 
-                        let drag_angle: cgmath::Deg<f32> = axis_to_start.angle(axis_to_drag).into();
-                        let drag_angle = drag_angle.0;
-
-                        //reset to values from start of rotation before rotate_around_point
-                        photos[rotate_drag.photo_index].set_rotation(rotate_drag.rotate_start);
-                        photos[rotate_drag.photo_index].set_translation(rotate_drag.translate_start);
-                        photos[rotate_drag.photo_index].rotate_around_point(drag_angle, rp.point);
+                        for rotate_drag in &mut control_state.active_rotate_all_photos_drag {
+                            rotate_photo(rotate_drag, rp);
+                        }
                     }
                 }
             },
@@ -370,19 +488,7 @@ pub fn handle_input_events(
                                                    viewport_geometry.height_in_world_units() as f32,
                                                    10.0).unwrap();
             },
-            Event::Key { state, kind, handled, ..} => {
-                if *handled {break};
 
-                if *kind == Key::S && *state == State::Pressed
-                {
-                    redraw = true;
-                    control_state.dewarp_shader = match control_state.dewarp_shader {
-                        DewarpShader::NoMorph => DewarpShader::Dewarp1,
-                        DewarpShader::Dewarp1 => DewarpShader::Dewarp2,
-                        DewarpShader::Dewarp2 => DewarpShader::NoMorph,
-                    };
-                }
-            },
             _ => {},
         }
     }

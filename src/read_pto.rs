@@ -17,6 +17,7 @@ pub struct ControlPoint {
 }
 
 impl ControlPoint {
+    #[allow(dead_code)]
     pub fn new(image_id: u64, x_coord: f64, y_coord: f64) -> ControlPoint
     {
         ControlPoint{image_id, x_coord, y_coord}
