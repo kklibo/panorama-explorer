@@ -18,8 +18,8 @@ pub struct Entities {
     pub image0_control_points: Vec<Vec3>,
     pub image1_control_points: Vec<Vec3>,
     pub photos: Vec<Photo>,
-    pub reset_photos_string: String,
-    pub align_photos_string: String,
+    pub photos_alignment_string: String,
+    pub photos_alignment_alt_string: String,
     pub color_mesh: Mesh,
     pub line_mesh: Mesh,
     pub overlay_mesh: Rc<LoadedImageMesh>,
@@ -33,16 +33,16 @@ impl Entities {
         context: &Context,
         loaded: &Loaded,
         pto_file: &str,
-        reset_photos_string_file: &str,
-        align_photos_string_file: &str,
+        photos_alignment_string_file: &str,
+        photos_alignment_alt_string_file: &str,
         map_overlay_image: &str,
         photo_images: &Vec<&str>) -> Entities
     {
-        let file_u8 = loaded.bytes(reset_photos_string_file).unwrap();
-        let reset_photos_string = std::str::from_utf8(file_u8).unwrap().to_string();
+        let file_u8 = loaded.bytes(photos_alignment_string_file).unwrap();
+        let photos_alignment_string = std::str::from_utf8(file_u8).unwrap().to_string();
 
-        let file_u8 = loaded.bytes(align_photos_string_file).unwrap();
-        let align_photos_string = std::str::from_utf8(file_u8).unwrap().to_string();
+        let file_u8 = loaded.bytes(photos_alignment_alt_string_file).unwrap();
+        let photos_alignment_alt_string = std::str::from_utf8(file_u8).unwrap().to_string();
 
         let file_u8 = loaded.bytes(pto_file).unwrap();
         let s = std::str::from_utf8(file_u8).unwrap();
@@ -102,8 +102,8 @@ impl Entities {
             image0_control_points,
             image1_control_points,
             photos,
-            reset_photos_string,
-            align_photos_string,
+            photos_alignment_string,
+            photos_alignment_alt_string,
             color_mesh,
             line_mesh,
             overlay_mesh,
@@ -111,7 +111,7 @@ impl Entities {
             copy_photos_effect,
         };
 
-        entities.set_photos_from_json_serde_string(&entities.reset_photos_string.clone()).unwrap();
+        entities.set_photos_from_json_serde_string(&entities.photos_alignment_string.clone()).unwrap();
         entities
     }
 

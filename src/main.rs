@@ -55,8 +55,8 @@ fn main() {
 
     //let pto_file = "test_photos/test.pto";
     let pto_file = "test_photos/DSC_9108_12_5 - DSC_9109_12_5.pto";
-    let reset_photos_string_file = "test_photos/reset_photos_string";
-    let align_photos_string_file = "test_photos/align_photos_string";
+    let photos_alignment_string_file = "test_photos/photos_alignment_string";
+    let photos_alignment_alt_string_file = "test_photos/photos_alignment_alt_string";
     let map_overlay_image = "test_photos/map_test.jpg";
     let photo_images = vec!(
     //    "test_photos/test1_border.jpg",
@@ -74,8 +74,8 @@ fn main() {
         let mut filepaths =
         vec!(
             pto_file,
-            reset_photos_string_file,
-            align_photos_string_file,
+            photos_alignment_string_file,
+            photos_alignment_alt_string_file,
             map_overlay_image,
         );
 
@@ -90,8 +90,8 @@ fn main() {
             &context,
             loaded,
             &pto_file,
-            &reset_photos_string_file,
-            &align_photos_string_file,
+            &photos_alignment_string_file,
+            &photos_alignment_alt_string_file,
             map_overlay_image,
             &photo_images
         );
