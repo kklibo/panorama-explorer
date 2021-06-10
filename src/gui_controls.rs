@@ -234,6 +234,15 @@ pub fn handle_input_events(
                     };
                 };
 
+                //in browse mode, left click always pans, other clicks do nothing
+                if control_state.ui_mode == UiMode::Browse {
+                    match *button {
+                        MouseButton::Left => pan_view(control_state),
+                        MouseButton::Middle => {},
+                        MouseButton::Right => {},
+                    }
+                    break;
+                }
 
                 match *button {
 
@@ -441,19 +450,7 @@ pub fn handle_input_events(
                                                    viewport_geometry.height_in_world_units() as f32,
                                                    10.0).unwrap();
             },
-            Event::Key { state, kind, handled, ..} => {
-                if *handled {break};
 
-                if *kind == Key::S && *state == State::Pressed
-                {
-                    redraw = true;
-                    control_state.dewarp_shader = match control_state.dewarp_shader {
-                        DewarpShader::NoMorph => DewarpShader::Dewarp1,
-                        DewarpShader::Dewarp1 => DewarpShader::Dewarp2,
-                        DewarpShader::Dewarp2 => DewarpShader::NoMorph,
-                    };
-                }
-            },
             _ => {},
         }
     }
