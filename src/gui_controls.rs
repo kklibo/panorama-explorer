@@ -22,7 +22,7 @@ pub fn run_gui_controls(
 
     let redraw = gui.update(frame_input, |gui_context| {
 
-        let window = Window::new("panorama tool").scroll(true);
+        let window = Window::new("panorama tool").scroll(false);
 
         window.show(gui_context, |ui| {
 
