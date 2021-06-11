@@ -53,19 +53,17 @@ fn main() {
     let mut gui = three_d::GUI::new(&context).unwrap();
 
 
-    //let pto_file = "test_photos/test.pto";
-    let pto_file = "test_photos/DSC_9108_12_5 - DSC_9109_12_5.pto";
-    let photos_alignment_string_file = "test_photos/photos_alignment_string";
-    let photos_alignment_alt_string_file = "test_photos/photos_alignment_alt_string";
-    let map_overlay_image = "test_photos/map_test.jpg";
+    let media_path = "../panorama-explorer-dev-media/";
+    let photo_dir = media_path.to_string() + "shoreline_2020_12_31_eighth_scale/";
+
+    let pto_file = photo_dir.clone() + "DSC_9108_12_5 - DSC_9109_12_5.pto";
+    let photos_alignment_string_file = photo_dir.clone() + "photos_alignment_string";
+    let photos_alignment_alt_string_file = photo_dir.clone() + "photos_alignment_alt_string";
+    let map_overlay_image = media_path.to_string() + "misc/4x4.png";
     let photo_images = vec!(
-    //    "test_photos/test1_border.jpg",
-    //    "test_photos/test2_border.jpg",
-    //    "test_photos/test1.jpg",
-    //    "test_photos/test2.jpg",
-        "test_photos/DSC_9108_12_5.JPG",
-        "test_photos/DSC_9109_12_5.JPG",
-        "test_photos/DSC_9110_12_5.JPG",
+        photo_dir.clone() + "DSC_9108_12_5.JPG",
+        photo_dir.clone() + "DSC_9109_12_5.JPG",
+        photo_dir.clone() + "DSC_9110_12_5.JPG",
     );
 
     //assemble filepaths to be loaded
@@ -73,10 +71,10 @@ fn main() {
     {
         let mut filepaths =
         vec!(
-            pto_file,
-            photos_alignment_string_file,
-            photos_alignment_alt_string_file,
-            map_overlay_image,
+            pto_file.clone(),
+            photos_alignment_string_file.clone(),
+            photos_alignment_alt_string_file.clone(),
+            map_overlay_image.clone(),
         );
 
         filepaths.append(&mut photo_images.clone());
@@ -92,8 +90,8 @@ fn main() {
             &pto_file,
             &photos_alignment_string_file,
             &photos_alignment_alt_string_file,
-            map_overlay_image,
-            &photo_images
+            &map_overlay_image,
+            &photo_images.iter().map(|s| s.as_ref()).collect()
         );
 
         let         texture_program = MeshProgram::new(&context, include_str!("shaders/texture.frag")).unwrap();
